@@ -543,14 +543,12 @@ export default function App() {
   // --------- URL helpers for sharable links ---------
   function buildPostURL(p: IndexedPost) {
     const url = new URL(window.location.href)
-    url.searchParams.set('c', p.channel.code)
-    url.searchParams.set('e', p.entry.path)
     url.searchParams.set('id', p.entry.id)
     return url.pathname + '?' + url.searchParams.toString()
   }
   function clearPostURL(replace = false) {
     const url = new URL(window.location.href)
-    url.searchParams.delete('c'); url.searchParams.delete('e'); url.searchParams.delete('id')
+    url.searchParams.delete('id')
     const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
     if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
   }
@@ -561,8 +559,8 @@ export default function App() {
   }
   function getPostFromURL(): IndexedPost | undefined {
     const sp = new URLSearchParams(window.location.search)
-    const id = sp.get('id'); const c = sp.get('c'); const e = sp.get('e')
-    return posts.find(p => (id && p.entry.id === id) || (c && e && p.channel.code === c && p.entry.path === e))
+    const id = sp.get('id');
+    return posts.find(p => (id && p.entry.id === id))
   }
 
   // Open modal and update URL
