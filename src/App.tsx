@@ -634,7 +634,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
+      <header className="sm:sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
 
@@ -650,14 +650,16 @@ export default function App() {
               <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search posts, codes, tags, authors" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
               <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
             </div>
-            <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900">
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="az">A to Z</option>
-            </select>
-            <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-              Join Discord
-            </a>
+            <div className="flex items-center gap-2">
+              <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900 flex-grow">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="az">A to Z</option>
+              </select>
+              <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                Join Discord
+              </a>
+            </div>
           </div>
         </div>
       </header>
