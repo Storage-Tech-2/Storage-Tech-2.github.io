@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type EntryRef, type NestedListItem, type SubmissionRecord, type SubmissionRecords, type Tag, type Image } from "./Schema";
-import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique } from "./Utils";
+import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type EntryRef, type NestedListItem, type SubmissionRecord, type SubmissionRecords, type Tag, type Image, type ArchiveComment } from "./Schema";
+import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText } from "./Utils";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, USE_RAW } from "./Constants";
 import logoimg from "./assets/logo.png";
 
@@ -50,7 +50,6 @@ function useInView<T extends Element>(opts: IntersectionObserverInit = {}): [Rea
   return [ref, inView]
 }
 
-
 function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH) {
   const [config, setConfig] = useState<ArchiveConfig | null>(null)
   const [channels, setChannels] = useState<ChannelRef[]>([])
@@ -76,7 +75,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
           try {
             const cd = await loadChannelData(ch, owner, repo, branch)
             return { channel: ch, data: cd }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } catch (e: any) {
             console.error("Channel load failed", ch.path, e)
             return { channel: ch, data: { ...ch, currentCodeId: 0, entries: [] } as ChannelData }
@@ -91,7 +90,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
         })
         idx.sort((a, b) => b.entry.timestamp - a.entry.timestamp) // newest first
         setPosts(idx)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         console.error(e)
         setError(e.message || String(e))
@@ -120,6 +119,19 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
   }
 
   return { config, channels, entries, posts, loading, error, ensurePostLoaded }
+}
+
+async function loadCommentsData(channelPath: string, entry: EntryRef, owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH): Promise<ArchiveComment[]> {
+  const path = `${channelPath}/${entry.path}/comments.json`
+  try {
+    if (USE_RAW) return await fetchJSONRaw(path, owner, repo, branch)
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers: { Accept: "application/vnd.github.raw" } })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return await res.json()
+  } catch (e) {
+    // No comments file or fetch error — treat as no comments
+    return []
+  }
 }
 
 // ------------------------------
@@ -220,6 +232,14 @@ function AttachmentCard({ att, onView }: { att: Attachment, onView?: (img: Image
           )}
         </div>
       ) : null}
+      { isImage ? (
+        <ImageThumb img={imageForView} onClick={() => onView?.(imageForView)} />
+      ) : ( // nothing to show, just a file
+        null
+      )}
+
+      {/* Details */}
+
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-2 p-3">
@@ -417,6 +437,24 @@ export default function App() {
   const [active, setActive] = useState<IndexedPost | null>(null)
   const [lightbox, setLightbox] = useState<Image | null>(null)
 
+  // Comments cache keyed by `${channel.path}/${entry.path}`
+  const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
+  const [commentsLoading, setCommentsLoading] = useState<Record<string, boolean>>({})
+  const commentsKey = (p: IndexedPost) => `${p.channel.path}/${p.entry.path}`
+  const ensureCommentsLoaded = async (p: IndexedPost) => {
+    const key = commentsKey(p)
+    if (commentsByKey[key] !== undefined) return
+    setCommentsLoading(s => ({ ...s, [key]: true }))
+    try {
+      const items = await loadCommentsData(p.channel.path, p.entry)
+      setCommentsByKey(s => ({ ...s, [key]: items }))
+    } catch (e) {
+      setCommentsByKey(s => ({ ...s, [key]: [] }))
+    } finally {
+      setCommentsLoading(s => ({ ...s, [key]: false }))
+    }
+  }
+
   const includeTags = useMemo(() => Object.keys(tagState).filter(k => tagState[k] === 1).map(normalize), [tagState])
   const excludeTags = useMemo(() => Object.keys(tagState).filter(k => tagState[k] === -1).map(normalize), [tagState])
 
@@ -513,7 +551,7 @@ export default function App() {
         return includeTags.every(t => postTags.includes(t))
       })
     }
-
+    
     // Search
     if (q.trim()) {
       const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
@@ -568,6 +606,8 @@ export default function App() {
     const loaded = await ensurePostLoaded(p)
     setActive(loaded)
     pushPostURL(loaded, replace)
+    // kick off lazy comments fetch without blocking the modal
+    ensureCommentsLoaded(loaded).catch(() => {})
   }
   function closeModal(pushHistory = true) {
     setActive(null)
@@ -741,6 +781,40 @@ export default function App() {
                       </div>
                     </div>
                   ) : null}
+                   {(() => {
+                    const key = `${active.channel.path}/${active.entry.path}`
+                    const items = commentsByKey[key]
+                    const loadingC = commentsLoading[key]
+                    if (loadingC) return <div className="text-sm text-gray-500">Loading comments...</div>
+                    if (!items || items.length === 0) return null
+                    return (
+                      <div>
+                        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Comments</h4>
+                        <ol className="space-y-3">
+                          {items.map((c) => (
+                            <li key={c.id} className="rounded-xl border p-3 dark:border-gray-800">
+                              <div className="flex items-center justify-between gap-2">
+                                <AuthorInline a={c.sender} />
+                                <span className="text-xs text-gray-500" title={formatDate(c.timestamp)}>{timeAgo(c.timestamp)}</span>
+                              </div>
+                              {c.content && <div className="mt-2 text-sm"><MarkdownText text={replaceAttachmentsInText(c.content, c.attachments)} /></div>}
+                              {c.attachments?.length ? (
+                                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  {c.attachments.map(att => (
+                                    <AttachmentCard
+                                      key={att.id}
+                                      att={{...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path}}
+                                      onView={(img) => setLightbox(img)}
+                                    />
+                                  ))}
+                                </div>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )
+                  })()}
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">Loading post...</div>
@@ -761,7 +835,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}  
+      )}
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-gray-500 dark:text-gray-400">

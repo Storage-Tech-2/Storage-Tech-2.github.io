@@ -4,7 +4,7 @@
 
 import type { IndexedPost } from "./App"
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH } from "./Constants"
-import { AuthorType, type Author } from "./Schema"
+import { AuthorType, type Attachment, type Author } from "./Schema"
 
 // ------------------------------
 export function clsx(...xs: Array<string | undefined | false>) {
@@ -111,4 +111,60 @@ export async function asyncPool<T, R>(limit: number, items: T[], fn: (item: T, i
   for (let k = 0; k < Math.max(1, Math.min(limit, items.length)); k++) workers.push(work())
   await Promise.allSettled(workers)
   return results
+}
+
+export function replaceAttachmentsInText(text: string, attachments: Attachment[]): string {
+    // Find all URLs in the message
+    let finalText = text;
+    const urls = text.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g)
+    if (urls) {
+        urls.forEach(url => {
+            // Check if mediafire
+            // https://www.mediafire.com/file/idjbw9lc1kt4obj/1_17_Crafter-r2.zip/file
+            // https://www.mediafire.com/folder/5ajiire4a6cs5/Scorpio+MIS
+            let match = null;
+            if (url.startsWith('https://www.mediafire.com/file/') || url.startsWith('https://www.mediafire.com/folder/')) {
+                const id = url.split('/')[4]
+                // check if duplicate
+                match = attachments.find(attachment => attachment.id === id);
+            } else if (url.startsWith('https://youtu.be/') || url.startsWith('https://www.youtube.com/watch')) {
+                // YouTube links
+                const videoId = new URL(url).searchParams.get('v') || url.split('/').pop();
+                if (!videoId) return;
+                match = attachments.find(attachment => attachment.id === videoId);
+            } else if (url.startsWith('https://cdn.discordapp.com/attachments/')) {
+                const id = url.split('/')[5]
+                match = attachments.find(attachment => attachment.id === id);
+            } else if (url.startsWith('https://bilibili.com/') || url.startsWith('https://www.bilibili.com/')) {
+                // Bilibili links
+                const urlObj = new URL(url);
+                const videoId = urlObj.pathname.split('/')[2] || urlObj.searchParams.get('bvid');
+                if (!videoId) return;
+                match = attachments.find(attachment => attachment.id === videoId);
+            }
+
+            if (!match) return;
+
+            // replace all instances of the URL with a placeholder if its a naked url, not wrapped in markdown
+            const finalTextSplit = finalText.split(url);
+            if (finalTextSplit.length > 1) {
+
+              const finalTextReplaced = [finalTextSplit[0]];
+              for (let j = 1; j < finalTextSplit.length; j++) {
+                // check if the previous character is not a markdown link
+                if (finalTextSplit[j - 1].endsWith('](') && finalTextSplit[j].startsWith(')')) {
+                    // if it is, just add the url
+                    finalTextReplaced.push(url);
+                } else {
+                    // otherwise, add a placeholder
+                    finalTextReplaced.push(`[${match.name || 'Attachment'}](${url})`);
+                }
+                finalTextReplaced.push(finalTextSplit[j]);
+              }
+
+              finalText = finalTextReplaced.join('');
+            }
+        })
+    }
+    return finalText;
 }
