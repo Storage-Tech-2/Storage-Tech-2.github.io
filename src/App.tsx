@@ -76,7 +76,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
           try {
             const cd = await loadChannelData(ch, owner, repo, branch)
             return { channel: ch, data: cd }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } catch (e: any) {
             console.error("Channel load failed", ch.path, e)
             return { channel: ch, data: { ...ch, currentCodeId: 0, entries: [] } as ChannelData }
@@ -91,7 +91,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
         })
         idx.sort((a, b) => b.entry.timestamp - a.entry.timestamp) // newest first
         setPosts(idx)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         console.error(e)
         setError(e.message || String(e))
@@ -153,7 +153,7 @@ function AuthorInline({ a }: { a: Author }) {
   const name = getAuthorName(a)
   return (
     <span className="inline-flex items-center gap-1 text-sm text-gray-800 dark:text-gray-100">
-      {a.iconURL ? <img src={a.iconURL} alt="" className="h-4 w-4 rounded-full"/> : <span className="h-4 w-4 rounded-full bg-gray-300 inline-block"/>}
+      {a.iconURL ? <img src={a.iconURL} alt="" className="h-4 w-4 rounded-full" /> : <span className="h-4 w-4 rounded-full bg-gray-300 inline-block" />}
       {a.url ? <a href={a.url} target="_blank" rel="noreferrer" className="hover:underline">{name}</a> : name}
     </span>
   )
@@ -275,7 +275,7 @@ function ImageThumb({ img, onClick }: { img: Image, onClick?: () => void }) {
   const src = img.path ? img.path : img.url
   return (
     <button className="block overflow-hidden rounded-lg border bg-black/5 dark:bg-white/5" onClick={onClick} title={img.description}>
-      <img src={src} alt={img.description || img.name} className="h-40 w-full object-contain"/>
+      <img src={src} alt={img.description || img.name} className="h-40 w-full object-contain" />
     </button>
   )
 }
@@ -348,7 +348,7 @@ function NestedList({ item }: { item: NestedListItem }) {
 function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p: IndexedPost) => void; ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost> }) {
   const [ref, inView] = useInView<HTMLElement>({ rootMargin: "400px 0px", threshold: 0.01 })
   useEffect(() => {
-    if (inView) ensurePostLoaded(p).catch(() => {})
+    if (inView) ensurePostLoaded(p).catch(() => { })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView])
 
@@ -513,7 +513,7 @@ export default function App() {
         return includeTags.every(t => postTags.includes(t))
       })
     }
-    
+
     // Search
     if (q.trim()) {
       const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
@@ -551,9 +551,9 @@ export default function App() {
       <header className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-          
+
             <img src={logoimg} alt="Logo" className="h-10 w-10" />
-          
+
             <div>
               <div className="text-xl font-bold">Storage Tech 2</div>
               <div className="text-xs text-gray-500"><a href="https://github.com/Storage-Tech-2/Archive">{owner}/{repo}@{branch}</a></div>
@@ -583,7 +583,7 @@ export default function App() {
             <span className="text-sm font-medium">Channels</span>
             <div className="flex flex-wrap gap-2">
               {channels.map(ch => (
-                <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "") }>
+                <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "")}>
                   <input type="checkbox" className="hidden" checked={selectedChannels.includes(ch.code)} onChange={() => setSelectedChannels(s => s.includes(ch.code) ? s.filter(x => x !== ch.code) : [...s, ch.code])} />
                   <span className="font-semibold">{ch.code}</span>
                   <span className={selectedChannels.includes(ch.code) ? "text-white" : "text-gray-500"}>{ch.name}</span>
@@ -596,11 +596,11 @@ export default function App() {
             <span className="text-sm font-medium">Tags</span>
             <div className="inline-flex items-center gap-2 text-xs">
               <label className="inline-flex items-center gap-1">
-                <input type="radio" name="tagMode" value="AND" checked={tagMode==='AND'} onChange={() => setTagMode('AND')} />
+                <input type="radio" name="tagMode" value="AND" checked={tagMode === 'AND'} onChange={() => setTagMode('AND')} />
                 <span>Match all</span>
               </label>
               <label className="inline-flex items-center gap-1">
-                <input type="radio" name="tagMode" value="OR" checked={tagMode==='OR'} onChange={() => setTagMode('OR')} />
+                <input type="radio" name="tagMode" value="OR" checked={tagMode === 'OR'} onChange={() => setTagMode('OR')} />
                 <span>Match any</span>
               </label>
               <span className="text-gray-500">Tip: click tag twice to exclude</span>
@@ -657,7 +657,7 @@ export default function App() {
                   {active.data.images?.length ? (
                     <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                       {active.data.images.map((img) => (
-                        <ImageThumb key={img.id} img={{...img, path: img.path ? assetURL(active.channel.path, active.entry.path, img.path) : img.path}} onClick={() => setLightbox({ ...img, path: img.path ? assetURL(active.channel.path, active.entry.path, img.path) : img.path })} />
+                        <ImageThumb key={img.id} img={{ ...img, path: img.path ? assetURL(active.channel.path, active.entry.path, img.path) : img.path }} onClick={() => setLightbox({ ...img, path: img.path ? assetURL(active.channel.path, active.entry.path, img.path) : img.path })} />
                       ))}
                     </div>
                   ) : null}
@@ -689,7 +689,7 @@ export default function App() {
                       <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Attachments</h4>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {active.data.attachments.map(att => (
-                          <AttachmentCard key={att.id} att={{...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path}} onView={(img) => setLightbox(img)} />
+                          <AttachmentCard key={att.id} att={{ ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path }} onView={(img) => setLightbox(img)} />
                         ))}
                       </div>
                     </div>
