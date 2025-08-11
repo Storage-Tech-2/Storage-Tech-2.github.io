@@ -694,10 +694,9 @@ export default function App() {
             </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
-            {allTags.slice(0, 40).map(tag => (
+            {allTags.map(tag => (
               <TagChip key={tag.id} tag={tag} state={tagState[tag.name] || 0} count={tagCounts[normalize(tag.name)] || 0} onToggle={() => toggleTag(tag.name)} />
             ))}
-            {allTags.length > 40 && <span className="text-xs text-gray-500">+{allTags.length - 40} more available</span>}
           </div>
         </div>
       </div>
