@@ -732,10 +732,12 @@ export default function App() {
             </header>
             <div className="p-4">
               {active.data ? (
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4">
                   {/* authors */}
+                  <div className="flex flex-col gap-1">
                   <AuthorsLine authors={active.data.authors || []} />
                   <EndorsersLine endorsers={active.data.endorsers || []} />
+                  </div>
 
                   {/* images */}
                   {active.data.images?.length ? (
