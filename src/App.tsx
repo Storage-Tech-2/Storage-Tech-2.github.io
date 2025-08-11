@@ -641,7 +641,7 @@ export default function App() {
             <img src={logoimg} alt="Logo" className="h-10 w-10" />
 
             <div>
-              <div className="text-xl font-bold">Storage Tech 2</div>
+              <div className="text-xl font-bold"><a href="/">Storage Tech 2</a></div>
               <div className="text-xs text-gray-500"><a href="https://github.com/Storage-Tech-2/Archive">{owner}/{repo}@{branch}</a></div>
             </div>
           </div>
