@@ -232,7 +232,7 @@ function AttachmentCard({ att, onView }: { att: Attachment, onView?: (img: Image
           )}
         </div>
       ) : null}
-      {isImage && onView ? (
+      {isImage && onView && att.canDownload ? (
         <ImageThumb img={imageForView} onClick={() => onView(imageForView)} />
       ) : ( // nothing to show, just a file
         null
