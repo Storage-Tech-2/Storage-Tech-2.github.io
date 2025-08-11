@@ -405,8 +405,7 @@ function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p:
           </div>
           {(p.entry.tags && p.entry.tags.length) ? (
             <div className="mt-1 flex flex-wrap gap-1">
-              {p.entry.tags.slice(0, 3).map(name => <span key={name} className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] dark:bg-gray-800">{name}</span>)}
-              {p.entry.tags.length > 3 && <span className="text-[10px] text-gray-500">+{p.entry.tags.length - 3}</span>}
+              {p.entry.tags.map(name => <span key={name} className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] dark:bg-gray-800">{name}</span>)}
             </div>
           ) : null}
         </div>
@@ -729,6 +728,13 @@ export default function App() {
                   <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{active.entry.code}</span>
                   <span>{formatDate(active.entry.timestamp)}</span>
                 </div>
+                {active.entry.tags && active.entry.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {active.entry.tags?.map(name => (
+                      <span key={name} className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] dark:bg-gray-800">{name}</span>
+                    ))}
+                  </div>
+                )}
               </div>
               <button onClick={() => closeModal()} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Close</button>
             </header>
@@ -737,8 +743,8 @@ export default function App() {
                 <div className="flex flex-col gap-4">
                   {/* authors */}
                   <div className="flex flex-col gap-1">
-                  <AuthorsLine authors={active.data.authors || []} />
-                  <EndorsersLine endorsers={active.data.endorsers || []} />
+                    <AuthorsLine authors={active.data.authors || []} />
+                    <EndorsersLine endorsers={active.data.endorsers || []} />
                   </div>
 
                   {/* images */}
@@ -800,7 +806,7 @@ export default function App() {
                               </div>
                               {c.content && <div className="mt-2 text-sm"><MarkdownText text={
                                 replaceAttachmentsInText(c.content, c.attachments.map(att => ({
-                                   ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path 
+                                  ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path
                                 })))
                               } /></div>}
                               {c.attachments?.length ? (
