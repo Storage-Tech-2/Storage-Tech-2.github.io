@@ -844,7 +844,10 @@ export default function App() {
             <img src={lightbox.path ? lightbox.path : lightbox.url} alt={lightbox.description || lightbox.name} className="max-h-[80vh] w-full object-contain rounded-2xl" />
             <div className="mt-2 flex items-center justify-between text-sm text-white">
               <div className="opacity-80">{lightbox.description || lightbox.name}</div>
-              <button onClick={() => setLightbox(null)} className="rounded-full border border-white/40 px-3 py-1">Close</button>
+              <div className="flex items-center gap-2">
+                <a href={lightbox.path ? lightbox.path : lightbox.url} target="_blank" rel="noreferrer" className="rounded-full border border-white/40 px-3 py-1">Open in new tab</a>
+                <button onClick={() => setLightbox(null)} className="rounded-full border border-white/40 px-3 py-1">Close</button>
+              </div>
             </div>
           </div>
         </div>
