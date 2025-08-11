@@ -321,7 +321,7 @@ function RecordRenderer({ records }: { records: SubmissionRecords }) {
   const entries = Object.entries(records)
   return (
     <div className="flex flex-col gap-4">
-      {entries.map(([key, value]) => (
+      {entries.map(([key, value]) => value.length !== 0 && (
         <section key={key} className="">
           <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{key}</h4>
           <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
