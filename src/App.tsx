@@ -540,10 +540,59 @@ export default function App() {
     return list
   }, [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode])
 
-  async function openCard(p: IndexedPost) {
+  // --------- URL helpers for sharable links ---------
+  function buildPostURL(p: IndexedPost) {
+    const url = new URL(window.location.href)
+    url.searchParams.set('c', p.channel.code)
+    url.searchParams.set('e', p.entry.path)
+    url.searchParams.set('id', p.entry.id)
+    return url.pathname + '?' + url.searchParams.toString()
+  }
+  function clearPostURL(replace = false) {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('c'); url.searchParams.delete('e'); url.searchParams.delete('id')
+    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
+    if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
+  }
+  function pushPostURL(p: IndexedPost, replace = false) {
+    const next = buildPostURL(p)
+    const state = { postId: p.entry.id }
+    if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
+  }
+  function getPostFromURL(): IndexedPost | undefined {
+    const sp = new URLSearchParams(window.location.search)
+    const id = sp.get('id'); const c = sp.get('c'); const e = sp.get('e')
+    return posts.find(p => (id && p.entry.id === id) || (c && e && p.channel.code === c && p.entry.path === e))
+  }
+
+  // Open modal and update URL
+  async function openCard(p: IndexedPost, replace = false) {
     const loaded = await ensurePostLoaded(p)
     setActive(loaded)
+    pushPostURL(loaded, replace)
   }
+  function closeModal(pushHistory = true) {
+    setActive(null)
+    if (pushHistory) clearPostURL()
+  }
+
+  // Handle initial URL and back/forward navigation
+  useEffect(() => {
+    const maybeOpenFromURL = async () => {
+      const target = getPostFromURL()
+      if (target) { await openCard(target, true) }
+    }
+    // If posts already loaded, try immediately; otherwise will also run when posts changes
+    if (posts.length) { maybeOpenFromURL() }
+    const onPop = () => {
+      const target = getPostFromURL()
+      if (target) openCard(target, true).catch(() => { })
+      else setActive(null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+    // We want to rerun when the set of posts changes or after initial load
+  }, [posts])
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
@@ -633,7 +682,7 @@ export default function App() {
 
       {/* Details modal */}
       {active && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={() => setActive(null)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={() => closeModal()}>
           <article className="max-w-3xl w-full rounded-2xl border bg-white p-0 shadow-xl dark:border-gray-800 dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
             <header className="flex items-start justify-between gap-3 border-b p-4">
               <div>
@@ -644,7 +693,7 @@ export default function App() {
                   <span>{formatDate(active.entry.timestamp)}</span>
                 </div>
               </div>
-              <button onClick={() => setActive(null)} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Close</button>
+              <button onClick={() => closeModal()} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Close</button>
             </header>
             <div className="p-4">
               {active.data ? (
@@ -714,7 +763,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
+      )}  
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-gray-500 dark:text-gray-400">
