@@ -75,7 +75,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
           try {
             const cd = await loadChannelData(ch, owner, repo, branch)
             return { channel: ch, data: cd }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } catch (e: any) {
             console.error("Channel load failed", ch.path, e)
             return { channel: ch, data: { ...ch, currentCodeId: 0, entries: [] } as ChannelData }
@@ -90,7 +90,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
         })
         idx.sort((a, b) => b.entry.timestamp - a.entry.timestamp) // newest first
         setPosts(idx)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         console.error(e)
         setError(e.message || String(e))
@@ -232,8 +232,8 @@ function AttachmentCard({ att, onView }: { att: Attachment, onView?: (img: Image
           )}
         </div>
       ) : null}
-      { isImage ? (
-        <ImageThumb img={imageForView} onClick={() => onView?.(imageForView)} />
+      {isImage && onView ? (
+        <ImageThumb img={imageForView} onClick={() => onView(imageForView)} />
       ) : ( // nothing to show, just a file
         null
       )}
@@ -276,9 +276,6 @@ function AttachmentCard({ att, onView }: { att: Attachment, onView?: (img: Image
         )}
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
-          {isImage && onView && (
-            <button onClick={() => onView(imageForView)} className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">View</button>
-          )}
           {att.canDownload ? (
             <a href={href} download className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Download</a>
           ) : (
@@ -551,7 +548,7 @@ export default function App() {
         return includeTags.every(t => postTags.includes(t))
       })
     }
-    
+
     // Search
     if (q.trim()) {
       const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
@@ -607,7 +604,7 @@ export default function App() {
     setActive(loaded)
     pushPostURL(loaded, replace)
     // kick off lazy comments fetch without blocking the modal
-    ensureCommentsLoaded(loaded).catch(() => {})
+    ensureCommentsLoaded(loaded).catch(() => { })
   }
   function closeModal(pushHistory = true) {
     setActive(null)
@@ -781,7 +778,7 @@ export default function App() {
                       </div>
                     </div>
                   ) : null}
-                   {(() => {
+                  {(() => {
                     const key = `${active.channel.path}/${active.entry.path}`
                     const items = commentsByKey[key]
                     const loadingC = commentsLoading[key]
@@ -797,13 +794,17 @@ export default function App() {
                                 <AuthorInline a={c.sender} />
                                 <span className="text-xs text-gray-500" title={formatDate(c.timestamp)}>{timeAgo(c.timestamp)}</span>
                               </div>
-                              {c.content && <div className="mt-2 text-sm"><MarkdownText text={replaceAttachmentsInText(c.content, c.attachments)} /></div>}
+                              {c.content && <div className="mt-2 text-sm"><MarkdownText text={
+                                replaceAttachmentsInText(c.content, c.attachments.map(att => ({
+                                   ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path 
+                                })))
+                              } /></div>}
                               {c.attachments?.length ? (
                                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                                   {c.attachments.map(att => (
                                     <AttachmentCard
                                       key={att.id}
-                                      att={{...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path}}
+                                      att={{ ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path }}
                                       onView={(img) => setLightbox(img)}
                                     />
                                   ))}

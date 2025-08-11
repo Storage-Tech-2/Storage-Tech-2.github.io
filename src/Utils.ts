@@ -154,10 +154,10 @@ export function replaceAttachmentsInText(text: string, attachments: Attachment[]
                 // check if the previous character is not a markdown link
                 if (finalTextSplit[j - 1].endsWith('](') && finalTextSplit[j].startsWith(')')) {
                     // if it is, just add the url
-                    finalTextReplaced.push(url);
+                    finalTextReplaced.push(match.canDownload ? match.path : url);
                 } else {
                     // otherwise, add a placeholder
-                    finalTextReplaced.push(`[${match.name || 'Attachment'}](${url})`);
+                    finalTextReplaced.push(`[${match.name || 'Attachment'}](${match.canDownload ? match.path : url})`);
                 }
                 finalTextReplaced.push(finalTextSplit[j]);
               }
