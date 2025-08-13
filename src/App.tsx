@@ -139,9 +139,9 @@ async function loadCommentsData(channelPath: string, entry: EntryRef, owner = DE
 // ------------------------------
 function ChannelBadge({ ch }: { ch: ChannelRef }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-gray-700 dark:text-gray-200" title={ch.description}>
+    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-gray-700 dark:text-white" title={ch.description}>
       <span className="font-semibold">{ch.code}</span>
-      <span className="text-gray-500">{ch.name}</span>
+      <span className="text-gray-500 dark:text-white">{ch.name}</span>
     </span>
   )
 }
