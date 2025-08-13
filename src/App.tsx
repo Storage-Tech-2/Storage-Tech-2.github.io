@@ -674,7 +674,7 @@ export default function App() {
                 <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "")}>
                   <input type="checkbox" className="hidden" checked={selectedChannels.includes(ch.code)} onChange={() => setSelectedChannels(s => s.includes(ch.code) ? s.filter(x => x !== ch.code) : [...s, ch.code])} />
                   <span className="font-semibold">{ch.code}</span>
-                  <span className={selectedChannels.includes(ch.code) ? "text-white" : "text-gray-500"}>{ch.name}</span>
+                  <span className={selectedChannels.includes(ch.code) ? "text-white dark:text-black" : "text-gray-500 dark:text-white"}>{ch.name}</span>
                   <span className="ml-1 rounded bg-black/10 px-1 text-[10px] dark:bg-white/10">{channelCounts[ch.code] || 0}</span>
                 </label>
               ))}
