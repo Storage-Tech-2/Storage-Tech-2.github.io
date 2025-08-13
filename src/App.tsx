@@ -399,7 +399,7 @@ function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p:
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{p.entry.code}</span>
           </div>
           {authorsLine && <div className="text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div>}
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
             <ChannelBadge ch={p.channel} />
             <span title={formatDate(p.entry.timestamp)}>{timeAgo(p.entry.timestamp)}</span>
           </div>
