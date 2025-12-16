@@ -147,17 +147,79 @@ function ChannelBadge({ ch }: { ch: ChannelRef }) {
 }
 
 function TagChip({ tag, state, count, onToggle }: { tag: Tag, state: -1 | 0 | 1, count?: number, onToggle?: () => void }) {
-  const base = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+  const meta = getSpecialTagMeta(tag.name)
+  const base = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors"
   const cls = state === 1
-    ? "bg-blue-600 text-white border-blue-600"
+    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
     : state === -1
-      ? "bg-red-600 text-white border-red-600"
-      : "text-gray-700 dark:text-gray-200"
+      ? "bg-red-600 text-white border-red-600 shadow-sm"
+      : meta
+        ? meta.classes
+        : "text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
   return (
     <button onClick={onToggle} className={clsx(base, cls)} title={state === -1 ? "Excluded" : state === 1 ? "Included" : "Not selected"}>
+      {meta?.icon && <span className="text-[12px]">{meta.icon}</span>}
       <span>{tag.name}</span>
       {typeof count === 'number' && <span className="rounded bg-black/10 px-1 text-[10px] dark:bg-white/10">{count}</span>}
     </button>
+  )
+}
+
+const SPECIAL_TAG_META: Record<string, { icon: string, classes: string }> = {
+  [normalize("Untested")]: { icon: "🧪", classes: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100" },
+  [normalize("Broken")]: { icon: "⛔", classes: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-100" },
+  [normalize("Tested & Functional")]: { icon: "✅", classes: "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100" },
+  [normalize("Recommended")]: { icon: "⭐", classes: "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100" },
+}
+
+function getSpecialTagMeta(name: string) {
+  return SPECIAL_TAG_META[normalize(name)]
+}
+
+const SPECIAL_TAG_ORDER = [
+  normalize("Untested"),
+  normalize("Broken"),
+  normalize("Tested & Functional"),
+  normalize("Recommended"),
+]
+
+function sortTagsForDisplay(names: string[]) {
+  const firstByNorm: Record<string, string> = {}
+  names.forEach(n => {
+    const norm = normalize(n)
+    if (!firstByNorm[norm]) firstByNorm[norm] = n
+  })
+  const specials = SPECIAL_TAG_ORDER.map(norm => firstByNorm[norm]).filter(Boolean) as string[]
+  const rest = Object.entries(firstByNorm)
+    .filter(([norm]) => !SPECIAL_TAG_ORDER.includes(norm))
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, original]) => original)
+  return [...specials, ...rest]
+}
+
+function sortTagObjectsForDisplay(tags: Tag[]) {
+  const byNorm = new Map<string, Tag>()
+  tags.forEach(tag => {
+    const norm = normalize(tag.name)
+    if (!byNorm.has(norm)) byNorm.set(norm, tag)
+  })
+  const specials = SPECIAL_TAG_ORDER.map(norm => byNorm.get(norm)).filter(Boolean) as Tag[]
+  const rest = Array.from(byNorm.entries())
+    .filter(([norm]) => !SPECIAL_TAG_ORDER.includes(norm))
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, tag]) => tag)
+  return [...specials, ...rest]
+}
+
+function TagPill({ name }: { name: string }) {
+  const meta = getSpecialTagMeta(name)
+  const base = "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+  const cls = meta ? meta.classes : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+  return (
+    <span className={clsx(base, cls)}>
+      {meta?.icon && <span className="text-[12px]">{meta.icon}</span>}
+      <span>{name}</span>
+    </span>
   )
 }
 
@@ -405,7 +467,7 @@ function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p:
           </div>
           {(p.entry.tags && p.entry.tags.length) ? (
             <div className="mt-1 flex flex-wrap gap-1">
-              {p.entry.tags.map(name => <span key={name} className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] dark:bg-gray-800">{name}</span>)}
+              {sortTagsForDisplay(p.entry.tags).map(name => <TagPill key={name} name={name} />)}
             </div>
           ) : null}
         </div>
@@ -475,7 +537,7 @@ export default function App() {
     const fromEntryRefs = postsPool.flatMap(p => p.entry.tags || [])
     const fromLoadedPosts = postsPool.flatMap(p => p.data?.tags?.map(t => t.name) || [])
     const names = unique([...fromChannels, ...fromEntryRefs, ...fromLoadedPosts])
-    return names.map(n => ({ id: n, name: n })) as Tag[]
+    return sortTagObjectsForDisplay(names.map(n => ({ id: n, name: n })) as Tag[])
   }, [channels, posts, selectedChannels])
 
   // Counts for channels: apply search and tag filters, ignore current channel selection
@@ -742,8 +804,8 @@ export default function App() {
                 </div>
                 {active.entry.tags && active.entry.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {active.entry.tags?.map(name => (
-                      <span key={name} className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] dark:bg-gray-800">{name}</span>
+                    {sortTagsForDisplay(active.entry.tags || []).map(name => (
+                      <TagPill key={name} name={name} />
                     ))}
                   </div>
                 )}
@@ -870,4 +932,3 @@ export default function App() {
     </div>
   )
 }
-
