@@ -1113,7 +1113,7 @@ export default function App() {
                     if (!list.length) return null
                     return (
                       <div>
-                        <h4 className="mb-2 text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
+                        <h4 className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
                         <ul className="ml-5 list-disc space-y-2 text-sm">
                           {list.map((a, i) => {
                             const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || [], (id) => dictionaryTooltips[id]).result
@@ -1215,7 +1215,11 @@ export default function App() {
                   {activeDictionary.data.definition && (
                     <div className="space-y-2">
                       <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Definition</h4>
-                      <MarkdownText text={transformOutputWithReferences(activeDictionary.data.definition, activeDictionary.data.references || []).result} />
+                      <MarkdownText text={transformOutputWithReferences(
+                        activeDictionary.data.definition,
+                        activeDictionary.data.references || [],
+                        (id) => dictionaryTooltips[id],
+                      ).result} />
                     </div>
                   )}
                   {dictionaryReferencedBy.length > 0 && (
