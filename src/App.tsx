@@ -434,6 +434,20 @@ function ImageThumb({ img, onClick }: { img: Image, onClick?: () => void }) {
   )
 }
 
+function LinkWithTooltip(props: React.ComponentProps<"a">) {
+  const { title, children, className, ...rest } = props
+  return (
+    <span className="relative group inline-block">
+      <a {...rest} className={clsx("underline", className)}>{children}</a>
+      {title ? (
+        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
+          {title}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
 function MarkdownText({ text }: { text: string }) {
   return (
     <ReactMarkdown
@@ -443,7 +457,7 @@ function MarkdownText({ text }: { text: string }) {
         h2: (props) => <h2 {...props} className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         h3: (props) => <h3 {...props} className="mt-2 text-lg font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         h4: (props) => <h4 {...props} className="mt-2 text-base font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
-        a: (props) => <a {...props} target="_blank" rel="noreferrer" className="underline" />,
+        a: ({ node, ...props }) => <LinkWithTooltip {...props} target="_blank" rel="noreferrer" />,
         p: (props) => <p {...props} className="leading-relaxed whitespace-pre-wrap" />,
         ul: (props) => <ul {...props} className="list-disc ml-5" />,
         ol: (props) => <ol {...props} className="list-decimal ml-5" />,
@@ -455,9 +469,9 @@ function MarkdownText({ text }: { text: string }) {
   )
 }
 
-function RecordRenderer({ records, recordStyles, schemaStyles, references }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[] }) {
+function RecordRenderer({ records, recordStyles, schemaStyles, references, dictionaryTooltips }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[], dictionaryTooltips?: Record<string, string> }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles])
-  const decorated = useMemo(() => transformOutputWithReferences(markdown, references || []).result, [markdown, references])
+  const decorated = useMemo(() => transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id]).result, [markdown, references, dictionaryTooltips])
   if (!decorated) return null
   return <MarkdownText text={decorated} />
 }
@@ -722,6 +736,17 @@ export default function App() {
       return haystack.includes(term)
     })
   }, [dictionaryEntries, dictionaryQuery])
+
+  const dictionaryTooltips = useMemo(() => {
+    const map: Record<string, string> = {}
+    dictionaryEntries.forEach((entry) => {
+      const def = entry.data?.definition?.trim()
+      const summary = entry.index.summary?.trim()
+      const text = def || summary
+      if (text) map[entry.index.id] = text
+    })
+    return map
+  }, [dictionaryEntries])
 
   // --------- URL helpers for sharable links ---------
   function buildPostURL(p: IndexedPost) {
@@ -1028,6 +1053,7 @@ export default function App() {
                       recordStyles={active.data.styles}
                       schemaStyles={schemaStyles}
                       references={active.data.references}
+                      dictionaryTooltips={dictionaryTooltips}
                     />
                   ) : null}
 
@@ -1040,7 +1066,7 @@ export default function App() {
                         <h4 className="mb-2 text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
                         <ul className="ml-5 list-disc space-y-2 text-sm">
                           {list.map((a, i) => {
-                            const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || []).result
+                            const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || [], (id) => dictionaryTooltips[id]).result
                             return (
                               <li key={i} className="space-y-1">
                                 <div className="font-medium">{a.displayName || a.username || (a.type === AuthorType.DiscordDeleted ? 'Deleted' : 'Unknown')}</div>

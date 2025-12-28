@@ -365,6 +365,7 @@ export function findMatchesWithinText(text: string, references: Reference[]): {
 export function transformOutputWithReferences(
   text: string,
   references: Reference[],
+  dictionaryTooltipLookup?: (id: string) => string | undefined,
 ): {
   result: string,
 } {
@@ -374,6 +375,8 @@ export function transformOutputWithReferences(
       result: text,
     }
   }
+
+  const excludedIDs: Set<Snowflake> = new Set();
 
   // first, filter out matches that are not at word boundaries
   const isWordChar = (ch: string | undefined): boolean => {
@@ -408,6 +411,10 @@ export function transformOutputWithReferences(
 
   // if a match is within a hyperlink, do custom processing
   for (const match of dedupedMatches) {
+    if (match.reference.type === ReferenceType.DISCORD_LINK && excludedIDs.has(match.reference.id)) {
+      continue;
+    }
+
     // check if in header (#'s in front)
     let inHeader = false;
     const lastNewline = text.lastIndexOf('\n', match.start);
@@ -449,16 +456,27 @@ export function transformOutputWithReferences(
 
 
     if (ref.type === ReferenceType.DICTIONARY_TERM) {
+      const tooltip = dictionaryTooltipLookup?.(ref.id)
+      const safeTitle = tooltip ? tooltip.replace(/"/g, "'") : undefined
       if (hyperlink) { // skip
-        resultParts.push(text.slice(hyperlink.start, hyperlink.end));
+        if (safeTitle) {
+          const linkText = hyperlink.groups[0] || "";
+          const existingUrl = hyperlink.groups[1] || "";
+          const linkedText = `[${linkText}](${existingUrl} "Definition: ${safeTitle}")`;
+          resultParts.push(linkedText);
+        } else {
+          resultParts.push(text.slice(hyperlink.start, hyperlink.end));
+        }
         currentIndex = hyperlink.end;
       } else {
         // create markdown link
         const newURL = new URL(window.location.href);
         newURL.searchParams.set('did', ref.id);
-        const linkedText = `[${text.slice(match.start, match.end)}](${newURL.href})`;
-        resultParts.push(linkedText);
+        const linkText = text.slice(match.start, match.end)
+        const withTitle = safeTitle ? `[${linkText}](${newURL.href} "Definition: ${safeTitle}")` : `[${linkText}](${newURL.href})`;
+        resultParts.push(withTitle);
         currentIndex = match.end;
+        excludedIDs.add(ref.id);
       }
     } else if (ref.type === ReferenceType.ARCHIVED_POST) {
       const newURL = new URL(window.location.href);
