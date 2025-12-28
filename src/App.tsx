@@ -620,6 +620,12 @@ export default function App() {
   const [dictionaryQuery, setDictionaryQuery] = useState("")
   const [dictionaryDefinitions, setDictionaryDefinitions] = useState<Record<string, string>>({})
   const dictionaryFetchInFlight = useRef<Set<string>>(new Set())
+  type NavigationState = {
+    postId?: string,
+    did?: string,
+    view?: 'archive' | 'dictionary',
+    keepView?: boolean,
+  }
 
   // Comments cache keyed by `${channel.path}/${entry.path}`
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
@@ -822,9 +828,9 @@ export default function App() {
     const state = { postId: p.entry.id }
     if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
   }
-  function getPostFromURL(): IndexedPost | undefined {
+  function getPostFromURL(idOverride?: string): IndexedPost | undefined {
     const sp = new URLSearchParams(window.location.search)
-    const id = sp.get('id');
+    const id = idOverride ?? sp.get('id');
     return postsRef.current.find(p => (id && p.entry.id === id))
   }
 
@@ -854,10 +860,13 @@ export default function App() {
     const state = { did: entry.index.id, view: 'dictionary' }
     if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
   }
-  function getDictionaryFromURL(): IndexedDictionaryEntry | undefined {
+  function getDictionaryFromURL(didOverride?: string): IndexedDictionaryEntry | undefined {
     const sp = new URLSearchParams(window.location.search)
-    const did = sp.get('did');
-    return dictionaryEntriesRef.current.find(p => (did && p.index.id === did))
+    const did = didOverride ?? sp.get('did');
+    if (!did) return undefined
+    return dictionaryEntriesRef.current.find(p => p.index.id === did) || {
+      index: { id: did, terms: [did], summary: "", updatedAt: Date.now() },
+    }
   }
 
   const switchToArchiveView = (replace = false) => {
@@ -913,10 +922,19 @@ export default function App() {
     if (url.origin !== window.location.origin) return false
     const did = url.searchParams.get('did')
     if (did) {
-      const targetDict = dictionaryEntries.find(p => p.index.id === did) || {
-        index: { id: did, terms: [did], summary: "", updatedAt: Date.now() },
+      const keepView = view === 'archive'
+      const targetDict = getDictionaryFromURL(did)
+      const state: NavigationState = { did, view: keepView ? 'archive' : 'dictionary', keepView }
+      if (keepView) {
+        window.history.pushState(state, '', window.location.href)
+      } else {
+        const nextUrl = new URL(window.location.href)
+        nextUrl.searchParams.set('did', did)
+        nextUrl.searchParams.set('view', 'dictionary')
+        nextUrl.searchParams.delete('id')
+        window.history.pushState(state, '', nextUrl.toString())
       }
-      openDictionaryEntry(targetDict, false, view === 'archive', false)
+      if (targetDict) openDictionaryEntry(targetDict, false, keepView, false)
       return true
     }
     const postId = url.searchParams.get('id')
@@ -929,7 +947,7 @@ export default function App() {
       return false
     }
     return false
-  }, [dictionaryEntries, view, posts, openCard])
+  }, [view, posts, openCard, getDictionaryFromURL])
 
   // Handle body overflow hidden when modal open
   useEffect(() => {
@@ -946,29 +964,42 @@ export default function App() {
   useEffect(() => { urlStateApplied.current = false }, [owner, repo, branch])
 
   useEffect(() => {
-    const applyURLState = async (replace = false) => {
+    const applyURLState = async (replace = false, navState?: NavigationState | null) => {
       const sp = new URLSearchParams(window.location.search)
-      const viewParam = sp.get('view')
-      const didParam = sp.get('did')
-      const targetView = viewParam === 'dictionary' || didParam ? 'dictionary' : 'archive'
+      const postId = navState?.postId ?? sp.get('id') ?? undefined
+      const didParam = navState?.did ?? sp.get('did') ?? undefined
+      const keepView = navState?.keepView ?? false
+      const viewParam = navState?.view ?? sp.get('view')
+      const wantsDictionary = !!didParam || viewParam === 'dictionary'
+      const targetView = keepView ? 'archive' : (wantsDictionary ? 'dictionary' : 'archive')
       setView(targetView)
-      if (targetView === 'dictionary') {
-        const targetDict = getDictionaryFromURL()
-        if (targetDict) { await openDictionaryEntry(targetDict, replace) } else { setActiveDictionary(null) }
+      if (targetView === 'dictionary' && !keepView) {
+        const targetDict = getDictionaryFromURL(didParam)
+        if (targetDict) { await openDictionaryEntry(targetDict, replace, false, false) } else { setActiveDictionary(null) }
         setActive(null)
         return
       }
-      const targetPost = getPostFromURL()
+      const targetPost = postId ? getPostFromURL(postId) : undefined
       if (targetPost) { await openCard(targetPost, replace) } else { setActive(null) }
+      if (didParam) {
+        const targetDict = getDictionaryFromURL(didParam)
+        if (targetDict) { await openDictionaryEntry(targetDict, replace, true, false) } else { setActiveDictionary(null) }
+      } else {
+        setActiveDictionary(null)
+      }
     }
-    const onPop = () => { applyURLState(true).catch(() => { }) }
+    const onPop = (evt: PopStateEvent) => {
+      const navState = (evt.state ?? window.history.state ?? null) as NavigationState | null
+      applyURLState(true, navState).catch(() => { })
+    }
     const sp = new URLSearchParams(window.location.search)
-    const wantsPost = !!sp.get('id')
-    const wantsDictionary = sp.get('view') === 'dictionary' || !!sp.get('did')
+    const navState = (window.history.state || null) as NavigationState | null
+    const wantsPost = !!(navState?.postId ?? sp.get('id'))
+    const wantsDictionary = !!(navState?.did ?? sp.get('did')) || navState?.view === 'dictionary' || sp.get('view') === 'dictionary'
     const dataReady = (!wantsPost || postsRef.current.length > 0) && (!wantsDictionary || dictionaryEntriesRef.current.length > 0)
     if (!urlStateApplied.current && dataReady) {
       urlStateApplied.current = true
-      applyURLState(true).catch(() => { })
+      applyURLState(true, navState).catch(() => { })
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
