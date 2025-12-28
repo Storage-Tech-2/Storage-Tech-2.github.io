@@ -959,6 +959,23 @@ export default function App() {
     return () => { document.body.classList.remove('overflow-hidden') }
   }, [active, activeDictionary])
 
+  // Update page title based on visible content
+  useEffect(() => {
+    const baseTitle = "Storage Tech 2"
+    if (active?.entry) {
+      const code = active.entry.code ? ` (${active.entry.code})` : ""
+      document.title = `${active.entry.name}${code} | ${baseTitle}`
+      return
+    }
+    if (activeDictionary?.index) {
+      const term = activeDictionary.index.terms[0] || activeDictionary.index.id
+      document.title = `${term} - Dictionary | ${baseTitle}`
+      return
+    }
+    const viewTitle = view === 'dictionary' ? "Dictionary" : "Archive"
+    document.title = `${viewTitle} | ${baseTitle}`
+  }, [active, activeDictionary, view])
+
   // Handle initial URL and back/forward navigation
   const urlStateApplied = useRef(false)
   useEffect(() => { urlStateApplied.current = false }, [owner, repo, branch])
