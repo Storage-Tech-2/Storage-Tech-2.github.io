@@ -529,14 +529,7 @@ export function transformOutputWithReferences(
       const tooltip = dictionaryTooltipLookup?.(ref.id)
       const safeTitle = makeTextSafeForTooltip(tooltip)
       if (hyperlink) { // skip
-        if (safeTitle) {
-          const linkText = hyperlink.groups[0] || "";
-          const existingUrl = hyperlink.groups[1] || "";
-          const linkedText = `[${linkText}](${existingUrl} "Definition: ${safeTitle}")`;
-          resultParts.push(linkedText);
-        } else {
-          resultParts.push(text.slice(hyperlink.start, hyperlink.end));
-        }
+        resultParts.push(text.slice(hyperlink.start, hyperlink.end));
         currentIndex = hyperlink.end;
       } else {
         // create markdown link
