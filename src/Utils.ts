@@ -518,11 +518,16 @@ export function transformOutputWithReferences(
     }
 
     const ref = match.reference;
+    
+    const makeTextSafeForTooltip = (s?: string) => {
+      if (!s) return s;
+      return s.replace(/"/g, "'").replace(/\n/g, ' ').trim();
+    }
 
 
     if (ref.type === ReferenceType.DICTIONARY_TERM) {
       const tooltip = dictionaryTooltipLookup?.(ref.id)
-      const safeTitle = tooltip ? tooltip.replace(/"/g, "'") : undefined
+      const safeTitle = makeTextSafeForTooltip(tooltip)
       if (hyperlink) { // skip
         if (safeTitle) {
           const linkText = hyperlink.groups[0] || "";
@@ -548,7 +553,7 @@ export function transformOutputWithReferences(
       newURL.searchParams.set('id', ref.id);
       newURL.searchParams.delete('did');
       const tooltip = postTooltipLookup?.(ref)
-      const safeTitle = tooltip ? tooltip.replace(/"/g, "'") : undefined
+      const safeTitle = makeTextSafeForTooltip(tooltip)
       if (hyperlink) { // dont skip, replace
         // get hyperlink text
         const linkText = hyperlink.groups[0] || "";
@@ -577,7 +582,7 @@ export function transformOutputWithReferences(
         resultParts.push(text.slice(hyperlink.start, hyperlink.end));
         currentIndex = hyperlink.end;
       } else {
-        const safeText = ref.serverName ? `in ${ref.serverName.replaceAll(/"/g, "'")}` : 'on Discord';
+        const safeText = ref.serverName ? `in ${makeTextSafeForTooltip(ref.serverName)}` : 'on Discord';
         const linkedText = `[[Link to message]](${ref.url} "${safeText}")`;
         resultParts.push(linkedText);
         currentIndex = match.end;
