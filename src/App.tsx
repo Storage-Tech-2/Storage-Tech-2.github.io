@@ -751,6 +751,20 @@ export default function App() {
     return map
   }, [dictionaryEntries, dictionaryDefinitions])
 
+  const postsByCode = useMemo(() => {
+    const map: Record<string, IndexedPost> = {}
+    posts.forEach((p) => {
+      if (p.entry?.code) map[p.entry.code] = p
+    })
+    return map
+  }, [posts])
+
+  const dictionaryReferencedBy = useMemo(() => {
+    const codes = activeDictionary?.data?.referencedBy
+    if (!codes?.length) return []
+    return codes.map((code) => ({ code, post: postsByCode[code] }))
+  }, [activeDictionary, postsByCode])
+
   // --------- URL helpers for sharable links ---------
   function buildPostURL(p: IndexedPost) {
     const url = new URL(window.location.href)
@@ -1202,6 +1216,42 @@ export default function App() {
                     <div className="space-y-2">
                       <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Definition</h4>
                       <MarkdownText text={transformOutputWithReferences(activeDictionary.data.definition, activeDictionary.data.references || []).result} />
+                    </div>
+                  )}
+                  {dictionaryReferencedBy.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Referenced By</h4>
+                      <div className="space-y-2">
+                        {dictionaryReferencedBy.map(({ code, post }) => {
+                          if (!post) {
+                            return (
+                              <div key={code} className="flex items-center justify-between rounded-lg border px-3 py-2 dark:border-gray-800">
+                                <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">{code}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Not found in archive</span>
+                              </div>
+                            )
+                          }
+                          const updated = getEntryUpdatedAt(post.entry)
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              onClick={() => openCard(post)}
+                              className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
+                            >
+                              <div className="space-y-1">
+                                <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
+                                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                  <ChannelBadge ch={post.channel} />
+                                  <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">{post.entry.code}</span>
+                                  {updated !== undefined && <span title={formatDate(updated)}>{timeAgo(updated)}</span>}
+                                </div>
+                              </div>
+                              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                   )}
                   <div className="flex flex-wrap gap-2">

@@ -190,4 +190,5 @@ export type DictionaryEntry = {
     statusMessageID?: Snowflake;
     updatedAt: number;
     references: Reference[];
+    referencedBy?: string[]; // list of codes of entries that reference this one
 }
