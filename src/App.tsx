@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType } from "./Schema";
+import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType, type ArchivedPostReference } from "./Schema";
 import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText, postToMarkdown, transformOutputWithReferences } from "./Utils";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, USE_RAW } from "./Constants";
 import logoimg from "./assets/logo.png";
@@ -505,9 +505,9 @@ function MarkdownText({ text, onInternalLink }: { text: string, onInternalLink?:
   )
 }
 
-function RecordRenderer({ records, recordStyles, schemaStyles, references, dictionaryTooltips, onInternalLink }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[], dictionaryTooltips?: Record<string, string>, onInternalLink?: (url: URL) => boolean }) {
+function RecordRenderer({ records, recordStyles, schemaStyles, references, dictionaryTooltips, postTooltipLookup, onInternalLink }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[], dictionaryTooltips?: Record<string, string>, postTooltipLookup?: (ref: ArchivedPostReference) => string | undefined, onInternalLink?: (url: URL) => boolean }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles])
-  const decorated = useMemo(() => transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id]).result, [markdown, references, dictionaryTooltips])
+  const decorated = useMemo(() => transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id], postTooltipLookup).result, [markdown, references, dictionaryTooltips, postTooltipLookup])
   if (!decorated) return null
   return <MarkdownText text={decorated} onInternalLink={onInternalLink} />
 }
@@ -800,12 +800,24 @@ export default function App() {
     })
     return map
   }, [posts])
+  const postsById = useMemo(() => {
+    const map: Record<string, IndexedPost> = {}
+    posts.forEach((p) => {
+      if (p.entry?.id) map[p.entry.id] = p
+    })
+    return map
+  }, [posts])
 
   const dictionaryReferencedBy = useMemo(() => {
     const codes = activeDictionary?.data?.referencedBy
     if (!codes?.length) return []
     return codes.map((code) => ({ code, post: postsByCode[code] }))
   }, [activeDictionary, postsByCode])
+
+  const postTooltipLookup = useCallback((ref: ArchivedPostReference) => {
+    const p = postsById[ref.id] || postsByCode[ref.code]
+    return p?.entry?.name
+  }, [postsByCode, postsById])
 
   // --------- URL helpers for sharable links ---------
   function buildPostURL(p: IndexedPost) {
@@ -1221,6 +1233,7 @@ export default function App() {
                       schemaStyles={schemaStyles}
                       references={active.data.references}
                       dictionaryTooltips={dictionaryTooltips}
+                      postTooltipLookup={postTooltipLookup}
                       onInternalLink={handleInternalLink}
                     />
                   ) : null}
@@ -1234,7 +1247,7 @@ export default function App() {
                         <h4 className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
                         <ul className="ml-5 list-disc space-y-2 text-sm">
                           {list.map((a, i) => {
-                            const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || [], (id) => dictionaryTooltips[id]).result
+                            const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || [], (id) => dictionaryTooltips[id], postTooltipLookup).result
                             return (
                               <li key={i} className="space-y-1">
                                 <div className="font-medium">{a.displayName || a.username || (a.type === AuthorType.DiscordDeleted ? 'Deleted' : 'Unknown')}</div>
@@ -1336,6 +1349,7 @@ export default function App() {
                         activeDictionary.data.definition,
                         activeDictionary.data.references || [],
                         (id) => dictionaryTooltips[id],
+                        postTooltipLookup,
                       ).result} onInternalLink={handleInternalLink} />
                     </div>
                   )}

@@ -4,7 +4,7 @@
 
 import type { IndexedPost } from "./App"
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH } from "./Constants"
-import { AuthorType, ReferenceType, type Attachment, type Author, type NestedListItem, type Reference, type StyleInfo, type SubmissionRecord, type SubmissionRecords } from "./Schema"
+import { AuthorType, ReferenceType, type Attachment, type Author, type NestedListItem, type Reference, type StyleInfo, type SubmissionRecord, type SubmissionRecords, type ArchivedPostReference } from "./Schema"
 
 // ------------------------------
 export function clsx(...xs: Array<string | undefined | false>) {
@@ -366,6 +366,7 @@ export function transformOutputWithReferences(
   text: string,
   references: Reference[],
   dictionaryTooltipLookup?: (id: string) => string | undefined,
+  postTooltipLookup?: (ref: ArchivedPostReference) => string | undefined,
 ): {
   result: string,
 } {
@@ -482,6 +483,8 @@ export function transformOutputWithReferences(
       const newURL = new URL(window.location.href);
       newURL.searchParams.set('id', ref.id);
       newURL.searchParams.delete('did');
+      const tooltip = postTooltipLookup?.(ref)
+      const safeTitle = tooltip ? tooltip.replace(/"/g, "'") : undefined
       if (hyperlink) { // dont skip, replace
         // get hyperlink text
         const linkText = hyperlink.groups[0] || "";
@@ -490,17 +493,17 @@ export function transformOutputWithReferences(
 
         if (linkText.toUpperCase() === ref.code) {
           // same as code, just replace URL
-          const linkedText = `[${linkText}](${newURL.href})`;
+          const linkedText = safeTitle ? `[${linkText}](${newURL.href} "${safeTitle}")` : `[${linkText}](${newURL.href})`;
           resultParts.push(linkedText);
         } else {
           // different, keep text but add suffix
-          const linkedText = `[${linkText} (${ref.code})](${newURL.href})`;
+          const linkedText = safeTitle ? `[${linkText} (${ref.code})](${newURL.href} "${safeTitle}")` : `[${linkText} (${ref.code})](${newURL.href})`;
           resultParts.push(linkedText);
         }
         currentIndex = hyperlink.end;
       } else {
         // create markdown link with code as text
-        const linkedText = `[${ref.code}](${newURL.href})`;
+        const linkedText = safeTitle ? `[${ref.code}](${newURL.href} "${safeTitle}")` : `[${ref.code}](${newURL.href})`;
         resultParts.push(linkedText);
         currentIndex = match.end;
       }
