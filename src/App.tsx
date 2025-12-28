@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType } from "./Schema";
@@ -434,8 +434,12 @@ function ImageThumb({ img, onClick }: { img: Image, onClick?: () => void }) {
   )
 }
 
-function LinkWithTooltip(props: React.ComponentProps<"a">) {
-  const { title, children, className, ...rest } = props
+type LinkWithTooltipProps = React.ComponentProps<"a"> & {
+  onInternalNavigate?: (url: URL) => boolean,
+}
+
+function LinkWithTooltip(props: LinkWithTooltipProps) {
+  const { title, children, className, onInternalNavigate, ...rest } = props
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     const href = rest.href
@@ -444,6 +448,10 @@ function LinkWithTooltip(props: React.ComponentProps<"a">) {
     try {
       const url = new URL(href, window.location.href)
       if (url.origin !== window.location.origin) return
+      if (onInternalNavigate && onInternalNavigate(url)) {
+        e.preventDefault()
+        return
+      }
       e.preventDefault()
       window.history.pushState({}, '', url.href)
       window.dispatchEvent(new PopStateEvent('popstate'))
@@ -473,7 +481,7 @@ function linkTargetForHref(href?: string) {
   }
 }
 
-function MarkdownText({ text }: { text: string }) {
+function MarkdownText({ text, onInternalLink }: { text: string, onInternalLink?: (url: URL) => boolean }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -484,7 +492,7 @@ function MarkdownText({ text }: { text: string }) {
         h4: (props) => <h4 {...props} className="mt-2 text-base font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         a: ({ node, ...props }) => {
           const target = linkTargetForHref(props.href)
-          return <LinkWithTooltip {...props} target={target} rel={target === "_blank" ? "noreferrer" : undefined} />
+          return <LinkWithTooltip {...props} onInternalNavigate={onInternalLink} target={target} rel={target === "_blank" ? "noreferrer" : undefined} />
         },
         p: (props) => <p {...props} className="leading-relaxed whitespace-pre-wrap" />,
         ul: (props) => <ul {...props} className="list-disc ml-5" />,
@@ -497,11 +505,11 @@ function MarkdownText({ text }: { text: string }) {
   )
 }
 
-function RecordRenderer({ records, recordStyles, schemaStyles, references, dictionaryTooltips }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[], dictionaryTooltips?: Record<string, string> }) {
+function RecordRenderer({ records, recordStyles, schemaStyles, references, dictionaryTooltips, onInternalLink }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[], dictionaryTooltips?: Record<string, string>, onInternalLink?: (url: URL) => boolean }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles])
   const decorated = useMemo(() => transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id]).result, [markdown, references, dictionaryTooltips])
   if (!decorated) return null
-  return <MarkdownText text={decorated} />
+  return <MarkdownText text={decorated} onInternalLink={onInternalLink} />
 }
 
 function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry, onOpen: (entry: IndexedDictionaryEntry) => void }) {
@@ -593,6 +601,11 @@ export default function App() {
 
   const { config: archiveConfig, channels, posts, loading, error, ensurePostLoaded } = useArchive(owner, repo, branch)
   const { dictionaryEntries, dictionaryLoading, dictionaryError, ensureEntryLoaded: ensureDictionaryEntryLoaded } = useDictionary(owner, repo, branch)
+  const postsRef = useRef<IndexedPost[]>([])
+  const dictionaryEntriesRef = useRef<IndexedDictionaryEntry[]>([])
+
+  useEffect(() => { postsRef.current = posts }, [posts])
+  useEffect(() => { dictionaryEntriesRef.current = dictionaryEntries }, [dictionaryEntries])
 
   // UI state
   const [q, setQ] = useState("")
@@ -814,7 +827,7 @@ export default function App() {
   function getPostFromURL(): IndexedPost | undefined {
     const sp = new URLSearchParams(window.location.search)
     const id = sp.get('id');
-    return posts.find(p => (id && p.entry.id === id))
+    return postsRef.current.find(p => (id && p.entry.id === id))
   }
 
   function buildDictionaryURL(entry: IndexedDictionaryEntry) {
@@ -824,11 +837,18 @@ export default function App() {
     url.searchParams.delete('id')
     return url.pathname + '?' + url.searchParams.toString()
   }
-  function clearDictionaryURL(replace = false) {
+  function clearDictionaryURL(replace = false, keepDictionaryView = true) {
     const url = new URL(window.location.href)
     url.searchParams.delete('did')
-    url.searchParams.set('view', 'dictionary')
-    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
+    if (keepDictionaryView) {
+      url.searchParams.set('view', 'dictionary')
+    } else {
+      url.searchParams.delete('view')
+    }
+    const nextSearch = url.searchParams.toString()
+    const currentSearch = new URL(window.location.href).searchParams.toString()
+    const next = url.pathname + (nextSearch ? '?' + nextSearch : '')
+    if (nextSearch === currentSearch) return
     if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
   }
   function pushDictionaryURL(entry: IndexedDictionaryEntry, replace = false) {
@@ -839,7 +859,7 @@ export default function App() {
   function getDictionaryFromURL(): IndexedDictionaryEntry | undefined {
     const sp = new URLSearchParams(window.location.search)
     const did = sp.get('did');
-    return dictionaryEntries.find(p => (did && p.index.id === did))
+    return dictionaryEntriesRef.current.find(p => (did && p.index.id === did))
   }
 
   const switchToArchiveView = (replace = false) => {
@@ -877,17 +897,41 @@ export default function App() {
     if (pushHistory) clearPostURL()
   }
 
-  async function openDictionaryEntry(entry: IndexedDictionaryEntry, replace = false) {
-    const loaded = await ensureDictionaryEntryLoaded(entry)
-    setView('dictionary')
+  async function openDictionaryEntry(entry: IndexedDictionaryEntry, replace = false, keepView = false, updateURL = true) {
+    // show modal immediately to avoid flicker while data loads
+    setActiveDictionary(entry)
+    if (!keepView) setView('dictionary')
     setActive(null)
+    const loaded = await ensureDictionaryEntryLoaded(entry)
     setActiveDictionary(loaded)
-    pushDictionaryURL(loaded, replace)
+    if (updateURL) pushDictionaryURL(loaded, replace)
   }
   function closeDictionaryModal(pushHistory = true) {
     setActiveDictionary(null)
-    if (pushHistory) clearDictionaryURL()
+    if (pushHistory) clearDictionaryURL(false, view === 'dictionary')
   }
+
+  const handleInternalLink = useCallback((url: URL) => {
+    if (url.origin !== window.location.origin) return false
+    const did = url.searchParams.get('did')
+    if (did) {
+      const targetDict = dictionaryEntries.find(p => p.index.id === did) || {
+        index: { id: did, terms: [did], summary: "", updatedAt: Date.now() },
+      }
+      openDictionaryEntry(targetDict, false, view === 'archive', false)
+      return true
+    }
+    const postId = url.searchParams.get('id')
+    if (postId) {
+      const targetPost = posts.find(p => p.entry.id === postId)
+      if (targetPost) {
+        openCard(targetPost, false)
+        return true
+      }
+      return false
+    }
+    return false
+  }, [dictionaryEntries, view, posts, openCard])
 
   // Handle body overflow hidden when modal open
   useEffect(() => {
@@ -900,6 +944,9 @@ export default function App() {
   }, [active, activeDictionary])
 
   // Handle initial URL and back/forward navigation
+  const urlStateApplied = useRef(false)
+  useEffect(() => { urlStateApplied.current = false }, [owner, repo, branch])
+
   useEffect(() => {
     const applyURLState = async (replace = false) => {
       const sp = new URLSearchParams(window.location.search)
@@ -916,12 +963,15 @@ export default function App() {
       const targetPost = getPostFromURL()
       if (targetPost) { await openCard(targetPost, replace) } else { setActive(null) }
     }
-    if (posts.length || dictionaryEntries.length) { applyURLState(true).catch(() => { }) }
     const onPop = () => { applyURLState(true).catch(() => { }) }
+    if (!urlStateApplied.current && (postsRef.current.length || dictionaryEntriesRef.current.length)) {
+      urlStateApplied.current = true
+      applyURLState(true).catch(() => { })
+    }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
     // We want to rerun when the set of posts changes or after initial load
-  }, [posts, dictionaryEntries])
+  }, [posts.length, dictionaryEntries.length])
 
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
@@ -1129,6 +1179,7 @@ export default function App() {
                       schemaStyles={schemaStyles}
                       references={active.data.references}
                       dictionaryTooltips={dictionaryTooltips}
+                      onInternalLink={handleInternalLink}
                     />
                   ) : null}
 
@@ -1146,7 +1197,7 @@ export default function App() {
                               <li key={i} className="space-y-1">
                                 <div className="font-medium">{a.displayName || a.username || (a.type === AuthorType.DiscordDeleted ? 'Deleted' : 'Unknown')}</div>
                                 <div className="text-gray-700 dark:text-gray-300">
-                                  <MarkdownText text={decorated} />
+                                  <MarkdownText text={decorated} onInternalLink={handleInternalLink} />
                                 </div>
                               </li>
                             )
@@ -1187,7 +1238,7 @@ export default function App() {
                                 replaceAttachmentsInText(c.content, c.attachments.map(att => ({
                                   ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path
                                 })))
-                              } /></div>}
+                              } onInternalLink={handleInternalLink} /></div>}
                               {c.attachments?.length ? (
                                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                                   {c.attachments.map(att => (
@@ -1214,7 +1265,7 @@ export default function App() {
         </div>
       )}
 
-      {view === 'dictionary' && activeDictionary && (
+      {activeDictionary && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={() => closeDictionaryModal()}>
           <article className="max-w-3xl w-full rounded-2xl border bg-white p-0 shadow-xl dark:border-gray-800 dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
             <header className="flex items-start justify-between gap-3 border-b p-4">
@@ -1243,7 +1294,7 @@ export default function App() {
                         activeDictionary.data.definition,
                         activeDictionary.data.references || [],
                         (id) => dictionaryTooltips[id],
-                      ).result} />
+                      ).result} onInternalLink={handleInternalLink} />
                     </div>
                   )}
                   {dictionaryReferencedBy.length > 0 && (
