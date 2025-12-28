@@ -382,7 +382,7 @@ export function transformOutputWithReferences(
   // first, filter out matches that are not at word boundaries
   const isWordChar = (ch: string | undefined): boolean => {
     if (!ch) return false;
-    return /[A-Za-z0-9_]/.test(ch);
+    return /[A-Za-z]/.test(ch);
   };
 
   const filteredMatches = matches.filter(({ start, end }) => {
