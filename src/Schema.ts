@@ -75,39 +75,55 @@ export type StyleInfo = {
 
 
 export enum ReferenceType {
-  DISCORD_LINK = "discordLink",
-  DICTIONARY_TERM = "dictionaryTerm",
-  ARCHIVED_POST = "archivedPost"
+    DISCORD_LINK = "discordLink",
+    DICTIONARY_TERM = "dictionaryTerm",
+    ARCHIVED_POST = "archivedPost",
+    USER_MENTION = "userMention",
+    CHANNEL_MENTION = "channelMention",
 }
 
 export type ReferenceBase = {
-  type: ReferenceType,
-  matches: string[]
+    type: ReferenceType,
+    matches: string[]
 }
 
 export type DiscordLinkReference = ReferenceBase & {
-  type: ReferenceType.DISCORD_LINK,
-  url: string,
-  server: Snowflake,
-  serverName?: string,
-  serverJoinURL?: string,
-  channel: Snowflake,
-  message?: Snowflake,
+    type: ReferenceType.DISCORD_LINK,
+    url: string,
+    server: Snowflake,
+    serverName?: string,
+    serverJoinURL?: string,
+    channel: Snowflake,
+    message?: Snowflake,
 }
 
 export type DictionaryTermReference = ReferenceBase & {
-  type: ReferenceType.DICTIONARY_TERM,
-  term: string,
-  id: Snowflake,
+    type: ReferenceType.DICTIONARY_TERM,
+    term: string,
+    id: Snowflake,
+    url: string,
 }
 
 export type ArchivedPostReference = ReferenceBase & {
-  type: ReferenceType.ARCHIVED_POST,
-  id: Snowflake,
-  code: string,
+    type: ReferenceType.ARCHIVED_POST,
+    id: Snowflake,
+    code: string,
+    url: string,
 }
 
-export type Reference = DiscordLinkReference | DictionaryTermReference | ArchivedPostReference;
+export type UserMentionReference = ReferenceBase & {
+    type: ReferenceType.USER_MENTION,
+    user: Author,
+}
+
+export type ChannelMentionReference = ReferenceBase & {
+    type: ReferenceType.CHANNEL_MENTION,
+    channelID: Snowflake,
+    channelName?: string,
+    channelURL?: string,
+}
+
+export type Reference = DiscordLinkReference | DictionaryTermReference | ArchivedPostReference | UserMentionReference | ChannelMentionReference;
 
 
 export type ArchiveEntryData = {

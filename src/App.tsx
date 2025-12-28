@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType, type ArchivedPostReference } from "./Schema";
+import { type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType, type ArchivedPostReference } from "./Schema";
 import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText, postToMarkdown, transformOutputWithReferences } from "./Utils";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, USE_RAW } from "./Constants";
 import logoimg from "./assets/logo.png";
@@ -1245,14 +1245,31 @@ export default function App() {
                     return (
                       <div>
                         <h4 className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
-                        <ul className="ml-5 list-disc space-y-2 text-sm">
+                        <ul className="space-y-3">
                           {list.map((a, i) => {
                             const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || [], (id) => dictionaryTooltips[id], postTooltipLookup).result
+                            const name = getAuthorName(a)
+                            const handle = a.username && a.username !== name ? a.username : null
+                            const initial = name.trim().charAt(0).toUpperCase() || '?'
                             return (
-                              <li key={i} className="space-y-1">
-                                <div className="font-medium">{a.displayName || a.username || (a.type === AuthorType.DiscordDeleted ? 'Deleted' : 'Unknown')}</div>
-                                <div className="text-gray-700 dark:text-gray-300">
-                                  <MarkdownText text={decorated} onInternalLink={handleInternalLink} />
+                              <li key={i} className="flex gap-3 rounded-xl border p-3 dark:border-gray-800">
+                                <div className="flex-shrink-0">
+                                  {a.iconURL ? (
+                                    <img src={a.iconURL} alt={name} className="h-10 w-10 rounded-full object-cover" />
+                                  ) : (
+                                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">{initial}</span>
+                                  )}
+                                </div>
+                                <div className="min-w-0 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                      {a.url ? <a href={a.url} target="_blank" rel="noreferrer" className="hover:underline">{name}</a> : name}
+                                    </span>
+                                    {handle ? <span className="text-xs text-gray-500">@{handle}</span> : null}
+                                  </div>
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <MarkdownText text={decorated} onInternalLink={handleInternalLink} />
+                                  </div>
                                 </div>
                               </li>
                             )

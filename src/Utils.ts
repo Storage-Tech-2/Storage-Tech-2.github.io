@@ -523,6 +523,28 @@ export function transformOutputWithReferences(
         // add server
         resultParts.push(` ([Join ${ref.serverName}](${ref.serverJoinURL}))`);
       }
+    } else if (ref.type === ReferenceType.USER_MENTION) {
+      if (hyperlink) { // skip
+        resultParts.push(text.slice(hyperlink.start, hyperlink.end));
+        currentIndex = hyperlink.end;
+      } else {
+        const text = ref.user.displayName || ref.user.username || "Unknown User";
+        resultParts.push(`[@${text}](# "ID: ${ref.user.id}")`);
+        currentIndex = match.end;
+      }
+    } else if (ref.type === ReferenceType.CHANNEL_MENTION) {
+      if (hyperlink) { // skip
+        resultParts.push(text.slice(hyperlink.start, hyperlink.end));
+        currentIndex = hyperlink.end;
+      } else if (ref.channelName && ref.channelURL) {
+        const linkedText = `[#${ref.channelName}](${ref.channelURL})`;
+        resultParts.push(linkedText);
+        currentIndex = match.end;
+      } else {
+        const linkedText = `[Unknown Channel](# "ID: ${ref.channelID}")`;
+        resultParts.push(linkedText);
+        currentIndex = match.end;
+      }
     }
 
   }
