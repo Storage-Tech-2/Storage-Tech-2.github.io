@@ -962,7 +962,11 @@ export default function App() {
       if (targetPost) { await openCard(targetPost, replace) } else { setActive(null) }
     }
     const onPop = () => { applyURLState(true).catch(() => { }) }
-    if (!urlStateApplied.current && (postsRef.current.length || dictionaryEntriesRef.current.length)) {
+    const sp = new URLSearchParams(window.location.search)
+    const wantsPost = !!sp.get('id')
+    const wantsDictionary = sp.get('view') === 'dictionary' || !!sp.get('did')
+    const dataReady = (!wantsPost || postsRef.current.length > 0) && (!wantsDictionary || dictionaryEntriesRef.current.length > 0)
+    if (!urlStateApplied.current && dataReady) {
       urlStateApplied.current = true
       applyURLState(true).catch(() => { })
     }
