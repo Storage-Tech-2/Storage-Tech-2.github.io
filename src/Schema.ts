@@ -99,14 +99,12 @@ export type DictionaryTermReference = ReferenceBase & {
     type: ReferenceType.DICTIONARY_TERM,
     term: string,
     id: Snowflake,
-    url: string,
 }
 
 export type ArchivedPostReference = ReferenceBase & {
     type: ReferenceType.ARCHIVED_POST,
     id: Snowflake,
     code: string,
-    url: string,
 }
 
 export type Reference = DiscordLinkReference | DictionaryTermReference | ArchivedPostReference;

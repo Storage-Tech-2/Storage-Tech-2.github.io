@@ -4,7 +4,7 @@
 
 import type { IndexedPost } from "./App"
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH } from "./Constants"
-import { AuthorType, type Attachment, type Author, type NestedListItem, type StyleInfo, type SubmissionRecord, type SubmissionRecords } from "./Schema"
+import { AuthorType, ReferenceType, type Attachment, type Author, type NestedListItem, type Reference, type StyleInfo, type SubmissionRecord, type SubmissionRecords } from "./Schema"
 
 // ------------------------------
 export function clsx(...xs: Array<string | undefined | false>) {
@@ -116,163 +116,400 @@ export async function asyncPool<T, R>(limit: number, items: T[], fn: (item: T, i
 }
 
 export function replaceAttachmentsInText(text: string, attachments: Attachment[]): string {
-    // Find all URLs in the message
-    let finalText = text;
-    const urls = text.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g)
-    if (urls) {
-        urls.forEach(url => {
-            // Check if mediafire
-            // https://www.mediafire.com/file/idjbw9lc1kt4obj/1_17_Crafter-r2.zip/file
-            // https://www.mediafire.com/folder/5ajiire4a6cs5/Scorpio+MIS
-            let match = null;
-            if (url.startsWith('https://www.mediafire.com/file/') || url.startsWith('https://www.mediafire.com/folder/')) {
-                const id = url.split('/')[4]
-                // check if duplicate
-                match = attachments.find(attachment => attachment.id === id);
-            } else if (url.startsWith('https://youtu.be/') || url.startsWith('https://www.youtube.com/watch')) {
-                // YouTube links
-                const videoId = new URL(url).searchParams.get('v') || url.split('/').pop();
-                if (!videoId) return;
-                match = attachments.find(attachment => attachment.id === videoId);
-            } else if (url.startsWith('https://cdn.discordapp.com/attachments/')) {
-                const id = url.split('/')[5]
-                match = attachments.find(attachment => attachment.id === id);
-            } else if (url.startsWith('https://bilibili.com/') || url.startsWith('https://www.bilibili.com/')) {
-                // Bilibili links
-                const urlObj = new URL(url);
-                const videoId = urlObj.pathname.split('/')[2] || urlObj.searchParams.get('bvid');
-                if (!videoId) return;
-                match = attachments.find(attachment => attachment.id === videoId);
-            }
+  // Find all URLs in the message
+  let finalText = text;
+  const urls = text.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g)
+  if (urls) {
+    urls.forEach(url => {
+      // Check if mediafire
+      // https://www.mediafire.com/file/idjbw9lc1kt4obj/1_17_Crafter-r2.zip/file
+      // https://www.mediafire.com/folder/5ajiire4a6cs5/Scorpio+MIS
+      let match = null;
+      if (url.startsWith('https://www.mediafire.com/file/') || url.startsWith('https://www.mediafire.com/folder/')) {
+        const id = url.split('/')[4]
+        // check if duplicate
+        match = attachments.find(attachment => attachment.id === id);
+      } else if (url.startsWith('https://youtu.be/') || url.startsWith('https://www.youtube.com/watch')) {
+        // YouTube links
+        const videoId = new URL(url).searchParams.get('v') || url.split('/').pop();
+        if (!videoId) return;
+        match = attachments.find(attachment => attachment.id === videoId);
+      } else if (url.startsWith('https://cdn.discordapp.com/attachments/')) {
+        const id = url.split('/')[5]
+        match = attachments.find(attachment => attachment.id === id);
+      } else if (url.startsWith('https://bilibili.com/') || url.startsWith('https://www.bilibili.com/')) {
+        // Bilibili links
+        const urlObj = new URL(url);
+        const videoId = urlObj.pathname.split('/')[2] || urlObj.searchParams.get('bvid');
+        if (!videoId) return;
+        match = attachments.find(attachment => attachment.id === videoId);
+      }
 
-            if (!match) return;
+      if (!match) return;
 
-            // replace all instances of the URL with a placeholder if its a naked url, not wrapped in markdown
-            const finalTextSplit = finalText.split(url);
-            if (finalTextSplit.length > 1) {
+      // replace all instances of the URL with a placeholder if its a naked url, not wrapped in markdown
+      const finalTextSplit = finalText.split(url);
+      if (finalTextSplit.length > 1) {
 
-              const finalTextReplaced = [finalTextSplit[0]];
-              for (let j = 1; j < finalTextSplit.length; j++) {
-                // check if the previous character is not a markdown link
-                if (finalTextSplit[j - 1].endsWith('](') && finalTextSplit[j].startsWith(')')) {
-                    // if it is, just add the url
-                    finalTextReplaced.push(match.canDownload ? match.path : url);
-                } else {
-                    // otherwise, add a placeholder
-                    finalTextReplaced.push(`[${match.name || 'Attachment'}](${match.canDownload ? match.path : url})`);
-                }
-                finalTextReplaced.push(finalTextSplit[j]);
-              }
+        const finalTextReplaced = [finalTextSplit[0]];
+        for (let j = 1; j < finalTextSplit.length; j++) {
+          // check if the previous character is not a markdown link
+          if (finalTextSplit[j - 1].endsWith('](') && finalTextSplit[j].startsWith(')')) {
+            // if it is, just add the url
+            finalTextReplaced.push(match.canDownload ? match.path : url);
+          } else {
+            // otherwise, add a placeholder
+            finalTextReplaced.push(`[${match.name || 'Attachment'}](${match.canDownload ? match.path : url})`);
+          }
+          finalTextReplaced.push(finalTextSplit[j]);
+        }
 
-              finalText = finalTextReplaced.join('');
-            }
-        })
-    }
-    return finalText;
+        finalText = finalTextReplaced.join('');
+      }
+    })
+  }
+  return finalText;
 }
 
 
 export function capitalizeFirstLetter(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export type StrictStyleInfo = {
-    depth: number;
-    headerText: string;
-    isOrdered: boolean;
+  depth: number;
+  headerText: string;
+  isOrdered: boolean;
 }
 
 export function getEffectiveStyle(key: string, schemaStyles?: Record<string, StyleInfo>, recordStyles?: Record<string, StyleInfo>): StrictStyleInfo {
-    const recordStyle = Object.hasOwn(recordStyles || {}, key) ? recordStyles![key] : null;
-    const schemaStyle = Object.hasOwn(schemaStyles || {}, key) ? schemaStyles![key] : null;
-    
-    const style = {
-        depth: 2,
-        headerText: capitalizeFirstLetter(key),
-        isOrdered: false,
-    }
-    if (schemaStyle) {
-        if (schemaStyle.depth !== undefined) style.depth = schemaStyle.depth;
-        if (schemaStyle.headerText !== undefined) style.headerText = schemaStyle.headerText;
-        if (schemaStyle.isOrdered !== undefined) style.isOrdered = schemaStyle.isOrdered;
-    }
-    if (recordStyle) {
-        if (recordStyle.depth !== undefined) style.depth = recordStyle.depth;
-        if (recordStyle.headerText !== undefined) style.headerText = recordStyle.headerText;
-        if (recordStyle.isOrdered !== undefined) style.isOrdered = recordStyle.isOrdered;
-    }
-    return style;
+  const recordStyle = Object.hasOwn(recordStyles || {}, key) ? recordStyles![key] : null;
+  const schemaStyle = Object.hasOwn(schemaStyles || {}, key) ? schemaStyles![key] : null;
+
+  const style = {
+    depth: 2,
+    headerText: capitalizeFirstLetter(key),
+    isOrdered: false,
+  }
+  if (schemaStyle) {
+    if (schemaStyle.depth !== undefined) style.depth = schemaStyle.depth;
+    if (schemaStyle.headerText !== undefined) style.headerText = schemaStyle.headerText;
+    if (schemaStyle.isOrdered !== undefined) style.isOrdered = schemaStyle.isOrdered;
+  }
+  if (recordStyle) {
+    if (recordStyle.depth !== undefined) style.depth = recordStyle.depth;
+    if (recordStyle.headerText !== undefined) style.headerText = recordStyle.headerText;
+    if (recordStyle.isOrdered !== undefined) style.isOrdered = recordStyle.isOrdered;
+  }
+  return style;
 }
 
 
 export function nestedListToMarkdown(nestedList: NestedListItem, indentLevel: number = 0): string {
-    let markdown = "";
-    const indent = "  ".repeat(indentLevel);
-    if (nestedList.isOrdered) {
-        nestedList.items.forEach((item, index) => {
-            if (typeof item === "string") {
-                markdown += `${indent}${index + 1}. ${item}\n`;
-            } else if (typeof item === "object") {
-                markdown += `${indent}${index + 1}. ${item.title}\n`;
-                if (item.items.length > 0) {
-                    markdown += nestedListToMarkdown(item, indentLevel + 1);
-                }
-            }
-        })
-    } else {
-        nestedList.items.forEach((item) => {
-            if (typeof item === "string") {
-                markdown += `${indent}- ${item}\n`;
-            } else if (typeof item === "object") {
-                markdown += `${indent}- ${item.title}\n`;
-                if (item.items.length > 0) {
-                    markdown += nestedListToMarkdown(item, indentLevel + 1);
-                }
-            }
-        });
-    }
-    return markdown.trim();
+  let markdown = "";
+  const indent = "  ".repeat(indentLevel);
+  if (nestedList.isOrdered) {
+    nestedList.items.forEach((item, index) => {
+      if (typeof item === "string") {
+        markdown += `${indent}${index + 1}. ${item}\n`;
+      } else if (typeof item === "object") {
+        markdown += `${indent}${index + 1}. ${item.title}\n`;
+        if (item.items.length > 0) {
+          markdown += nestedListToMarkdown(item, indentLevel + 1);
+        }
+      }
+    })
+  } else {
+    nestedList.items.forEach((item) => {
+      if (typeof item === "string") {
+        markdown += `${indent}- ${item}\n`;
+      } else if (typeof item === "object") {
+        markdown += `${indent}- ${item.title}\n`;
+        if (item.items.length > 0) {
+          markdown += nestedListToMarkdown(item, indentLevel + 1);
+        }
+      }
+    });
+  }
+  return markdown.trim();
 }
 
 
 export function submissionRecordToMarkdown(value: SubmissionRecord, style?: StyleInfo): string {
-    let markdown = "";
-    if (Array.isArray(value)) {
-        if (value.length !== 0) {
-            markdown += value.map((item, i) => {
-                if (typeof item === "string") {
-                    return style?.isOrdered ? `${i + 1}. ${item}` : `- ${item}`;
-                } else if (typeof item === "object") {
-                    return style?.isOrdered ? `${i + 1}. ${item.title}\n${nestedListToMarkdown(item, 1)}` : `- ${item.title}\n${nestedListToMarkdown(item, 1)}`;
-                }
-                return "";
-            }).join("\n");
+  let markdown = "";
+  if (Array.isArray(value)) {
+    if (value.length !== 0) {
+      markdown += value.map((item, i) => {
+        if (typeof item === "string") {
+          return style?.isOrdered ? `${i + 1}. ${item}` : `- ${item}`;
+        } else if (typeof item === "object") {
+          return style?.isOrdered ? `${i + 1}. ${item.title}\n${nestedListToMarkdown(item, 1)}` : `- ${item.title}\n${nestedListToMarkdown(item, 1)}`;
         }
-    } else {
-        markdown += `${value}\n`;
+        return "";
+      }).join("\n");
     }
+  } else {
+    markdown += `${value}\n`;
+  }
 
-    return markdown.trim();
+  return markdown.trim();
 }
 
 
 export function postToMarkdown(record: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>): string {
-    let markdown = "";
+  let markdown = "";
 
-    let isFirst = true;
-    for (const key in record) {
-        const recordValue = record[key];
-        const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
+  let isFirst = true;
+  for (const key in record) {
+    const recordValue = record[key];
+    const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
 
-        const text = submissionRecordToMarkdown(recordValue, styles);
-        if (text.length > 0) {
-            if (key !== "description" || !isFirst) {
-                markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
-            }
-            isFirst = false;
-        }
-        markdown += text;
+    const text = submissionRecordToMarkdown(recordValue, styles);
+    if (text.length > 0) {
+      if (key !== "description" || !isFirst) {
+        markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
+      }
+      isFirst = false;
+    }
+    markdown += text;
+  }
+
+  return markdown.trim();
+}
+
+
+
+export type RegexMatch = {
+  pattern: string;
+  match: string;
+  start: number;
+  end: number;
+  groups: (string | undefined)[];
+};
+
+/**
+ * Find matches for arbitrary regex patterns (must be global) in the provided text.
+ * This can be used to dynamically include patterns like post codes or Discord forum links.
+ */
+export function findRegexMatches(text: string, patterns: RegExp[]): RegexMatch[] {
+  const results: RegexMatch[] = [];
+  for (const pattern of patterns) {
+    if (!pattern.global) {
+      // ensure global flag for iterative matching
+      const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+      const globalPattern = new RegExp(pattern.source, flags);
+      collectMatches(globalPattern);
+    } else {
+      collectMatches(pattern);
+    }
+  }
+  return results;
+
+  function collectMatches(regex: RegExp) {
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      const matched = match[0];
+      const start = match.index;
+      results.push({
+        pattern: regex.source,
+        match: matched,
+        start,
+        end: start + matched.length,
+        groups: match.slice(1),
+      });
+      if (match[0].length === 0) {
+        regex.lastIndex++;
+      }
+    }
+  }
+}
+
+
+export type Snowflake = string;
+
+export type ServerLinksMap = Map<Snowflake, { id: Snowflake, name: string, joinURL: string }>;
+
+export const DiscordForumLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/g;
+
+
+export function findMatchesWithinText(text: string, references: Reference[]): {
+  reference: Reference;
+  start: number;
+  end: number;
+}[] {
+  const matches: {
+    reference: Reference;
+    start: number;
+    end: number;
+  }[] = [];
+
+  for (const ref of references) {
+    for (const matchText of ref.matches) {
+      let startIndex = 0;
+      while (startIndex < text.length) {
+        const index = text.indexOf(matchText, startIndex);
+        if (index === -1) break;
+        matches.push({
+          reference: ref,
+          start: index,
+          end: index + matchText.length,
+        });
+        startIndex = index + matchText.length;
+      }
+    }
+  }
+
+  return matches;
+}
+
+export function transformOutputWithReferences(
+  text: string,
+  references: Reference[],
+): {
+  result: string,
+} {
+  const matches = findMatchesWithinText(text, references);
+  if (matches.length === 0) {
+    return {
+      result: text,
+    }
+  }
+
+  // first, filter out matches that are not at word boundaries
+  const isWordChar = (ch: string | undefined): boolean => {
+    if (!ch) return false;
+    return /[A-Za-z0-9_]/.test(ch);
+  };
+
+  const filteredMatches = matches.filter(({ start, end }) => {
+    const before = start > 0 ? text[start - 1] : undefined;
+    const after = end < text.length ? text[end] : undefined;
+    return !isWordChar(before) && !isWordChar(after);
+  });
+
+  filteredMatches.sort((a, b) => a.start - b.start);
+
+  // remove overlapping matches, prefer earlier matches
+  const dedupedMatches: typeof matches = [];
+  let lastEnd = -1;
+  for (const match of filteredMatches) {
+    if (match.start >= lastEnd) {
+      dedupedMatches.push(match);
+      lastEnd = match.end;
+    }
+  }
+
+  // detect markdown hyperlinks
+  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const hyperlinks = findRegexMatches(text, [regex]);
+
+  const resultParts: string[] = [];
+  let currentIndex = 0;
+
+  // if a match is within a hyperlink, do custom processing
+  for (const match of dedupedMatches) {
+    // check if in header (#'s in front)
+    let inHeader = false;
+    const lastNewline = text.lastIndexOf('\n', match.start);
+    if (lastNewline !== -1) {
+      const lineStart = lastNewline + 1;
+      let i = lineStart;
+      while (i < match.start && text[i] === ' ') {
+        i++;
+      }
+      let hashCount = 0;
+      while (i < match.start && text[i] === '#') {
+        hashCount++;
+        i++;
+      }
+      if (hashCount > 0) {
+        inHeader = true;
+      }
+    }
+    if (inHeader) { // skip
+      continue;
     }
 
-    return markdown.trim();
+    // check if match is within a hyperlink
+    const hyperlink = hyperlinks.find(h => match.start >= h.start && match.end <= h.end);
+
+    if (hyperlink) {
+      // add text before hyperlink
+      if (currentIndex < hyperlink.start) {
+        resultParts.push(text.slice(currentIndex, hyperlink.start));
+      }
+    } else {
+      // add text before match
+      if (currentIndex < match.start) {
+        resultParts.push(text.slice(currentIndex, match.start));
+      }
+    }
+
+    const ref = match.reference;
+
+
+    if (ref.type === ReferenceType.DICTIONARY_TERM) {
+      if (hyperlink) { // skip
+        resultParts.push(text.slice(hyperlink.start, hyperlink.end));
+        currentIndex = hyperlink.end;
+      } else {
+        // create markdown link
+        const newURL = new URL(window.location.href);
+        newURL.searchParams.set('did', ref.id);
+        const linkedText = `[${text.slice(match.start, match.end)}](${newURL.href})`;
+        resultParts.push(linkedText);
+        currentIndex = match.end;
+      }
+    } else if (ref.type === ReferenceType.ARCHIVED_POST) {
+      const newURL = new URL(window.location.href);
+      newURL.searchParams.set('id', ref.id);
+      newURL.searchParams.delete('did');
+      if (hyperlink) { // dont skip, replace
+        // get hyperlink text
+        const linkText = hyperlink.groups[0] || "";
+
+
+
+        if (linkText.toUpperCase() === ref.code) {
+          // same as code, just replace URL
+          const linkedText = `[${linkText}](${newURL.href})`;
+          resultParts.push(linkedText);
+        } else {
+          // different, keep text but add suffix
+          const linkedText = `[${linkText} (${ref.code})](${newURL.href})`;
+          resultParts.push(linkedText);
+        }
+        currentIndex = hyperlink.end;
+      } else {
+        // create markdown link with code as text
+        const linkedText = `[${ref.code}](${newURL.href})`;
+        resultParts.push(linkedText);
+        currentIndex = match.end;
+      }
+    } else if (ref.type === ReferenceType.DISCORD_LINK) {
+
+      if (hyperlink) {
+        resultParts.push(text.slice(hyperlink.start, hyperlink.end));
+        currentIndex = hyperlink.end;
+      } else {
+        resultParts.push(text.slice(match.start, match.end));
+        currentIndex = match.end;
+      }
+
+      if (ref.serverName && ref.serverJoinURL) {
+        // add server
+        resultParts.push(` ([Join ${ref.serverName}](${ref.serverJoinURL}))`);
+      }
+    }
+
+  }
+
+  // add remaining text
+  if (currentIndex < text.length) {
+    resultParts.push(text.slice(currentIndex));
+  }
+
+  return {
+    result: resultParts.join(''),
+  }
 }

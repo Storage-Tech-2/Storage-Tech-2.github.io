@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type EntryRef, type NestedListItem, type SubmissionRecord, type SubmissionRecords, type Tag, type Image, type ArchiveComment } from "./Schema";
-import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText } from "./Utils";
+import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo } from "./Schema";
+import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText, postToMarkdown } from "./Utils";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, USE_RAW } from "./Constants";
 import logoimg from "./assets/logo.png";
 
@@ -370,6 +370,10 @@ function MarkdownText({ text }: { text: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
+        h1: (props) => <h1 {...props} className="mt-3 text-2xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h2: (props) => <h2 {...props} className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h3: (props) => <h3 {...props} className="mt-2 text-lg font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h4: (props) => <h4 {...props} className="mt-2 text-base font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         a: (props) => <a {...props} target="_blank" rel="noreferrer" className="underline" />,
         p: (props) => <p {...props} className="leading-relaxed whitespace-pre-wrap" />,
         ul: (props) => <ul {...props} className="list-disc ml-5" />,
@@ -382,51 +386,10 @@ function MarkdownText({ text }: { text: string }) {
   )
 }
 
-function RecordRenderer({ records }: { records: SubmissionRecords }) {
-  const entries = Object.entries(records)
-  return (
-    <div className="flex flex-col gap-4">
-      {entries.map(([key, value]) => value.length !== 0 && (
-        <section key={key} className="">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{key}</h4>
-          <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-            <RecordValue value={value} />
-          </div>
-        </section>
-      ))}
-    </div>
-  )
-}
-
-function RecordValue({ value }: { value: SubmissionRecord }) {
-  if (typeof value === "string") return <MarkdownText text={value} />
-  // Array form: render as a list so list-like records show as lists
-  const items = value
-  return (
-    <ul className="ml-5 list-disc space-y-1">
-      {items.map((item, idx) => (
-        typeof item === "string" ? (
-          <li key={idx}><MarkdownText text={item} /></li>
-        ) : (
-          <li key={idx}><NestedList item={item} /></li>
-        )
-      ))}
-    </ul>
-  )
-}
-
-function NestedList({ item }: { item: NestedListItem }) {
-  const ListTag = item.isOrdered ? "ol" : "ul"
-  return (
-    <div className="">
-      {item.title && <div className="font-medium">{item.title}</div>}
-      <ListTag className={clsx("ml-5 list-inside", item.isOrdered ? "list-decimal" : "list-disc")}>
-        {item.items.map((i, idx) => (
-          typeof i === "string" ? <li key={idx}><MarkdownText text={i} /></li> : <li key={idx}><NestedList item={i} /></li>
-        ))}
-      </ListTag>
-    </div>
-  )
+function RecordRenderer({ records, recordStyles, schemaStyles }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo> }) {
+  const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles])
+  if (!markdown) return null
+  return <MarkdownText text={markdown} />
 }
 
 // A single gallery card that lazy-loads its post when in view
@@ -496,7 +459,7 @@ export default function App() {
   const [repo, setRepo] = useState(DEFAULT_REPO)
   const [branch, setBranch] = useState(DEFAULT_BRANCH)
 
-  const { channels, entries, posts, loading, error, ensurePostLoaded } = useArchive(owner, repo, branch)
+  const { config, channels, entries, posts, loading, error, ensurePostLoaded } = useArchive(owner, repo, branch)
 
   // UI state
   const [q, setQ] = useState("")
@@ -716,6 +679,7 @@ export default function App() {
 
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
+  const schemaStyles = useMemo(() => (config as unknown as { postStyles?: Record<string, StyleInfo> })?.postStyles, [config])
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
@@ -848,7 +812,13 @@ export default function App() {
                   ) : null}
 
                   {/* records */}
-                  {active.data.records ? <RecordRenderer records={active.data.records} /> : null}
+                  {active.data.records ? (
+                    <RecordRenderer
+                      records={active.data.records}
+                      recordStyles={active.data.styles}
+                      schemaStyles={schemaStyles}
+                    />
+                  ) : null}
 
                   {/* acknowledgements */}
                   {(() => {
@@ -856,7 +826,7 @@ export default function App() {
                     if (!list.length) return null
                     return (
                       <div>
-                        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
+                        <h4 className="mb-2 text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
                         <ul className="ml-5 list-disc space-y-1 text-sm">
                           {list.map((a, i) => (
                             <li key={i}>
@@ -871,7 +841,7 @@ export default function App() {
                   {/* attachments */}
                   {active.data.attachments?.length ? (
                     <div>
-                      <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Attachments</h4>
+                      <h4 className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300">Attachments</h4>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {active.data.attachments.map(att => (
                           <AttachmentCard key={att.id} att={{ ...att, path: att.path ? assetURL(active.channel.path, active.entry.path, att.path) : att.path }} onView={(img) => setLightbox(img)} />
