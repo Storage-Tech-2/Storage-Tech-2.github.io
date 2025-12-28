@@ -67,6 +67,51 @@ export type DiscordPostReference = {
   uploadMessageId?: Snowflake;
 }
 
+export type StyleInfo = {
+    depth?: number;
+    headerText?: string;
+    isOrdered?: boolean;
+}
+
+
+export enum ReferenceType {
+    DISCORD_LINK = "discordLink",
+    DICTIONARY_TERM = "dictionaryTerm",
+    ARCHIVED_POST = "archivedPost"
+}
+
+export type ReferenceBase = {
+    type: ReferenceType,
+    matches: string[]
+}
+
+export type DiscordLinkReference = ReferenceBase & {
+    type: ReferenceType.DISCORD_LINK,
+    url: string,
+    server: Snowflake,
+    serverName?: string,
+    serverJoinURL?: string,
+    channel: Snowflake,
+    message?: Snowflake,
+}
+
+export type DictionaryTermReference = ReferenceBase & {
+    type: ReferenceType.DICTIONARY_TERM,
+    term: string,
+    id: Snowflake,
+    url: string,
+}
+
+export type ArchivedPostReference = ReferenceBase & {
+    type: ReferenceType.ARCHIVED_POST,
+    id: Snowflake,
+    code: string,
+    url: string,
+}
+
+export type Reference = DiscordLinkReference | DictionaryTermReference | ArchivedPostReference;
+
+
 export type ArchiveEntryData = {
   id: Snowflake;
   name: string;
@@ -77,8 +122,13 @@ export type ArchiveEntryData = {
   images: Image[];
   attachments: Attachment[];
   records: SubmissionRecords;
+  styles: Record<string, StyleInfo>;
+  references: Reference[];
+  author_references: Reference[];
   post?: DiscordPostReference;
-  timestamp: number;
+  timestamp?: number; // legacy
+  archivedAt: number;
+  updatedAt: number;
 }
 
 export interface ChannelRef {
@@ -100,12 +150,19 @@ export interface EntryRef {
   id: Snowflake;
   name: string;
   code: string;
-  timestamp: number;
+  timestamp?: number; // legacy
+  archivedAt: number;
+  updatedAt: number;
   path: string; // folder within channel
   tags: string[]; // tag names available at the entry reference level
 }
 
-export interface ArchiveConfig { archiveChannels: ChannelRef[] }
+export interface ArchiveConfig { 
+  archiveChannels: ChannelRef[] 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  postSchema: any; // JSON Schema for validating posts
+  postStyle: Record<string, StyleInfo>;
+}
 
 export type ArchiveComment = {
     id: string; // Unique identifier for the comment

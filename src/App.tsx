@@ -16,6 +16,9 @@ export type IndexedPost = {
   data?: ArchiveEntryData,
 }
 
+const getEntryUpdatedAt = (entry: Pick<EntryRef, "updatedAt" | "archivedAt" | "timestamp">) => entry.updatedAt ?? entry.archivedAt ?? entry.timestamp
+const getEntryArchivedAt = (entry: Pick<EntryRef, "updatedAt" | "archivedAt" | "timestamp">) => entry.archivedAt ?? entry.timestamp ?? entry.updatedAt
+
 async function loadConfig(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH): Promise<ArchiveConfig> {
   if (USE_RAW) return fetchJSONRaw("config.json", owner, repo, branch)
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/config.json?ref=${branch}`, {
@@ -88,7 +91,7 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
         channelDatas.forEach(({ channel, data }) => {
           data.entries.forEach((entry) => idx.push({ channel, entry }))
         })
-        idx.sort((a, b) => b.entry.timestamp - a.entry.timestamp) // newest first
+        idx.sort((a, b) => (getEntryUpdatedAt(b.entry) ?? 0) - (getEntryUpdatedAt(a.entry) ?? 0)) // newest first
         setPosts(idx)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
@@ -427,7 +430,7 @@ function NestedList({ item }: { item: NestedListItem }) {
 }
 
 // A single gallery card that lazy-loads its post when in view
-function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p: IndexedPost) => void; ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost> }) {
+function PostCard({ p, onOpen, ensurePostLoaded, sortKey }: { p: IndexedPost; onOpen: (p: IndexedPost) => void; ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost>; sortKey: SortKey }) {
   const [ref, inView] = useInView<HTMLElement>({ rootMargin: "400px 0px", threshold: 0.01 })
   useEffect(() => {
     if (inView) ensurePostLoaded(p).catch(() => { })
@@ -438,6 +441,10 @@ function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p:
   const src = img0 ? (img0.path ? assetURL(p.channel.path, p.entry.path, img0.path) : img0.url) : undefined
 
   // Pick up to two authors
+  const updatedAt = getEntryUpdatedAt(p.entry)
+  const archivedAt = getEntryArchivedAt(p.entry)
+  const showArchivedTime = sortKey === "archived" || sortKey === "archivedOldest"
+  const displayTs = showArchivedTime ? (archivedAt ?? updatedAt) : (updatedAt ?? archivedAt)
   const authors = p.data?.authors?.filter(a => !a.dontDisplay) || []
   const authorsLine = authors.length
     ? `${getAuthorName(authors[0])}${authors[1] ? ", " + getAuthorName(authors[1]) : ""}${authors.length > 2 ? ` +${authors.length - 2}` : ""}`
@@ -463,7 +470,9 @@ function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p:
           {authorsLine && <div className="text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div>}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
             <ChannelBadge ch={p.channel} />
-            <span title={formatDate(p.entry.timestamp)}>{timeAgo(p.entry.timestamp)}</span>
+            <div className="flex flex-col items-end text-right">
+              {displayTs !== undefined && <span title={formatDate(displayTs)}>{timeAgo(displayTs)}</span>}
+            </div>
           </div>
           {(p.entry.tags && p.entry.tags.length) ? (
             <div className="mt-1 flex flex-wrap gap-1">
@@ -480,7 +489,7 @@ function PostCard({ p, onOpen, ensurePostLoaded }: { p: IndexedPost; onOpen: (p:
 // Main app component
 // ------------------------------
 
-type SortKey = "newest" | "oldest" | "az"
+type SortKey = "newest" | "oldest" | "archived" | "archivedOldest" | "az"
 
 export default function App() {
   const [owner, setOwner] = useState(DEFAULT_OWNER)
@@ -632,8 +641,10 @@ export default function App() {
     }
     // Sorting
     list = list.slice().sort((a, b) => {
-      if (sortKey === "newest") return b.entry.timestamp - a.entry.timestamp
-      if (sortKey === "oldest") return a.entry.timestamp - b.entry.timestamp
+      if (sortKey === "newest") return (getEntryUpdatedAt(b.entry) ?? 0) - (getEntryUpdatedAt(a.entry) ?? 0)
+      if (sortKey === "oldest") return (getEntryUpdatedAt(a.entry) ?? 0) - (getEntryUpdatedAt(b.entry) ?? 0)
+      if (sortKey === "archived") return (getEntryArchivedAt(b.entry) ?? 0) - (getEntryArchivedAt(a.entry) ?? 0)
+      if (sortKey === "archivedOldest") return (getEntryArchivedAt(a.entry) ?? 0) - (getEntryArchivedAt(b.entry) ?? 0)
       return a.entry.name.localeCompare(b.entry.name)
     })
     return list
@@ -703,6 +714,9 @@ export default function App() {
     // We want to rerun when the set of posts changes or after initial load
   }, [posts])
 
+  const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
+  const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       {/* Header */}
@@ -724,8 +738,10 @@ export default function App() {
             </div>
             <div className="flex items-center gap-2">
               <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900 flex-grow">
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
+                <option value="newest">Updated (newest)</option>
+                <option value="oldest">Updated (oldest)</option>
+                <option value="archived">Archived (newest)</option>
+                <option value="archivedOldest">Archived (oldest)</option>
                 <option value="az">A to Z</option>
               </select>
               <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
@@ -785,7 +801,7 @@ export default function App() {
         <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {posts.length} posts</div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((p) => (
-            <PostCard key={`${p.channel.path}/${p.entry.path}`} p={p} onOpen={openCard} ensurePostLoaded={ensurePostLoaded} />
+            <PostCard key={`${p.channel.path}/${p.entry.path}`} p={p} onOpen={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
           ))}
         </div>
       </main>
@@ -800,7 +816,8 @@ export default function App() {
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                   <ChannelBadge ch={active.channel} />
                   <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{active.entry.code}</span>
-                  <span>{formatDate(active.entry.timestamp)}</span>
+                  {activeUpdatedAt !== undefined && <span className="text-gray-700 dark:text-gray-200" title={formatDate(activeUpdatedAt)}>Updated {timeAgo(activeUpdatedAt)}</span>}
+                  {activeArchivedAt !== undefined && <span className="text-gray-700 dark:text-gray-200" title={formatDate(activeArchivedAt)}>Archived {timeAgo(activeArchivedAt)}</span>}
                 </div>
                 {active.entry.tags && active.entry.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">

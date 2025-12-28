@@ -4,7 +4,7 @@
 
 import type { IndexedPost } from "./App"
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH } from "./Constants"
-import { AuthorType, type Attachment, type Author } from "./Schema"
+import { AuthorType, type Attachment, type Author, type NestedListItem, type StyleInfo, type SubmissionRecord, type SubmissionRecords } from "./Schema"
 
 // ------------------------------
 export function clsx(...xs: Array<string | undefined | false>) {
@@ -169,4 +169,110 @@ export function replaceAttachmentsInText(text: string, attachments: Attachment[]
         })
     }
     return finalText;
+}
+
+
+export function capitalizeFirstLetter(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export type StrictStyleInfo = {
+    depth: number;
+    headerText: string;
+    isOrdered: boolean;
+}
+
+export function getEffectiveStyle(key: string, schemaStyles?: Record<string, StyleInfo>, recordStyles?: Record<string, StyleInfo>): StrictStyleInfo {
+    const recordStyle = Object.hasOwn(recordStyles || {}, key) ? recordStyles![key] : null;
+    const schemaStyle = Object.hasOwn(schemaStyles || {}, key) ? schemaStyles![key] : null;
+    
+    const style = {
+        depth: 2,
+        headerText: capitalizeFirstLetter(key),
+        isOrdered: false,
+    }
+    if (schemaStyle) {
+        if (schemaStyle.depth !== undefined) style.depth = schemaStyle.depth;
+        if (schemaStyle.headerText !== undefined) style.headerText = schemaStyle.headerText;
+        if (schemaStyle.isOrdered !== undefined) style.isOrdered = schemaStyle.isOrdered;
+    }
+    if (recordStyle) {
+        if (recordStyle.depth !== undefined) style.depth = recordStyle.depth;
+        if (recordStyle.headerText !== undefined) style.headerText = recordStyle.headerText;
+        if (recordStyle.isOrdered !== undefined) style.isOrdered = recordStyle.isOrdered;
+    }
+    return style;
+}
+
+
+export function nestedListToMarkdown(nestedList: NestedListItem, indentLevel: number = 0): string {
+    let markdown = "";
+    const indent = "  ".repeat(indentLevel);
+    if (nestedList.isOrdered) {
+        nestedList.items.forEach((item, index) => {
+            if (typeof item === "string") {
+                markdown += `${indent}${index + 1}. ${item}\n`;
+            } else if (typeof item === "object") {
+                markdown += `${indent}${index + 1}. ${item.title}\n`;
+                if (item.items.length > 0) {
+                    markdown += nestedListToMarkdown(item, indentLevel + 1);
+                }
+            }
+        })
+    } else {
+        nestedList.items.forEach((item) => {
+            if (typeof item === "string") {
+                markdown += `${indent}- ${item}\n`;
+            } else if (typeof item === "object") {
+                markdown += `${indent}- ${item.title}\n`;
+                if (item.items.length > 0) {
+                    markdown += nestedListToMarkdown(item, indentLevel + 1);
+                }
+            }
+        });
+    }
+    return markdown.trim();
+}
+
+
+export function submissionRecordToMarkdown(value: SubmissionRecord, style?: StyleInfo): string {
+    let markdown = "";
+    if (Array.isArray(value)) {
+        if (value.length !== 0) {
+            markdown += value.map((item, i) => {
+                if (typeof item === "string") {
+                    return style?.isOrdered ? `${i + 1}. ${item}` : `- ${item}`;
+                } else if (typeof item === "object") {
+                    return style?.isOrdered ? `${i + 1}. ${item.title}\n${nestedListToMarkdown(item, 1)}` : `- ${item.title}\n${nestedListToMarkdown(item, 1)}`;
+                }
+                return "";
+            }).join("\n");
+        }
+    } else {
+        markdown += `${value}\n`;
+    }
+
+    return markdown.trim();
+}
+
+
+export function postToMarkdown(record: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>): string {
+    let markdown = "";
+
+    let isFirst = true;
+    for (const key in record) {
+        const recordValue = record[key];
+        const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
+
+        const text = submissionRecordToMarkdown(recordValue, styles);
+        if (text.length > 0) {
+            if (key !== "description" || !isFirst) {
+                markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
+            }
+            isFirst = false;
+        }
+        markdown += text;
+    }
+
+    return markdown.trim();
 }
