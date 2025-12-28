@@ -865,7 +865,7 @@ export default function App() {
       {/* Header */}
       <header className="sm:sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
         <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center gap-3 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pb-1">
             <div className="flex items-center gap-3 flex-shrink-0">
               <img src={logoimg} alt="Logo" className="h-10 w-10" />
               <div>
@@ -881,7 +881,7 @@ export default function App() {
 
             {view === 'archive' ? (
               <>
-                <div className="relative flex-1 min-w-[240px]">
+                <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
                   <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search posts, codes, tags, authors" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
                   <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
                 </div>
@@ -894,7 +894,7 @@ export default function App() {
                 </select>
               </>
             ) : (
-              <div className="relative flex-1 min-w-[240px]">
+              <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
                 <input value={dictionaryQuery} onChange={e => setDictionaryQuery(e.target.value)} placeholder="Search dictionary terms" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
                 <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
               </div>
