@@ -510,7 +510,8 @@ export function transformOutputWithReferences(
         resultParts.push(text.slice(hyperlink.start, hyperlink.end));
         currentIndex = hyperlink.end;
       } else {
-        const linkedText = `[[Link to message]](${ref.url})`;
+        const safeText = ref.serverName ? `in ${ref.serverName.replaceAll(/"/g, "'")}` : 'on Discord';
+        const linkedText = `[[Link to message]](${ref.url} "${safeText}")`;
         resultParts.push(linkedText);
         currentIndex = match.end;
       }

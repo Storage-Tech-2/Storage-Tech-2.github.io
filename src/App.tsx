@@ -581,6 +581,7 @@ export default function App() {
   const [view, setView] = useState<'archive' | 'dictionary'>('archive')
   const [dictionaryQuery, setDictionaryQuery] = useState("")
   const [dictionaryDefinitions, setDictionaryDefinitions] = useState<Record<string, string>>({})
+  const dictionaryFetchInFlight = useRef<Set<string>>(new Set())
 
   // Comments cache keyed by `${channel.path}/${entry.path}`
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
@@ -898,13 +899,15 @@ export default function App() {
     addRefs(active?.data?.author_references)
     if (!targetIds.size) return
     targetIds.forEach(async (id) => {
-      if (dictionaryDefinitions[id]) return
+      if (dictionaryDefinitions[id] || dictionaryFetchInFlight.current.has(id)) return
+      dictionaryFetchInFlight.current.add(id)
       try {
         const entryInList = dictionaryEntries.find(e => e.index.id === id)
         const def = entryInList?.data?.definition
         const summary = entryInList?.index.summary
         if (def?.trim()) {
           setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: def.trim() })
+          dictionaryFetchInFlight.current.delete(id)
           return
         }
         const fetched = await loadDictionaryEntry(id, owner, repo, branch)
@@ -912,6 +915,8 @@ export default function App() {
         if (text) setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: text })
       } catch {
         // ignore fetch errors
+      } finally {
+        dictionaryFetchInFlight.current.delete(id)
       }
     })
   }, [active, dictionaryEntries, dictionaryDefinitions, owner, repo, branch])
