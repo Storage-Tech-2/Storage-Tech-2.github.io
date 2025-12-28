@@ -448,6 +448,16 @@ function LinkWithTooltip(props: React.ComponentProps<"a">) {
   )
 }
 
+function linkTargetForHref(href?: string) {
+  if (!href) return undefined
+  try {
+    const url = new URL(href, window.location.href)
+    return url.origin === window.location.origin ? undefined : "_blank"
+  } catch {
+    return "_blank"
+  }
+}
+
 function MarkdownText({ text }: { text: string }) {
   return (
     <ReactMarkdown
@@ -457,7 +467,10 @@ function MarkdownText({ text }: { text: string }) {
         h2: (props) => <h2 {...props} className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         h3: (props) => <h3 {...props} className="mt-2 text-lg font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         h4: (props) => <h4 {...props} className="mt-2 text-base font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
-        a: ({ node, ...props }) => <LinkWithTooltip {...props} target="_blank" rel="noreferrer" />,
+        a: ({ node, ...props }) => {
+          const target = linkTargetForHref(props.href)
+          return <LinkWithTooltip {...props} target={target} rel={target === "_blank" ? "noreferrer" : undefined} />
+        },
         p: (props) => <p {...props} className="leading-relaxed whitespace-pre-wrap" />,
         ul: (props) => <ul {...props} className="list-disc ml-5" />,
         ol: (props) => <ol {...props} className="list-decimal ml-5" />,
