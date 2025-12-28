@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference } from "./Schema";
+import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType } from "./Schema";
 import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText, postToMarkdown, transformOutputWithReferences } from "./Utils";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, USE_RAW } from "./Constants";
 import logoimg from "./assets/logo.png";
@@ -580,6 +580,7 @@ export default function App() {
   const [lightbox, setLightbox] = useState<Image | null>(null)
   const [view, setView] = useState<'archive' | 'dictionary'>('archive')
   const [dictionaryQuery, setDictionaryQuery] = useState("")
+  const [dictionaryDefinitions, setDictionaryDefinitions] = useState<Record<string, string>>({})
 
   // Comments cache keyed by `${channel.path}/${entry.path}`
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
@@ -738,15 +739,16 @@ export default function App() {
   }, [dictionaryEntries, dictionaryQuery])
 
   const dictionaryTooltips = useMemo(() => {
-    const map: Record<string, string> = {}
+    const map: Record<string, string> = { ...dictionaryDefinitions }
     dictionaryEntries.forEach((entry) => {
+      if (map[entry.index.id]) return
       const def = entry.data?.definition?.trim()
       const summary = entry.index.summary?.trim()
       const text = def || summary
       if (text) map[entry.index.id] = text
     })
     return map
-  }, [dictionaryEntries])
+  }, [dictionaryEntries, dictionaryDefinitions])
 
   // --------- URL helpers for sharable links ---------
   function buildPostURL(p: IndexedPost) {
@@ -884,6 +886,35 @@ export default function App() {
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
   const schemaStyles = useMemo(() => (archiveConfig as unknown as { postStyles?: Record<string, StyleInfo> })?.postStyles, [archiveConfig])
+
+  useEffect(() => {
+    const targetIds = new Set<string>()
+    const addRefs = (refs?: Reference[]) => {
+      refs?.forEach(ref => {
+        if (ref.type === ReferenceType.DICTIONARY_TERM) targetIds.add(ref.id)
+      })
+    }
+    addRefs(active?.data?.references)
+    addRefs(active?.data?.author_references)
+    if (!targetIds.size) return
+    targetIds.forEach(async (id) => {
+      if (dictionaryDefinitions[id]) return
+      try {
+        const entryInList = dictionaryEntries.find(e => e.index.id === id)
+        const def = entryInList?.data?.definition
+        const summary = entryInList?.index.summary
+        if (def?.trim()) {
+          setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: def.trim() })
+          return
+        }
+        const fetched = await loadDictionaryEntry(id, owner, repo, branch)
+        const text = fetched.definition?.trim() || summary?.trim()
+        if (text) setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: text })
+      } catch {
+        // ignore fetch errors
+      }
+    })
+  }, [active, dictionaryEntries, dictionaryDefinitions, owner, repo, branch])
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">

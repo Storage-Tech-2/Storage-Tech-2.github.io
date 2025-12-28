@@ -411,7 +411,7 @@ export function transformOutputWithReferences(
 
   // if a match is within a hyperlink, do custom processing
   for (const match of dedupedMatches) {
-    if (match.reference.type === ReferenceType.DISCORD_LINK && excludedIDs.has(match.reference.id)) {
+    if (match.reference.type === ReferenceType.DICTIONARY_TERM && excludedIDs.has(match.reference.id)) {
       continue;
     }
 
