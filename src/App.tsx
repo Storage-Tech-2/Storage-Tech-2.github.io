@@ -781,10 +781,8 @@ export default function App() {
     const map: Record<string, string> = { ...dictionaryDefinitions }
     dictionaryEntries.forEach((entry) => {
       if (map[entry.index.id]) return
-      const def = entry.data?.definition?.trim()
       const summary = entry.index.summary?.trim()
-      const text = def || summary
-      if (text) map[entry.index.id] = text
+      if (summary) map[entry.index.id] = summary
     })
     return map
   }, [dictionaryEntries, dictionaryDefinitions])
@@ -992,16 +990,8 @@ export default function App() {
       dictionaryFetchInFlight.current.add(id)
       try {
         const entryInList = dictionaryEntries.find(e => e.index.id === id)
-        const def = entryInList?.data?.definition
-        const summary = entryInList?.index.summary
-        if (def?.trim()) {
-          setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: def.trim() })
-          dictionaryFetchInFlight.current.delete(id)
-          return
-        }
-        const fetched = await loadDictionaryEntry(id, owner, repo, branch)
-        const text = fetched.definition?.trim() || summary?.trim()
-        if (text) setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: text })
+        const summary = entryInList?.index.summary?.trim()
+        if (summary) setDictionaryDefinitions((prev) => prev[id] ? prev : { ...prev, [id]: summary })
       } catch {
         // ignore fetch errors
       } finally {
