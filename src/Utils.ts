@@ -357,7 +357,7 @@ function shouldIncludeMatch(text: string, term: string, start: number, end: numb
     }
 
     // check if term ends with trailing number
-    if (/[0-9]$/.test(term)) {
+    if (/[0-9x.]$/.test(term)) {
         // next char must not be a number
         if (after && /[0-9]/.test(after)) {
             return false;
@@ -450,7 +450,7 @@ export function transformOutputWithReferences(
   }
 
   const excludedIDs: Set<Snowflake> = new Set();
-  
+
   const filteredMatches = matches.filter(({ start, end }) => {
     return shouldIncludeMatch(text, text.slice(start, end), start, end);
   });
