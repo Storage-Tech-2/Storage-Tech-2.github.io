@@ -156,7 +156,12 @@ function useDictionary(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFA
         if (cancelled) return
         setConfig(cfg)
         const list = cfg.entries.map((index) => ({ index }))
-        list.sort((a, b) => b.index.updatedAt - a.index.updatedAt)
+        list.sort((a, b) => {
+          const aTerm = (a.index.terms?.[0] || "").toLowerCase()
+          const bTerm = (b.index.terms?.[0] || "").toLowerCase()
+          if (aTerm && bTerm) return aTerm.localeCompare(bTerm)
+          return aTerm ? -1 : bTerm ? 1 : 0
+        })
         setEntries(list)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
