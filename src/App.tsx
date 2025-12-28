@@ -436,9 +436,24 @@ function ImageThumb({ img, onClick }: { img: Image, onClick?: () => void }) {
 
 function LinkWithTooltip(props: React.ComponentProps<"a">) {
   const { title, children, className, ...rest } = props
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    const href = rest.href
+    // Allow normal behavior for new-tab/middle-click/with modifier keys or external links
+    if (!href || rest.target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    try {
+      const url = new URL(href, window.location.href)
+      if (url.origin !== window.location.origin) return
+      e.preventDefault()
+      window.history.pushState({}, '', url.href)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    } catch {
+      // fall back to default navigation
+    }
+  }
   return (
     <span className="relative group inline-block">
-      <a {...rest} className={clsx("underline", className)}>{children}</a>
+      <a {...rest} onClick={handleClick} className={clsx("underline", className)}>{children}</a>
       {title ? (
         <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
           {title}
@@ -503,9 +518,6 @@ function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry, onOp
             )}
             {entry.index.summary && <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">{entry.index.summary}</div>}
           </div>
-          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300" title={formatDate(entry.index.updatedAt)}>
-            {timeAgo(entry.index.updatedAt)}
-          </span>
         </div>
       </button>
     </article>
@@ -1209,7 +1221,6 @@ export default function App() {
               <div className="space-y-2">
                 <h3 className="text-lg font-bold">{activeDictionary.index.terms[0] || activeDictionary.index.id}</h3>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{activeDictionary.index.id}</span>
                   <span title={formatDate(activeDictionary.index.updatedAt)}>Updated {timeAgo(activeDictionary.index.updatedAt)}</span>
                 </div>
                 {activeDictionary.index.terms.length > 1 && (
