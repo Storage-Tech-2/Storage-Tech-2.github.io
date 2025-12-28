@@ -68,43 +68,43 @@ export type DiscordPostReference = {
 }
 
 export type StyleInfo = {
-    depth?: number;
-    headerText?: string;
-    isOrdered?: boolean;
+  depth?: number;
+  headerText?: string;
+  isOrdered?: boolean;
 }
 
 
 export enum ReferenceType {
-    DISCORD_LINK = "discordLink",
-    DICTIONARY_TERM = "dictionaryTerm",
-    ARCHIVED_POST = "archivedPost"
+  DISCORD_LINK = "discordLink",
+  DICTIONARY_TERM = "dictionaryTerm",
+  ARCHIVED_POST = "archivedPost"
 }
 
 export type ReferenceBase = {
-    type: ReferenceType,
-    matches: string[]
+  type: ReferenceType,
+  matches: string[]
 }
 
 export type DiscordLinkReference = ReferenceBase & {
-    type: ReferenceType.DISCORD_LINK,
-    url: string,
-    server: Snowflake,
-    serverName?: string,
-    serverJoinURL?: string,
-    channel: Snowflake,
-    message?: Snowflake,
+  type: ReferenceType.DISCORD_LINK,
+  url: string,
+  server: Snowflake,
+  serverName?: string,
+  serverJoinURL?: string,
+  channel: Snowflake,
+  message?: Snowflake,
 }
 
 export type DictionaryTermReference = ReferenceBase & {
-    type: ReferenceType.DICTIONARY_TERM,
-    term: string,
-    id: Snowflake,
+  type: ReferenceType.DICTIONARY_TERM,
+  term: string,
+  id: Snowflake,
 }
 
 export type ArchivedPostReference = ReferenceBase & {
-    type: ReferenceType.ARCHIVED_POST,
-    id: Snowflake,
-    code: string,
+  type: ReferenceType.ARCHIVED_POST,
+  id: Snowflake,
+  code: string,
 }
 
 export type Reference = DiscordLinkReference | DictionaryTermReference | ArchivedPostReference;
@@ -155,17 +155,39 @@ export interface EntryRef {
   tags: string[]; // tag names available at the entry reference level
 }
 
-export interface ArchiveConfig { 
-  archiveChannels: ChannelRef[] 
+export interface ArchiveConfig {
+  archiveChannels: ChannelRef[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   postSchema: any; // JSON Schema for validating posts
   postStyle: Record<string, StyleInfo>;
 }
 
 export type ArchiveComment = {
-    id: string; // Unique identifier for the comment
-    sender: Author;
-    content: string; // The content of the comment
-    attachments: Attachment[]; // List of attachments associated with the comment
-    timestamp: number; // Timestamp of when the comment was made
+  id: string; // Unique identifier for the comment
+  sender: Author;
+  content: string; // The content of the comment
+  attachments: Attachment[]; // List of attachments associated with the comment
+  timestamp: number; // Timestamp of when the comment was made
+}
+
+export type DictionaryIndexEntry = {
+  id: Snowflake,
+  terms: string[]
+  summary: string,
+  updatedAt: number,
+}
+
+export type DictionaryConfig = {
+  entries: DictionaryIndexEntry[]
+}
+
+export type DictionaryEntry = {
+    id: Snowflake;
+    terms: string[];
+    definition: string;
+    threadURL: string;
+    statusURL: string;
+    statusMessageID?: Snowflake;
+    updatedAt: number;
+    references: Reference[];
 }

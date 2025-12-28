@@ -329,7 +329,7 @@ export type Snowflake = string;
 
 export type ServerLinksMap = Map<Snowflake, { id: Snowflake, name: string, joinURL: string }>;
 
-export const DiscordForumLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/g;
+export const DiscordForumLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/g;
 
 
 export function findMatchesWithinText(text: string, references: Reference[]): {
@@ -492,7 +492,8 @@ export function transformOutputWithReferences(
         resultParts.push(text.slice(hyperlink.start, hyperlink.end));
         currentIndex = hyperlink.end;
       } else {
-        resultParts.push(text.slice(match.start, match.end));
+        const linkedText = `[[Link to message]](${ref.url})`;
+        resultParts.push(linkedText);
         currentIndex = match.end;
       }
 

@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo } from "./Schema";
-import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText, postToMarkdown } from "./Utils";
+import { AuthorType, type ArchiveConfig, type ArchiveEntryData, type Attachment, type Author, type ChannelData, type ChannelRef, type DictionaryConfig, type DictionaryEntry, type DictionaryIndexEntry, type EntryRef, type SubmissionRecords, type Tag, type Image, type ArchiveComment, type StyleInfo, type Reference } from "./Schema";
+import { assetURL, asyncPool, clsx, fetchJSONRaw, formatDate, getAuthorName, getPostTagsNormalized, getYouTubeEmbedURL, timeAgo, normalize, unique, replaceAttachmentsInText, postToMarkdown, transformOutputWithReferences } from "./Utils";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, USE_RAW } from "./Constants";
 import logoimg from "./assets/logo.png";
 
@@ -14,6 +14,11 @@ export type IndexedPost = {
   channel: ChannelRef,
   entry: EntryRef,
   data?: ArchiveEntryData,
+}
+
+export type IndexedDictionaryEntry = {
+  index: DictionaryIndexEntry,
+  data?: DictionaryEntry,
 }
 
 const getEntryUpdatedAt = (entry: Pick<EntryRef, "updatedAt" | "archivedAt" | "timestamp">) => entry.updatedAt ?? entry.archivedAt ?? entry.timestamp
@@ -35,6 +40,16 @@ async function loadChannelData(channel: ChannelRef, owner = DEFAULT_OWNER, repo 
 
 async function loadPostData(channelPath: string, entry: EntryRef, owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH): Promise<ArchiveEntryData> {
   const path = `${channelPath}/${entry.path}/data.json`
+  return USE_RAW ? fetchJSONRaw(path, owner, repo, branch) : (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers: { Accept: "application/vnd.github.raw" } })).json()
+}
+
+async function loadDictionaryConfig(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH): Promise<DictionaryConfig> {
+  const path = `dictionary/config.json`
+  return USE_RAW ? fetchJSONRaw(path, owner, repo, branch) : (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers: { Accept: "application/vnd.github.raw" } })).json()
+}
+
+async function loadDictionaryEntry(id: string, owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH): Promise<DictionaryEntry> {
+  const path = `dictionary/entries/${id}.json`
   return USE_RAW ? fetchJSONRaw(path, owner, repo, branch) : (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers: { Accept: "application/vnd.github.raw" } })).json()
 }
 
@@ -122,6 +137,55 @@ function useArchive(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT
   }
 
   return { config, channels, entries, posts, loading, error, ensurePostLoaded }
+}
+
+function useDictionary(owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH) {
+  const [config, setConfig] = useState<DictionaryConfig | null>(null)
+  const [entries, setEntries] = useState<IndexedDictionaryEntry[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const inflight = useRef<Map<string, Promise<IndexedDictionaryEntry>>>(new Map())
+
+  useEffect(() => {
+    let cancelled = false
+    async function run() {
+      setLoading(true)
+      setError(null)
+      try {
+        const cfg = await loadDictionaryConfig(owner, repo, branch)
+        if (cancelled) return
+        setConfig(cfg)
+        const list = cfg.entries.map((index) => ({ index }))
+        list.sort((a, b) => b.index.updatedAt - a.index.updatedAt)
+        setEntries(list)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        console.error(e)
+        if (!cancelled) setError(e.message || String(e))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [owner, repo, branch])
+
+  const ensureEntryLoaded = async (item: IndexedDictionaryEntry) => {
+    if (item.data) return item
+    const key = item.index.id
+    const existing = inflight.current.get(key)
+    if (existing) return existing
+    const p = (async () => {
+      const data = await loadDictionaryEntry(item.index.id, owner, repo, branch)
+      item.data = data
+      setEntries((prev) => prev.map((ent) => ent.index.id === item.index.id ? { ...ent, data } : ent))
+      return { ...item, data }
+    })()
+    inflight.current.set(key, p)
+    try { return await p } finally { inflight.current.delete(key) }
+  }
+
+  return { dictionaryConfig: config, dictionaryEntries: entries, dictionaryLoading: loading, dictionaryError: error, ensureEntryLoaded }
 }
 
 async function loadCommentsData(channelPath: string, entry: EntryRef, owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH): Promise<ArchiveComment[]> {
@@ -386,10 +450,34 @@ function MarkdownText({ text }: { text: string }) {
   )
 }
 
-function RecordRenderer({ records, recordStyles, schemaStyles }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo> }) {
+function RecordRenderer({ records, recordStyles, schemaStyles, references }: { records: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>, references?: Reference[] }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles])
-  if (!markdown) return null
-  return <MarkdownText text={markdown} />
+  const decorated = useMemo(() => transformOutputWithReferences(markdown, references || []).result, [markdown, references])
+  if (!decorated) return null
+  return <MarkdownText text={decorated} />
+}
+
+function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry, onOpen: (entry: IndexedDictionaryEntry) => void }) {
+  const primary = entry.index.terms[0] || entry.index.id
+  const extraCount = Math.max(0, (entry.index.terms?.length || 0) - 1)
+  return (
+    <article className="group rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+      <button onClick={() => onOpen(entry)} className="block w-full text-left p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <div className="text-sm font-semibold leading-tight">{primary}</div>
+            {extraCount > 0 && (
+              <div className="text-[11px] text-gray-500 dark:text-gray-400">{`+${extraCount} more ${extraCount === 1 ? "alias" : "aliases"}`}</div>
+            )}
+            {entry.index.summary && <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">{entry.index.summary}</div>}
+          </div>
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300" title={formatDate(entry.index.updatedAt)}>
+            {timeAgo(entry.index.updatedAt)}
+          </span>
+        </div>
+      </button>
+    </article>
+  )
 }
 
 // A single gallery card that lazy-loads its post when in view
@@ -459,7 +547,8 @@ export default function App() {
   const [repo, setRepo] = useState(DEFAULT_REPO)
   const [branch, setBranch] = useState(DEFAULT_BRANCH)
 
-  const { config, channels, entries, posts, loading, error, ensurePostLoaded } = useArchive(owner, repo, branch)
+  const { config: archiveConfig, channels, posts, loading, error, ensurePostLoaded } = useArchive(owner, repo, branch)
+  const { dictionaryEntries, dictionaryLoading, dictionaryError, ensureEntryLoaded: ensureDictionaryEntryLoaded } = useDictionary(owner, repo, branch)
 
   // UI state
   const [q, setQ] = useState("")
@@ -468,7 +557,10 @@ export default function App() {
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [sortKey, setSortKey] = useState<SortKey>("newest")
   const [active, setActive] = useState<IndexedPost | null>(null)
+  const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null)
   const [lightbox, setLightbox] = useState<Image | null>(null)
+  const [view, setView] = useState<'archive' | 'dictionary'>('archive')
+  const [dictionaryQuery, setDictionaryQuery] = useState("")
 
   // Comments cache keyed by `${channel.path}/${entry.path}`
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
@@ -613,15 +705,32 @@ export default function App() {
     return list
   }, [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode])
 
+  const filteredDictionary = useMemo(() => {
+    const term = dictionaryQuery.trim().toLowerCase()
+    if (!term) return dictionaryEntries
+    return dictionaryEntries.filter(entry => {
+      const haystack = [
+        entry.index.summary || '',
+        ...(entry.index.terms || []),
+        entry.data?.definition || '',
+      ].join(' ').toLowerCase()
+      return haystack.includes(term)
+    })
+  }, [dictionaryEntries, dictionaryQuery])
+
   // --------- URL helpers for sharable links ---------
   function buildPostURL(p: IndexedPost) {
     const url = new URL(window.location.href)
     url.searchParams.set('id', p.entry.id)
+    url.searchParams.delete('did')
+    url.searchParams.delete('view')
     return url.pathname + '?' + url.searchParams.toString()
   }
   function clearPostURL(replace = false) {
     const url = new URL(window.location.href)
     url.searchParams.delete('id')
+    url.searchParams.delete('did')
+    url.searchParams.delete('view')
     const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
     if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
   }
@@ -636,9 +745,56 @@ export default function App() {
     return posts.find(p => (id && p.entry.id === id))
   }
 
+  function buildDictionaryURL(entry: IndexedDictionaryEntry) {
+    const url = new URL(window.location.href)
+    url.searchParams.set('did', entry.index.id)
+    url.searchParams.set('view', 'dictionary')
+    url.searchParams.delete('id')
+    return url.pathname + '?' + url.searchParams.toString()
+  }
+  function clearDictionaryURL(replace = false) {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('did')
+    url.searchParams.set('view', 'dictionary')
+    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
+    if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
+  }
+  function pushDictionaryURL(entry: IndexedDictionaryEntry, replace = false) {
+    const next = buildDictionaryURL(entry)
+    const state = { did: entry.index.id, view: 'dictionary' }
+    if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
+  }
+  function getDictionaryFromURL(): IndexedDictionaryEntry | undefined {
+    const sp = new URLSearchParams(window.location.search)
+    const did = sp.get('did');
+    return dictionaryEntries.find(p => (did && p.index.id === did))
+  }
+
+  const switchToArchiveView = (replace = false) => {
+    setView('archive')
+    setActiveDictionary(null)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('view')
+    url.searchParams.delete('did')
+    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
+    if (replace) window.history.replaceState({ view: 'archive' }, '', next); else window.history.pushState({ view: 'archive' }, '', next)
+  }
+
+  const switchToDictionaryView = (replace = false) => {
+    setView('dictionary')
+    setActive(null)
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', 'dictionary')
+    url.searchParams.delete('id')
+    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
+    if (replace) window.history.replaceState({ view: 'dictionary' }, '', next); else window.history.pushState({ view: 'dictionary' }, '', next)
+  }
+
   // Open modal and update URL
   async function openCard(p: IndexedPost, replace = false) {
     const loaded = await ensurePostLoaded(p)
+    setView('archive')
+    setActiveDictionary(null)
     setActive(loaded)
     pushPostURL(loaded, replace)
     // kick off lazy comments fetch without blocking the modal
@@ -649,129 +805,178 @@ export default function App() {
     if (pushHistory) clearPostURL()
   }
 
+  async function openDictionaryEntry(entry: IndexedDictionaryEntry, replace = false) {
+    const loaded = await ensureDictionaryEntryLoaded(entry)
+    setView('dictionary')
+    setActive(null)
+    setActiveDictionary(loaded)
+    pushDictionaryURL(loaded, replace)
+  }
+  function closeDictionaryModal(pushHistory = true) {
+    setActiveDictionary(null)
+    if (pushHistory) clearDictionaryURL()
+  }
+
   // Handle body overflow hidden when modal open
   useEffect(() => {
-    if (active) {
+    if (active || activeDictionary) {
       document.body.classList.add('overflow-hidden')
     } else {
       document.body.classList.remove('overflow-hidden')
     }
     return () => { document.body.classList.remove('overflow-hidden') }
-  }, [active])
+  }, [active, activeDictionary])
 
   // Handle initial URL and back/forward navigation
   useEffect(() => {
-    const maybeOpenFromURL = async () => {
-      const target = getPostFromURL()
-      if (target) { await openCard(target, true) }
+    const applyURLState = async (replace = false) => {
+      const sp = new URLSearchParams(window.location.search)
+      const viewParam = sp.get('view')
+      const didParam = sp.get('did')
+      const targetView = viewParam === 'dictionary' || didParam ? 'dictionary' : 'archive'
+      setView(targetView)
+      if (targetView === 'dictionary') {
+        const targetDict = getDictionaryFromURL()
+        if (targetDict) { await openDictionaryEntry(targetDict, replace) } else { setActiveDictionary(null) }
+        setActive(null)
+        return
+      }
+      const targetPost = getPostFromURL()
+      if (targetPost) { await openCard(targetPost, replace) } else { setActive(null) }
     }
-    // If posts already loaded, try immediately; otherwise will also run when posts changes
-    if (posts.length) { maybeOpenFromURL() }
-    const onPop = () => {
-      const target = getPostFromURL()
-      if (target) openCard(target, true).catch(() => { })
-      else setActive(null)
-    }
+    if (posts.length || dictionaryEntries.length) { applyURLState(true).catch(() => { }) }
+    const onPop = () => { applyURLState(true).catch(() => { }) }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
     // We want to rerun when the set of posts changes or after initial load
-  }, [posts])
+  }, [posts, dictionaryEntries])
 
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
-  const schemaStyles = useMemo(() => (config as unknown as { postStyles?: Record<string, StyleInfo> })?.postStyles, [config])
+  const schemaStyles = useMemo(() => (archiveConfig as unknown as { postStyles?: Record<string, StyleInfo> })?.postStyles, [archiveConfig])
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       {/* Header */}
       <header className="sm:sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto max-w-7xl px-4 py-3">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1">
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <img src={logoimg} alt="Logo" className="h-10 w-10" />
+              <div>
+                <div className="text-xl font-bold"><a href="/">Storage Tech 2</a></div>
+                <div className="text-xs text-gray-500"><a href="https://github.com/Storage-Tech-2/Archive">{owner}/{repo}@{branch}</a></div>
+              </div>
+            </div>
 
-            <img src={logoimg} alt="Logo" className="h-10 w-10" />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button onClick={() => switchToArchiveView()} className={clsx("rounded-xl border px-3 py-2 text-sm", view === 'archive' ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900")}>Archive</button>
+              <button onClick={() => switchToDictionaryView()} className={clsx("rounded-xl border px-3 py-2 text-sm", view === 'dictionary' ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900")}>Dictionary</button>
+            </div>
 
-            <div>
-              <div className="text-xl font-bold"><a href="/">Storage Tech 2</a></div>
-              <div className="text-xs text-gray-500"><a href="https://github.com/Storage-Tech-2/Archive">{owner}/{repo}@{branch}</a></div>
-            </div>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <div className="relative w-full sm:w-96">
-              <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search posts, codes, tags, authors" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
-              <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900 flex-grow">
-                <option value="newest">Updated (newest)</option>
-                <option value="oldest">Updated (oldest)</option>
-                <option value="archived">Archived (newest)</option>
-                <option value="archivedOldest">Archived (oldest)</option>
-                <option value="az">A to Z</option>
-              </select>
-              <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-                Join Discord
-              </a>
-            </div>
+            {view === 'archive' ? (
+              <>
+                <div className="relative flex-1 min-w-[240px]">
+                  <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search posts, codes, tags, authors" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
+                  <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
+                </div>
+                <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900 flex-shrink-0">
+                  <option value="newest">Updated (newest)</option>
+                  <option value="oldest">Updated (oldest)</option>
+                  <option value="archived">Archived (newest)</option>
+                  <option value="archivedOldest">Archived (oldest)</option>
+                  <option value="az">A to Z</option>
+                </select>
+              </>
+            ) : (
+              <div className="relative flex-1 min-w-[240px]">
+                <input value={dictionaryQuery} onChange={e => setDictionaryQuery(e.target.value)} placeholder="Search dictionary terms" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
+                <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
+              </div>
+            )}
+
+            <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="flex-shrink-0 rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+              Join Discord
+            </a>
           </div>
         </div>
       </header>
 
-      {/* Filters */}
-      <div className="mx-auto max-w-7xl px-4 py-3">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">Channels</span>
-            <div className="flex flex-wrap gap-2">
-              {channels.map(ch => (
-                <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "")}>
-                  <input type="checkbox" className="hidden" checked={selectedChannels.includes(ch.code)} onChange={() => setSelectedChannels(s => s.includes(ch.code) ? s.filter(x => x !== ch.code) : [...s, ch.code])} />
-                  <span className="font-semibold">{ch.code}</span>
-                  <span className={selectedChannels.includes(ch.code) ? "text-white dark:text-black" : "text-gray-500 dark:text-white"}>{ch.name}</span>
-                  <span className="ml-1 rounded bg-black/10 px-1 text-[10px] dark:bg-white/10">{channelCounts[ch.code] || 0}</span>
-                </label>
+      {view === 'archive' ? (
+        <>
+          {/* Filters */}
+          <div className="mx-auto max-w-7xl px-4 py-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium">Channels</span>
+                <div className="flex flex-wrap gap-2">
+                  {channels.map(ch => (
+                    <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "")}>
+                      <input type="checkbox" className="hidden" checked={selectedChannels.includes(ch.code)} onChange={() => setSelectedChannels(s => s.includes(ch.code) ? s.filter(x => x !== ch.code) : [...s, ch.code])} />
+                      <span className="font-semibold">{ch.code}</span>
+                      <span className={selectedChannels.includes(ch.code) ? "text-white dark:text-black" : "text-gray-500 dark:text-white"}>{ch.name}</span>
+                      <span className="ml-1 rounded bg-black/10 px-1 text-[10px] dark:bg-white/10">{channelCounts[ch.code] || 0}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium">Tags</span>
+                <div className="inline-flex items-center gap-2 text-xs">
+                  <label className="inline-flex items-center gap-1">
+                    <input type="radio" name="tagMode" value="AND" checked={tagMode === 'AND'} onChange={() => setTagMode('AND')} />
+                    <span>Match all</span>
+                  </label>
+                  <label className="inline-flex items-center gap-1">
+                    <input type="radio" name="tagMode" value="OR" checked={tagMode === 'OR'} onChange={() => setTagMode('OR')} />
+                    <span>Match any</span>
+                  </label>
+                  <span className="text-gray-500">Tip: click tag twice to exclude</span>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {allTags.map(tag => (
+                  <TagChip key={tag.id} tag={tag} state={tagState[tag.name] || 0} count={tagCounts[normalize(tag.name)] || 0} onToggle={() => toggleTag(tag.name)} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="mx-auto max-w-7xl px-4">
+            {error && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+            {loading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading repository metadata...</div>}
+          </div>
+
+          {/* Gallery */}
+          <main className="mx-auto max-w-7xl px-4 pb-12">
+            <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {posts.length} posts</div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((p) => (
+                <PostCard key={`${p.channel.path}/${p.entry.path}`} p={p} onOpen={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
               ))}
             </div>
+          </main>
+        </>
+      ) : (
+        <>
+          <div className="mx-auto max-w-7xl px-4 py-3">
+            {dictionaryError && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{dictionaryError}</div>}
+            {dictionaryLoading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading dictionary...</div>}
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium">Tags</span>
-            <div className="inline-flex items-center gap-2 text-xs">
-              <label className="inline-flex items-center gap-1">
-                <input type="radio" name="tagMode" value="AND" checked={tagMode === 'AND'} onChange={() => setTagMode('AND')} />
-                <span>Match all</span>
-              </label>
-              <label className="inline-flex items-center gap-1">
-                <input type="radio" name="tagMode" value="OR" checked={tagMode === 'OR'} onChange={() => setTagMode('OR')} />
-                <span>Match any</span>
-              </label>
-              <span className="text-gray-500">Tip: click tag twice to exclude</span>
+          <main className="mx-auto max-w-7xl px-4 pb-12">
+            <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filteredDictionary.length} of {dictionaryEntries.length} terms</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredDictionary.map((entry) => (
+                <DictionaryCard key={entry.index.id} entry={entry} onOpen={openDictionaryEntry} />
+              ))}
             </div>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {allTags.map(tag => (
-              <TagChip key={tag.id} tag={tag} state={tagState[tag.name] || 0} count={tagCounts[normalize(tag.name)] || 0} onToggle={() => toggleTag(tag.name)} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className="mx-auto max-w-7xl px-4">
-        {error && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
-        {loading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading repository metadata...</div>}
-      </div>
-
-      {/* Gallery */}
-      <main className="mx-auto max-w-7xl px-4 pb-12">
-        <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {posts.length} posts</div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((p) => (
-            <PostCard key={`${p.channel.path}/${p.entry.path}`} p={p} onOpen={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
-          ))}
-        </div>
-      </main>
+          </main>
+        </>
+      )}
 
       {/* Details modal */}
-      {active && (
+      {view === 'archive' && active && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={() => closeModal()}>
           <article className="max-w-3xl w-full rounded-2xl border bg-white p-0 shadow-xl dark:border-gray-800 dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
             <header className="flex items-start justify-between gap-3 border-b p-4">
@@ -817,6 +1022,7 @@ export default function App() {
                       records={active.data.records}
                       recordStyles={active.data.styles}
                       schemaStyles={schemaStyles}
+                      references={active.data.references}
                     />
                   ) : null}
 
@@ -827,12 +1033,18 @@ export default function App() {
                     return (
                       <div>
                         <h4 className="mb-2 text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
-                        <ul className="ml-5 list-disc space-y-1 text-sm">
-                          {list.map((a, i) => (
-                            <li key={i}>
-                              <span className="font-medium">{a.displayName || a.username || (a.type === AuthorType.DiscordDeleted ? 'Deleted' : 'Unknown')}</span>: <span className="text-gray-700 dark:text-gray-300">{a.reason}</span>
-                            </li>
-                          ))}
+                        <ul className="ml-5 list-disc space-y-2 text-sm">
+                          {list.map((a, i) => {
+                            const decorated = transformOutputWithReferences(a.reason || "", active.data.author_references || []).result
+                            return (
+                              <li key={i} className="space-y-1">
+                                <div className="font-medium">{a.displayName || a.username || (a.type === AuthorType.DiscordDeleted ? 'Deleted' : 'Unknown')}</div>
+                                <div className="text-gray-700 dark:text-gray-300">
+                                  <MarkdownText text={decorated} />
+                                </div>
+                              </li>
+                            )
+                          })}
                         </ul>
                       </div>
                     )
@@ -890,6 +1102,47 @@ export default function App() {
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">Loading post...</div>
+              )}
+            </div>
+          </article>
+        </div>
+      )}
+
+      {view === 'dictionary' && activeDictionary && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={() => closeDictionaryModal()}>
+          <article className="max-w-3xl w-full rounded-2xl border bg-white p-0 shadow-xl dark:border-gray-800 dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
+            <header className="flex items-start justify-between gap-3 border-b p-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold">{activeDictionary.index.terms[0] || activeDictionary.index.id}</h3>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{activeDictionary.index.id}</span>
+                  <span title={formatDate(activeDictionary.index.updatedAt)}>Updated {timeAgo(activeDictionary.index.updatedAt)}</span>
+                </div>
+                {activeDictionary.index.terms.length > 1 && (
+                  <div className="flex flex-wrap gap-1">
+                    {activeDictionary.index.terms.slice(1).map((term, i) => (
+                      <span key={i} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">Alias: {term}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => closeDictionaryModal()} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Close</button>
+            </header>
+            <div className="p-4">
+              {activeDictionary.data ? (
+                <div className="flex flex-col gap-4 text-sm">
+                  {activeDictionary.data.definition && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Definition</h4>
+                      <MarkdownText text={transformOutputWithReferences(activeDictionary.data.definition, activeDictionary.data.references || []).result} />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {activeDictionary.data.threadURL && <a href={activeDictionary.data.threadURL} target="_blank" rel="noreferrer" className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Forum Thread</a>}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">Loading term...</div>
               )}
             </div>
           </article>
