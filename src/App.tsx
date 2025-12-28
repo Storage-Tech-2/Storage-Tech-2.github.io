@@ -486,10 +486,10 @@ function MarkdownText({ text, onInternalLink }: { text: string, onInternalLink?:
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        h1: (props) => <h1 {...props} className="mt-3 text-2xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
-        h2: (props) => <h2 {...props} className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
-        h3: (props) => <h3 {...props} className="mt-2 text-lg font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
-        h4: (props) => <h4 {...props} className="mt-2 text-base font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h1: (props) => <h1 {...props} className="text-2xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h2: (props) => <h2 {...props} className="text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h3: (props) => <h3 {...props} className="text-lg font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
+        h4: (props) => <h4 {...props} className="text-base font-semibold tracking-wide text-gray-600 dark:text-gray-300" />,
         a: ({ node, ...props }) => {
           const target = linkTargetForHref(props.href)
           return <LinkWithTooltip {...props} onInternalNavigate={onInternalLink} target={target} rel={target === "_blank" ? "noreferrer" : undefined} />
