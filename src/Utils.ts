@@ -206,32 +206,32 @@ export function getEffectiveStyle(key: string, schemaStyles?: Record<string, Sty
 
 
 export function nestedListToMarkdown(nestedList: NestedListItem, indentLevel: number = 0): string {
-  let markdown = "";
-  const indent = "  ".repeat(indentLevel);
-  if (nestedList.isOrdered) {
-    nestedList.items.forEach((item, index) => {
-      if (typeof item === "string") {
-        markdown += `${indent}${index + 1}. ${item}\n`;
-      } else if (typeof item === "object") {
-        markdown += `${indent}${index + 1}. ${item.title}\n`;
-        if (item.items.length > 0) {
-          markdown += nestedListToMarkdown(item, indentLevel + 1);
-        }
-      }
-    })
-  } else {
-    nestedList.items.forEach((item) => {
-      if (typeof item === "string") {
-        markdown += `${indent}- ${item}\n`;
-      } else if (typeof item === "object") {
-        markdown += `${indent}- ${item.title}\n`;
-        if (item.items.length > 0) {
-          markdown += nestedListToMarkdown(item, indentLevel + 1);
-        }
-      }
-    });
-  }
-  return markdown;
+    const markdown: string[] = [];
+    const indent = "  ".repeat(indentLevel);
+    if (nestedList.isOrdered) {
+        nestedList.items.forEach((item, index) => {
+            if (typeof item === "string") {
+                markdown.push(`${indent}${index + 1}. ${item}`);
+            } else if (typeof item === "object") {
+                markdown.push(`${indent}${index + 1}. ${item.title}`);
+                if (item.items.length > 0) {
+                    markdown.push(nestedListToMarkdown(item, indentLevel + 1));
+                }
+            }
+        })
+    } else {
+        nestedList.items.forEach((item) => {
+            if (typeof item === "string") {
+                markdown.push(`${indent}- ${item}`);
+            } else if (typeof item === "object") {
+                markdown.push(`${indent}- ${item.title}`);
+                if (item.items.length > 0) {
+                    markdown.push(nestedListToMarkdown(item, indentLevel + 1));
+                }
+            }
+        });
+    }
+    return markdown.join("\n");
 }
 
 
