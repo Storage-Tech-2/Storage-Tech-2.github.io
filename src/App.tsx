@@ -1204,7 +1204,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-              </div>
+            </div>
               <button onClick={() => closeModal()} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Close</button>
             </header>
             <div className="p-4">
@@ -1328,6 +1328,18 @@ export default function App() {
                       </div>
                     )
                   })()}
+                  <div className="flex flex-wrap gap-2">
+                    {active.data.post?.threadURL && (
+                      <a
+                        href={active.data.post.threadURL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        Link to Discord Thread
+                      </a>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">Loading post...</div>
