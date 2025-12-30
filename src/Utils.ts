@@ -206,32 +206,32 @@ export function getEffectiveStyle(key: string, schemaStyles?: Record<string, Sty
 
 
 export function nestedListToMarkdown(nestedList: NestedListItem, indentLevel: number = 0): string {
-    const markdown: string[] = [];
-    const indent = "  ".repeat(indentLevel);
-    if (nestedList.isOrdered) {
-        nestedList.items.forEach((item, index) => {
-            if (typeof item === "string") {
-                markdown.push(`${indent}${index + 1}. ${item}`);
-            } else if (typeof item === "object") {
-                markdown.push(`${indent}${index + 1}. ${item.title}`);
-                if (item.items.length > 0) {
-                    markdown.push(nestedListToMarkdown(item, indentLevel + 2));
-                }
-            }
-        })
-    } else {
-        nestedList.items.forEach((item) => {
-            if (typeof item === "string") {
-                markdown.push(`${indent}- ${item}`);
-            } else if (typeof item === "object") {
-                markdown.push(`${indent}- ${item.title}`);
-                if (item.items.length > 0) {
-                    markdown.push(nestedListToMarkdown(item, indentLevel + 1));
-                }
-            }
-        });
-    }
-    return markdown.join("\n");
+  const markdown: string[] = [];
+  const indent = "  ".repeat(indentLevel);
+  if (nestedList.isOrdered) {
+    nestedList.items.forEach((item, index) => {
+      if (typeof item === "string") {
+        markdown.push(`${indent}${index + 1}. ${item}`);
+      } else if (typeof item === "object") {
+        markdown.push(`${indent}${index + 1}. ${item.title}`);
+        if (item.items.length > 0) {
+          markdown.push(nestedListToMarkdown(item, indentLevel + 2));
+        }
+      }
+    })
+  } else {
+    nestedList.items.forEach((item) => {
+      if (typeof item === "string") {
+        markdown.push(`${indent}- ${item}`);
+      } else if (typeof item === "object") {
+        markdown.push(`${indent}- ${item.title}`);
+        if (item.items.length > 0) {
+          markdown.push(nestedListToMarkdown(item, indentLevel + 1));
+        }
+      }
+    });
+  }
+  return markdown.join("\n");
 }
 
 
@@ -256,38 +256,40 @@ export function submissionRecordToMarkdown(value: SubmissionRecord, style?: Styl
 }
 
 export function postToMarkdown(record: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>): string {
-    let markdown = "";
+  let markdown = "";
 
-    let isFirst = true;
+  let isFirst = true;
 
-    const parentsRecorded = new Set<string>();
-    for (const key in record) {
-        const keyParts = key.split(":");
-        for (let i = keyParts.length - 1; i > 0; i--) {
-            const parentKey = keyParts.slice(0, i).join(":");
-            if (!parentsRecorded.has(parentKey)) {
-                const parentStyle = getEffectiveStyle(parentKey, schemaStyles, recordStyles);
-                markdown += `\n${'#'.repeat(parentStyle.depth)} ${parentStyle.headerText}\n`;
-                parentsRecorded.add(parentKey);
-            } else {
-                break;
-            }
-        }
-
-        const recordValue = record[key];
-        const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
-
-        const text = submissionRecordToMarkdown(recordValue, styles);
-        if (text.length > 0) {
-            if (key !== "description" || !isFirst) {
-                markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
-            }
-            isFirst = false;
-        }
-        markdown += text;
+  const parentsRecorded = new Set<string>();
+  for (const key in record) {
+    const keyParts = key.split(":");
+    for (let i = keyParts.length - 1; i > 0; i--) {
+      const parentKey = keyParts.slice(0, i).join(":");
+      if (!parentsRecorded.has(parentKey)) {
+        const parentStyle = getEffectiveStyle(parentKey, schemaStyles, recordStyles);
+        markdown += `\n${'#'.repeat(parentStyle.depth)} ${parentStyle.headerText}\n`;
+        parentsRecorded.add(parentKey);
+      } else {
+        break;
+      }
     }
 
-    return markdown.trim();
+    parentsRecorded.add(key);
+
+    const recordValue = record[key];
+    const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
+
+    const text = submissionRecordToMarkdown(recordValue, styles);
+    if (text.length > 0) {
+      if (key !== "description" || !isFirst) {
+        markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
+      }
+      isFirst = false;
+    }
+    markdown += text;
+  }
+
+  return markdown.trim();
 }
 
 
@@ -347,74 +349,74 @@ export const DiscordForumLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord(?:
 
 
 function shouldIncludeMatch(text: string, term: string, start: number, end: number): boolean {
-   
-
-    const isTermAllCaps = term.toUpperCase() === term;
-    const matchedText = text.slice(start, end);
-
-    if (isTermAllCaps && matchedText !== term) { // case-sensitive match required
-        return false;
-    }
 
 
-    const before = start > 0 ? text[start - 1] : undefined;
-    const after = end < text.length ? text[end] : undefined;
+  const isTermAllCaps = term.toUpperCase() === term;
+  const matchedText = text.slice(start, end);
 
-    // check if term starts with leading number
-    if (/^[0-9]/.test(term)) {
-
-        // prev char must not be a number or decimal point
-        if (before && (/[0-9.]/.test(before))) {
-            return false;
-        }
-    }
-
-    // check if term ends with trailing number
-    if (/[0-9x.]$/.test(term)) {
-        // next char must not be a number
-        if (after && /[0-9]/.test(after)) {
-            return false;
-        }
-    }
-    
-   
-    const isWordChar = (ch: string | undefined): boolean => {
-        return ch !== undefined && /[A-Za-z]/.test(ch);
-    }
-
-    const startSatisfied = isWordChar(before) === false;
-    let endingSatisfied = isWordChar(after) === false;
-
-    if (startSatisfied && endingSatisfied) {
-        return true;
-    }
-
-     const hasNoNumbers = !/[0-9]/.test(term);
-
-    if (hasNoNumbers && startSatisfied && !endingSatisfied) { // just some words
-        // check if next character is possessive
-        const getSliceAtEnd = (len: number): string => {
-            return text.slice(end, Math.min(end + len, text.length));
-        }
-        const getCharAt = (pos: number): string | undefined => {
-            pos += end;
-            return pos < text.length ? text[pos] : undefined;
-        }
-
-        if (getCharAt(0) === "s" && !isWordChar(getCharAt(1))) {
-            endingSatisfied = true;
-        } else if (getSliceAtEnd(2) === "ed" && !isWordChar(getCharAt(2))) {
-            endingSatisfied = true;
-        } else if (getSliceAtEnd(3) === "ing" && !isWordChar(getCharAt(3))) {
-            endingSatisfied = true;
-        }
-
-        if (endingSatisfied) {
-            return true;
-        }
-    }
-
+  if (isTermAllCaps && matchedText !== term) { // case-sensitive match required
     return false;
+  }
+
+
+  const before = start > 0 ? text[start - 1] : undefined;
+  const after = end < text.length ? text[end] : undefined;
+
+  // check if term starts with leading number
+  if (/^[0-9]/.test(term)) {
+
+    // prev char must not be a number or decimal point
+    if (before && (/[0-9.]/.test(before))) {
+      return false;
+    }
+  }
+
+  // check if term ends with trailing number
+  if (/[0-9x.]$/.test(term)) {
+    // next char must not be a number
+    if (after && /[0-9]/.test(after)) {
+      return false;
+    }
+  }
+
+
+  const isWordChar = (ch: string | undefined): boolean => {
+    return ch !== undefined && /[A-Za-z]/.test(ch);
+  }
+
+  const startSatisfied = isWordChar(before) === false;
+  let endingSatisfied = isWordChar(after) === false;
+
+  if (startSatisfied && endingSatisfied) {
+    return true;
+  }
+
+  const hasNoNumbers = !/[0-9]/.test(term);
+
+  if (hasNoNumbers && startSatisfied && !endingSatisfied) { // just some words
+    // check if next character is possessive
+    const getSliceAtEnd = (len: number): string => {
+      return text.slice(end, Math.min(end + len, text.length));
+    }
+    const getCharAt = (pos: number): string | undefined => {
+      pos += end;
+      return pos < text.length ? text[pos] : undefined;
+    }
+
+    if (getCharAt(0) === "s" && !isWordChar(getCharAt(1))) {
+      endingSatisfied = true;
+    } else if (getSliceAtEnd(2) === "ed" && !isWordChar(getCharAt(2))) {
+      endingSatisfied = true;
+    } else if (getSliceAtEnd(3) === "ing" && !isWordChar(getCharAt(3))) {
+      endingSatisfied = true;
+    }
+
+    if (endingSatisfied) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function findMatchesWithinText(text: string, references: Reference[]): {
@@ -531,7 +533,7 @@ export function transformOutputWithReferences(
     }
 
     const ref = match.reference;
-    
+
     const makeTextSafeForTooltip = (s?: string) => {
       if (!s) return s;
       return s.replace(/"/g, "'").replace(/\n/g, ' ').trim();
