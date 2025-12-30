@@ -255,26 +255,39 @@ export function submissionRecordToMarkdown(value: SubmissionRecord, style?: Styl
   return markdown.trim();
 }
 
-
 export function postToMarkdown(record: SubmissionRecords, recordStyles?: Record<string, StyleInfo>, schemaStyles?: Record<string, StyleInfo>): string {
-  let markdown = "";
+    let markdown = "";
 
-  let isFirst = true;
-  for (const key in record) {
-    const recordValue = record[key];
-    const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
+    let isFirst = true;
 
-    const text = submissionRecordToMarkdown(recordValue, styles);
-    if (text.length > 0) {
-      if (key !== "description" || !isFirst) {
-        markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
-      }
-      isFirst = false;
+    const parentsRecorded = new Set<string>();
+    for (const key in record) {
+        const keyParts = key.split(":");
+        for (let i = keyParts.length - 1; i > 0; i--) {
+            const parentKey = keyParts.slice(0, i).join(":");
+            if (!parentsRecorded.has(parentKey)) {
+                const parentStyle = getEffectiveStyle(parentKey, schemaStyles, recordStyles);
+                markdown += `\n${'#'.repeat(parentStyle.depth)} ${parentStyle.headerText}\n`;
+                parentsRecorded.add(parentKey);
+            } else {
+                break;
+            }
+        }
+
+        const recordValue = record[key];
+        const styles = getEffectiveStyle(key, schemaStyles, recordStyles);
+
+        const text = submissionRecordToMarkdown(recordValue, styles);
+        if (text.length > 0) {
+            if (key !== "description" || !isFirst) {
+                markdown += `\n${'#'.repeat(styles.depth)} ${styles.headerText}\n`;
+            }
+            isFirst = false;
+        }
+        markdown += text;
     }
-    markdown += text;
-  }
 
-  return markdown.trim();
+    return markdown.trim();
 }
 
 
