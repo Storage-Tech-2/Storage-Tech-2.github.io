@@ -686,7 +686,6 @@ export default function App() {
         p.entry.tags?.join(' ') || '',
         ...(p.data ? [
           p.data.tags?.map(t => t.name).join(' ') || '',
-          p.data.authors?.map(a => getAuthorName(a)).join(' ') || '',
           typeof p.data.records?.description === 'string' ? p.data.records.description : '',
         ] : []),
       ].join(' ').toLowerCase()
@@ -711,7 +710,6 @@ export default function App() {
         p.entry.tags?.join(' ') || '',
         ...(p.data ? [
           p.data.tags?.map(t => t.name).join(' ') || '',
-          p.data.authors?.map(a => getAuthorName(a)).join(' ') || '',
           typeof p.data.records?.description === 'string' ? p.data.records.description : '',
         ] : []),
       ].join(' ').toLowerCase()
@@ -751,7 +749,6 @@ export default function App() {
           p.entry.tags?.join(" ") || "",
           ...(p.data ? [
             p.data.tags?.map(t => t.name).join(" ") || "",
-            p.data.authors?.map(a => getAuthorName(a)).join(" ") || "",
             typeof p.data.records?.description === "string" ? p.data.records.description : "",
           ] : []),
         ].join(" ").toLowerCase()
@@ -1086,7 +1083,7 @@ export default function App() {
             {view === 'archive' ? (
               <>
                 <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
-                  <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search posts, codes, tags, authors" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
+                  <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search posts, codes, tags" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
                   <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
                 </div>
                 <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900 flex-shrink-0">
