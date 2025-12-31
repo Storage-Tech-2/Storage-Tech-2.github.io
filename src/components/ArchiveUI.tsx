@@ -18,7 +18,7 @@ export function ChannelBadge({ ch }: { ch: { code: string, name: string, descrip
 
 export function TagChip({ tag, state, count, onToggle }: { tag: Tag, state: -1 | 0 | 1, count?: number, onToggle?: () => void }) {
   const meta = getSpecialTagMeta(tag.name)
-  const base = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors"
+  const base = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors"
   const cls = state === 1
     ? "bg-blue-600 text-white border-blue-600 shadow-sm"
     : state === -1
@@ -37,7 +37,7 @@ export function TagChip({ tag, state, count, onToggle }: { tag: Tag, state: -1 |
 
 export function TagPill({ name }: { name: string }) {
   const meta = getSpecialTagMeta(name)
-  const base = "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
+  const base = "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold leading-none whitespace-nowrap"
   const cls = meta ? meta.classes : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
   return (
     <span className={clsx(base, cls)}>
