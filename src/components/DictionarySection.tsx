@@ -7,6 +7,7 @@ type Props = {
   dictionaryLoading: boolean
   filteredDictionary: IndexedDictionaryEntry[]
   dictionaryEntries: IndexedDictionaryEntry[]
+  dictionarySort: "az" | "updated"
   openDictionaryEntry: (entry: IndexedDictionaryEntry) => void
 }
 
@@ -15,6 +16,7 @@ export function DictionarySection({
   dictionaryLoading,
   filteredDictionary,
   dictionaryEntries,
+  dictionarySort,
   openDictionaryEntry,
 }: Props) {
   return (
@@ -24,7 +26,7 @@ export function DictionarySection({
         {dictionaryLoading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading dictionary...</div>}
       </div>
       <main className="mx-auto max-w-7xl px-4 pb-12">
-        <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filteredDictionary.length} of {dictionaryEntries.length} terms</div>
+        <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filteredDictionary.length} of {dictionaryEntries.length} terms • Sorted {dictionarySort === "az" ? "A to Z" : "by updated time"}</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDictionary.map((entry) => (
             <DictionaryCard key={entry.index.id} entry={entry} onOpen={openDictionaryEntry} />

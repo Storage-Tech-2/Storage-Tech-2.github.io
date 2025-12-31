@@ -15,6 +15,8 @@ type Props = {
   onSortChange: (val: SortKey) => void
   dictionaryQuery: string
   onDictionarySearchChange: (val: string) => void
+  dictionarySort: "az" | "updated"
+  onDictionarySortChange: (val: "az" | "updated") => void
   onArchiveClick: () => void
   onDictionaryClick: () => void
 }
@@ -32,6 +34,8 @@ export function HeaderBar({
   onSortChange,
   dictionaryQuery,
   onDictionarySearchChange,
+  dictionarySort,
+  onDictionarySortChange,
   onArchiveClick,
   onDictionaryClick,
 }: Props) {
@@ -74,10 +78,16 @@ export function HeaderBar({
               </select>
             </>
           ) : (
-            <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
-              <input value={dictionaryQuery} onChange={e => onDictionarySearchChange(e.target.value)} placeholder="Search dictionary terms" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
-              <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
-            </div>
+            <>
+              <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
+                <input value={dictionaryQuery} onChange={e => onDictionarySearchChange(e.target.value)} placeholder="Search dictionary terms" className="w-full rounded-xl border px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" />
+                <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
+              </div>
+              <select value={dictionarySort} onChange={e => onDictionarySortChange(e.target.value as "az" | "updated")} className="rounded-xl border px-3 py-2 bg-white dark:bg-gray-900 flex-shrink-0">
+                <option value="az">A to Z</option>
+                <option value="updated">Updated (newest)</option>
+              </select>
+            </>
           )}
 
           <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="flex-shrink-0 rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">

@@ -66,6 +66,7 @@ export default function App() {
   const [lightbox, setLightbox] = useState<Image | null>(null)
   const [view, setView] = useState<'archive' | 'dictionary'>('archive')
   const [dictionaryQuery, setDictionaryQuery] = useState("")
+  const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az")
   const [dictionaryDefinitions, setDictionaryDefinitions] = useState<Record<string, string>>({})
   const dictionaryFetchInFlight = useRef<Set<string>>(new Set())
 
@@ -144,8 +145,8 @@ export default function App() {
   )
 
   const filteredDictionary = useMemo(
-    () => filterDictionaryEntries(dictionaryEntries, dictionaryQuery),
-    [dictionaryEntries, dictionaryQuery],
+    () => filterDictionaryEntries(dictionaryEntries, dictionaryQuery, dictionarySort),
+    [dictionaryEntries, dictionaryQuery, dictionarySort],
   )
 
   const dictionaryTooltips = useMemo(() => {
@@ -413,6 +414,8 @@ export default function App() {
         onSortChange={(val) => setSortKey(val)}
         dictionaryQuery={dictionaryQuery}
         onDictionarySearchChange={setDictionaryQuery}
+        dictionarySort={dictionarySort}
+        onDictionarySortChange={setDictionarySort}
         onArchiveClick={() => switchToArchiveView()}
         onDictionaryClick={() => switchToDictionaryView()}
       />
@@ -443,6 +446,7 @@ export default function App() {
           dictionaryLoading={dictionaryLoading}
           filteredDictionary={filteredDictionary}
           dictionaryEntries={dictionaryEntries}
+          dictionarySort={dictionarySort}
           openDictionaryEntry={openDictionaryEntry}
         />
       )}

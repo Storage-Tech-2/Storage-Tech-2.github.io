@@ -140,15 +140,28 @@ export const filterPosts = (posts: IndexedPost[], params: FilterPostsParams) => 
   });
 };
 
-export const filterDictionaryEntries = (dictionaryEntries: IndexedDictionaryEntry[], dictionaryQuery: string) => {
+export const filterDictionaryEntries = (dictionaryEntries: IndexedDictionaryEntry[], dictionaryQuery: string, sort: "az" | "updated" = "az") => {
   const term = dictionaryQuery.trim().toLowerCase();
-  if (!term) return dictionaryEntries;
-  return dictionaryEntries.filter(entry => {
-    const haystack = [
-      entry.index.summary || "",
-      ...(entry.index.terms || []),
-      entry.data?.definition || "",
-    ].join(" ").toLowerCase();
-    return haystack.includes(term);
-  });
+  let list = dictionaryEntries;
+  if (term) {
+    list = list.filter(entry => {
+      const haystack = [
+        entry.index.summary || "",
+        ...(entry.index.terms || []),
+        entry.data?.definition || "",
+      ].join(" ").toLowerCase();
+      return haystack.includes(term);
+    });
+  }
+  const sorted = [...list];
+  if (sort === "updated") {
+    sorted.sort((a, b) => (b.index.updatedAt ?? 0) - (a.index.updatedAt ?? 0));
+  } else {
+    sorted.sort((a, b) => {
+      const aTerm = (a.index.terms?.[0] || a.index.id || "").toLowerCase();
+      const bTerm = (b.index.terms?.[0] || b.index.id || "").toLowerCase();
+      return aTerm.localeCompare(bTerm);
+    });
+  }
+  return sorted;
 };
