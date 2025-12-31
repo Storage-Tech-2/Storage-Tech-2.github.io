@@ -10,7 +10,7 @@ type Props = {
   postTooltipLookup: (ref: { id: string; code?: string }) => string | undefined
   handleInternalLink: (url: URL) => boolean
   dictionaryReferencedBy: { code: string; post?: IndexedPost }[]
-  openCard: (post: IndexedPost, keepView?: boolean) => void
+  openCard: (post: IndexedPost, replace?: boolean, keepView?: boolean) => void
 }
 
 export function DictionaryModal({

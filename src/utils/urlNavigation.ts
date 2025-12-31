@@ -169,7 +169,7 @@ type ApplyUrlStateParams = {
   applyFiltersFromSearch: (sp: URLSearchParams) => void;
   getDictionaryFromURL: (did?: string) => IndexedDictionaryEntry | undefined;
   getPostFromURL: (id?: string) => IndexedPost | undefined;
-  openCard: (p: IndexedPost, replace?: boolean) => Promise<void>;
+  openCard: (p: IndexedPost, replace?: boolean, keepView?: boolean) => Promise<void>;
   openDictionaryEntry: (entry: IndexedDictionaryEntry, replace?: boolean, keepView?: boolean, updateURL?: boolean) => Promise<void>;
   setActive: Dispatch<SetStateAction<IndexedPost | null>>;
   setActiveDictionary: Dispatch<SetStateAction<IndexedDictionaryEntry | null>>;
@@ -193,8 +193,9 @@ export const applyUrlState = async ({
   const postId = navState?.postId ?? sp.get("id") ?? undefined;
   const didParam = navState?.did ?? sp.get("did") ?? undefined;
   const keepView = navState?.keepView ?? false;
+  const keepDictionaryViewForPost = navState?.keepDictionaryViewForPost ?? false;
   const viewParam = navState?.view ?? sp.get("view");
-  const wantsDictionary = !!didParam || viewParam === "dictionary";
+  const wantsDictionary = !!didParam || viewParam === "dictionary" || keepDictionaryViewForPost;
   const targetView = keepView ? "archive" : wantsDictionary ? "dictionary" : "archive";
   setView(targetView);
   if (targetView === "dictionary" && !keepView) {
@@ -207,7 +208,7 @@ export const applyUrlState = async ({
     if (postId) {
       const targetPost = getPostFromURL(postId);
       if (targetPost) {
-        await openCard(targetPost, replace);
+        await openCard(targetPost, replace, true);
       } else {
         setActive(null);
       }
