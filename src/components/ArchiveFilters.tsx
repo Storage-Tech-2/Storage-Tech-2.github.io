@@ -35,8 +35,15 @@ export function ArchiveFilters({
           <span className="text-sm font-medium">Channels</span>
           <div className="flex flex-wrap gap-2 select-none">
             {channels.map(ch => (
-              <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "")}>
-                <input type="checkbox" className="hidden" checked={selectedChannels.includes(ch.code)} onChange={() => onToggleChannel(ch.code)} />
+              <label
+                key={ch.code}
+                title={ch.description}
+                className={clsx(
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-1 dark:focus-within:ring-offset-gray-900",
+                  selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "",
+                )}
+              >
+                <input type="checkbox" className="sr-only" checked={selectedChannels.includes(ch.code)} onChange={() => onToggleChannel(ch.code)} />
                 <span className="font-semibold">{ch.code}</span>
                 <span className={selectedChannels.includes(ch.code) ? "text-white dark:text-black" : "text-gray-500 dark:text-white"}>{ch.name}</span>
                 <span className="ml-1 rounded bg-black/10 px-1 text-[10px] dark:bg-white/10">{channelCounts[ch.code] || 0}</span>
