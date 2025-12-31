@@ -11,7 +11,7 @@ import { DictionarySection } from "./components/DictionarySection";
 import { PostModal } from "./components/PostModal";
 import { DictionaryModal } from "./components/DictionaryModal";
 import { normalize, unique } from "./utils";
-import { sortTagObjectsForDisplay } from "./utils/tagDisplay";
+import { getSpecialTagMeta, sortTagObjectsForDisplay } from "./utils/tagDisplay";
 import {
   computeChannelCounts,
   computeTagCounts,
@@ -129,7 +129,11 @@ export default function App() {
     const fromEntryRefs = postsPool.flatMap(p => p.entry.tags || [])
     const fromLoadedPosts = postsPool.flatMap(p => p.data?.tags?.map(t => t.name) || [])
     const names = unique([...fromChannels, ...fromEntryRefs, ...fromLoadedPosts])
-    return sortTagObjectsForDisplay(names.map(n => ({ id: n, name: n })) as Tag[])
+    let list = sortTagObjectsForDisplay(names.map(n => ({ id: n, name: n })) as Tag[])
+    if (!selectedChannels.length) {
+      list = list.filter(tag => !!getSpecialTagMeta(tag.name))
+    }
+    return list
   }, [channels, posts, selectedChannels])
 
   // Counts for channels: apply search and tag filters, ignore current channel selection
