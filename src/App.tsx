@@ -10,16 +10,35 @@ import { ArchiveSection } from "./components/ArchiveSection";
 import { DictionarySection } from "./components/DictionarySection";
 import { PostModal } from "./components/PostModal";
 import { DictionaryModal } from "./components/DictionaryModal";
-import { normalize, unique, getPostTagsNormalized } from "./utils";
+import { normalize, unique } from "./utils";
 import { sortTagObjectsForDisplay } from "./utils/tagDisplay";
+import {
+  computeChannelCounts,
+  computeTagCounts,
+  extractFiltersFromSearch,
+  filterDictionaryEntries,
+  filterPosts,
+  serializeListParam,
+} from "./utils/filtering";
+import {
+  applyUrlState,
+  clearDictionaryURL,
+  clearPostURL,
+  getDictionaryFromURL as getDictionaryFromURLFromList,
+  getPostFromURL as getPostFromURLFromList,
+  handleInternalNavigation,
+  type NavigationState,
+  pushArchiveViewState,
+  pushDictionaryURL,
+  pushDictionaryViewState,
+  pushPostURL,
+} from "./utils/urlNavigation";
 
 // ------------------------------
 // Main app component
 // ------------------------------
 
 const SORT_KEYS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"]
-const parseListParam = (value: string | null) => value ? value.split(",").map((v) => v.trim()).filter(Boolean) : []
-const serializeListParam = (values: string[]) => values.filter(Boolean).join(",")
 
 export default function App() {
   const [owner, setOwner] = useState(DEFAULT_OWNER)
@@ -48,34 +67,14 @@ export default function App() {
   const [dictionaryQuery, setDictionaryQuery] = useState("")
   const [dictionaryDefinitions, setDictionaryDefinitions] = useState<Record<string, string>>({})
   const dictionaryFetchInFlight = useRef<Set<string>>(new Set())
-  type NavigationState = {
-    postId?: string,
-    did?: string,
-    view?: 'archive' | 'dictionary',
-    keepView?: boolean,
-  }
 
   const applyFiltersFromSearch = useCallback((sp: URLSearchParams) => {
-    const nextQ = sp.get("q") ?? ""
-    setQ(nextQ)
-
-    const sortParam = sp.get("sort") as SortKey | null
-    if (sortParam && SORT_KEYS.includes(sortParam)) setSortKey(sortParam)
-
-    const modeParam = sp.get("tagMode")
-    setTagMode(modeParam === "OR" ? "OR" : "AND")
-
-    const includeTagsRaw = parseListParam(sp.get("tags"))
-    const excludeTagsRaw = parseListParam(sp.get("xtags"))
-    setTagState(() => {
-      const next: Record<string, -1 | 0 | 1> = {}
-      includeTagsRaw.forEach((name) => { next[name] = 1 })
-      excludeTagsRaw.forEach((name) => { next[name] = -1 })
-      return next
-    })
-
-    const channelsParam = parseListParam(sp.get("channels"))
-    setSelectedChannels(channelsParam)
+    const next = extractFiltersFromSearch(sp, SORT_KEYS)
+    setQ(next.q)
+    if (next.sortKey) setSortKey(next.sortKey)
+    setTagMode(next.tagMode)
+    setTagState(next.tagState)
+    setSelectedChannels(next.selectedChannels)
     setFiltersHydrated(true)
   }, [])
 
@@ -126,115 +125,21 @@ export default function App() {
   }, [channels, posts, selectedChannels])
 
   // Counts for channels: apply search and tag filters, ignore current channel selection
-  const channelCounts = useMemo(() => {
-    const map: Record<string, number> = {}
-    const trimmed = q.trim().toLowerCase()
-    const list = posts.filter(p => {
-      const postTags = getPostTagsNormalized(p)
-      if (excludeTags.some(t => postTags.includes(t))) return false
-      if (includeTags.length) {
-        if (tagMode === 'OR' && !includeTags.some(t => postTags.includes(t))) return false
-        if (tagMode === 'AND' && !includeTags.every(t => postTags.includes(t))) return false
-      }
-      if (!trimmed) return true
-      const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(' ').toLowerCase()
-      const extra = [
-        p.entry.tags?.join(' ') || '',
-        ...(p.data ? [
-          p.data.tags?.map(t => t.name).join(' ') || '',
-          typeof p.data.records?.description === 'string' ? p.data.records.description : '',
-        ] : []),
-      ].join(' ').toLowerCase()
-      return `${base} ${extra}`.includes(trimmed)
-    })
-    list.forEach(p => { map[p.channel.code] = (map[p.channel.code] || 0) + 1 })
-    return map
-  }, [posts, includeTags, excludeTags, tagMode, q])
+  const channelCounts = useMemo(() => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q), [posts, includeTags, excludeTags, tagMode, q])
 
   // Counts for tags: apply search, channel filter, and exclude tags. Do not apply include-tags to preview potential additions.
-  const tagCounts = useMemo(() => {
-    const map: Record<string, number> = {}
-    const trimmed = q.trim().toLowerCase()
-    const channelSet = selectedChannels.length ? new Set(selectedChannels) : null
-    const list = posts.filter(p => {
-      if (channelSet && !(channelSet.has(p.channel.code) || channelSet.has(p.channel.name))) return false
-      const postTags = getPostTagsNormalized(p)
-      if (excludeTags.some(t => postTags.includes(t))) return false
-      if (!trimmed) return true
-      const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(' ').toLowerCase()
-      const extra = [
-        p.entry.tags?.join(' ') || '',
-        ...(p.data ? [
-          p.data.tags?.map(t => t.name).join(' ') || '',
-          typeof p.data.records?.description === 'string' ? p.data.records.description : '',
-        ] : []),
-      ].join(' ').toLowerCase()
-      return `${base} ${extra}`.includes(trimmed)
-    })
-    list.forEach(p => {
-      getPostTagsNormalized(p).forEach(t => { map[t] = (map[t] || 0) + 1 })
-    })
-    return map
-  }, [posts, selectedChannels, excludeTags, q])
+  const tagCounts = useMemo(() => computeTagCounts(posts, selectedChannels, excludeTags, q), [posts, selectedChannels, excludeTags, q])
 
   // Build a filtered list
-  const filtered = useMemo(() => {
-    let list = posts
-    // Channel filter
-    if (selectedChannels.length) {
-      const set = new Set(selectedChannels)
-      list = list.filter(p => set.has(p.channel.code) || set.has(p.channel.name))
-    }
-    // Tag include/exclude filter
-    if (includeTags.length || excludeTags.length) {
-      list = list.filter(p => {
-        const postTags = getPostTagsNormalized(p)
-        if (excludeTags.some(t => postTags.includes(t))) return false
-        if (!includeTags.length) return true
-        if (tagMode === 'OR') return includeTags.some(t => postTags.includes(t))
-        return includeTags.every(t => postTags.includes(t))
-      })
-    }
+  const filtered = useMemo(
+    () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, sortKey, tagMode }),
+    [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode],
+  )
 
-    // Search
-    if (q.trim()) {
-      const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
-      list = list.filter(p => {
-        const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase()
-        const extra = [
-          p.entry.tags?.join(" ") || "",
-          ...(p.data ? [
-            p.data.tags?.map(t => t.name).join(" ") || "",
-            typeof p.data.records?.description === "string" ? p.data.records.description : "",
-          ] : []),
-        ].join(" ").toLowerCase()
-        const hay = `${base} ${extra}`
-        return terms.every(t => hay.includes(t))
-      })
-    }
-    // Sorting
-    list = list.slice().sort((a, b) => {
-      if (sortKey === "newest") return (getEntryUpdatedAt(b.entry) ?? 0) - (getEntryUpdatedAt(a.entry) ?? 0)
-      if (sortKey === "oldest") return (getEntryUpdatedAt(a.entry) ?? 0) - (getEntryUpdatedAt(b.entry) ?? 0)
-      if (sortKey === "archived") return (getEntryArchivedAt(b.entry) ?? 0) - (getEntryArchivedAt(a.entry) ?? 0)
-      if (sortKey === "archivedOldest") return (getEntryArchivedAt(a.entry) ?? 0) - (getEntryArchivedAt(b.entry) ?? 0)
-      return a.entry.name.localeCompare(b.entry.name)
-    })
-    return list
-  }, [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode])
-
-  const filteredDictionary = useMemo(() => {
-    const term = dictionaryQuery.trim().toLowerCase()
-    if (!term) return dictionaryEntries
-    return dictionaryEntries.filter(entry => {
-      const haystack = [
-        entry.index.summary || '',
-        ...(entry.index.terms || []),
-        entry.data?.definition || '',
-      ].join(' ').toLowerCase()
-      return haystack.includes(term)
-    })
-  }, [dictionaryEntries, dictionaryQuery])
+  const filteredDictionary = useMemo(
+    () => filterDictionaryEntries(dictionaryEntries, dictionaryQuery),
+    [dictionaryEntries, dictionaryQuery],
+  )
 
   const dictionaryTooltips = useMemo(() => {
     const map: Record<string, string> = { ...dictionaryDefinitions }
@@ -272,86 +177,25 @@ export default function App() {
     return p?.entry?.name
   }, [postsByCode, postsById])
 
-  // --------- URL helpers for sharable links ---------
-  const buildPostURL = useCallback((p: IndexedPost) => {
-    const url = new URL(window.location.href)
-    url.searchParams.set('id', p.entry.id)
-    url.searchParams.delete('did')
-    url.searchParams.delete('view')
-    return url.pathname + '?' + url.searchParams.toString()
-  }, [])
-  const clearPostURL = useCallback((replace = false) => {
-    const url = new URL(window.location.href)
-    url.searchParams.delete('id')
-    url.searchParams.delete('did')
-    url.searchParams.delete('view')
-    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
-    if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
-  }, [])
-  const pushPostURL = useCallback((p: IndexedPost, replace = false) => {
-    const next = buildPostURL(p)
-    const state = { postId: p.entry.id }
-    if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
-  }, [buildPostURL])
-  const getPostFromURL = useCallback((idOverride?: string): IndexedPost | undefined => {
-    const sp = new URLSearchParams(window.location.search)
-    const id = idOverride ?? sp.get('id');
-    return postsRef.current.find(p => (id && p.entry.id === id))
-  }, [])
-
-  const buildDictionaryURL = useCallback((entry: IndexedDictionaryEntry) => {
-    const url = new URL(window.location.href)
-    url.searchParams.set('did', entry.index.id)
-    url.searchParams.set('view', 'dictionary')
-    url.searchParams.delete('id')
-    return url.pathname + '?' + url.searchParams.toString()
-  }, [])
-  const clearDictionaryURL = useCallback((replace = false, keepDictionaryView = true) => {
-    const url = new URL(window.location.href)
-    url.searchParams.delete('did')
-    if (keepDictionaryView) {
-      url.searchParams.set('view', 'dictionary')
-    } else {
-      url.searchParams.delete('view')
-    }
-    const nextSearch = url.searchParams.toString()
-    const currentSearch = new URL(window.location.href).searchParams.toString()
-    const next = url.pathname + (nextSearch ? '?' + nextSearch : '')
-    if (nextSearch === currentSearch) return
-    if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
-  }, [])
-  const pushDictionaryURL = useCallback((entry: IndexedDictionaryEntry, replace = false) => {
-    const next = buildDictionaryURL(entry)
-    const state = { did: entry.index.id, view: 'dictionary' }
-    if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
-  }, [buildDictionaryURL])
-  const getDictionaryFromURL = useCallback((didOverride?: string): IndexedDictionaryEntry | undefined => {
-    const sp = new URLSearchParams(window.location.search)
-    const did = didOverride ?? sp.get('did');
-    if (!did) return undefined
-    return dictionaryEntriesRef.current.find(p => p.index.id === did) || {
-      index: { id: did, terms: [did], summary: "", updatedAt: Date.now() },
-    }
-  }, [])
+  const getPostFromURL = useCallback(
+    (idOverride?: string): IndexedPost | undefined => getPostFromURLFromList(postsRef.current, idOverride),
+    [],
+  )
+  const getDictionaryFromURL = useCallback(
+    (didOverride?: string): IndexedDictionaryEntry | undefined => getDictionaryFromURLFromList(dictionaryEntriesRef.current, didOverride),
+    [],
+  )
 
   const switchToArchiveView = (replace = false) => {
     setView('archive')
     setActiveDictionary(null)
-    const url = new URL(window.location.href)
-    url.searchParams.delete('view')
-    url.searchParams.delete('did')
-    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
-    if (replace) window.history.replaceState({ view: 'archive' }, '', next); else window.history.pushState({ view: 'archive' }, '', next)
+    pushArchiveViewState(replace)
   }
 
   const switchToDictionaryView = (replace = false) => {
     setView('dictionary')
     setActive(null)
-    const url = new URL(window.location.href)
-    url.searchParams.set('view', 'dictionary')
-    url.searchParams.delete('id')
-    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
-    if (replace) window.history.replaceState({ view: 'dictionary' }, '', next); else window.history.pushState({ view: 'dictionary' }, '', next)
+    pushDictionaryViewState(replace)
   }
 
   // Open modal and update URL
@@ -363,7 +207,7 @@ export default function App() {
     pushPostURL(loaded, replace)
     // kick off lazy comments fetch without blocking the modal
     ensureCommentsLoaded(loaded).catch(() => { })
-  }, [ensureCommentsLoaded, ensurePostLoaded, pushPostURL])
+  }, [ensureCommentsLoaded, ensurePostLoaded])
   function closeModal(pushHistory = true) {
     setActive(null)
     if (pushHistory) clearPostURL()
@@ -377,42 +221,20 @@ export default function App() {
     const loaded = await ensureDictionaryEntryLoaded(entry)
     setActiveDictionary(loaded)
     if (updateURL) pushDictionaryURL(loaded, replace)
-  }, [ensureDictionaryEntryLoaded, pushDictionaryURL])
+  }, [ensureDictionaryEntryLoaded])
   function closeDictionaryModal(pushHistory = true) {
     setActiveDictionary(null)
     if (pushHistory) clearDictionaryURL(false, view === 'dictionary')
   }
 
-  const handleInternalLink = useCallback((url: URL) => {
-    if (url.origin !== window.location.origin) return false
-    const did = url.searchParams.get('did')
-    if (did) {
-      const keepView = view === 'archive'
-      const targetDict = getDictionaryFromURL(did)
-      const state: NavigationState = { did, view: keepView ? 'archive' : 'dictionary', keepView }
-      if (keepView) {
-        window.history.pushState(state, '', window.location.href)
-      } else {
-        const nextUrl = new URL(window.location.href)
-        nextUrl.searchParams.set('did', did)
-        nextUrl.searchParams.set('view', 'dictionary')
-        nextUrl.searchParams.delete('id')
-        window.history.pushState(state, '', nextUrl.toString())
-      }
-      if (targetDict) openDictionaryEntry(targetDict, false, keepView, false)
-      return true
-    }
-    const postId = url.searchParams.get('id')
-    if (postId) {
-      const targetPost = posts.find(p => p.entry.id === postId)
-      if (targetPost) {
-        openCard(targetPost, false)
-        return true
-      }
-      return false
-    }
-    return false
-  }, [view, posts, openCard, getDictionaryFromURL, openDictionaryEntry])
+  const handleInternalLink = useCallback((url: URL) => handleInternalNavigation({
+    url,
+    view,
+    posts,
+    getDictionaryFromURL,
+    openDictionaryEntry,
+    openCard,
+  }), [view, posts, getDictionaryFromURL, openDictionaryEntry, openCard])
 
   // Handle body overflow hidden when modal open
   useEffect(() => {
@@ -446,34 +268,20 @@ export default function App() {
   useEffect(() => { urlStateApplied.current = false; setFiltersHydrated(false) }, [owner, repo, branch])
 
   useEffect(() => {
-    const applyURLState = async (replace = false, navState?: NavigationState | null) => {
-      const sp = new URLSearchParams(window.location.search)
-      applyFiltersFromSearch(sp)
-      const postId = navState?.postId ?? sp.get('id') ?? undefined
-      const didParam = navState?.did ?? sp.get('did') ?? undefined
-      const keepView = navState?.keepView ?? false
-      const viewParam = navState?.view ?? sp.get('view')
-      const wantsDictionary = !!didParam || viewParam === 'dictionary'
-      const targetView = keepView ? 'archive' : (wantsDictionary ? 'dictionary' : 'archive')
-      setView(targetView)
-      if (targetView === 'dictionary' && !keepView) {
-        const targetDict = getDictionaryFromURL(didParam)
-        if (targetDict) { await openDictionaryEntry(targetDict, replace, false, false) } else { setActiveDictionary(null) }
-        setActive(null)
-        return
-      }
-      const targetPost = postId ? getPostFromURL(postId) : undefined
-      if (targetPost) { await openCard(targetPost, replace) } else { setActive(null) }
-      if (didParam) {
-        const targetDict = getDictionaryFromURL(didParam)
-        if (targetDict) { await openDictionaryEntry(targetDict, replace, true, false) } else { setActiveDictionary(null) }
-      } else {
-        setActiveDictionary(null)
-      }
-    }
     const onPop = (evt: PopStateEvent) => {
       const navState = (evt.state ?? window.history.state ?? null) as NavigationState | null
-      applyURLState(true, navState).catch(() => { })
+      applyUrlState({
+        replace: true,
+        navState,
+        applyFiltersFromSearch,
+        getDictionaryFromURL,
+        getPostFromURL,
+        openCard,
+        openDictionaryEntry,
+        setActive,
+        setActiveDictionary,
+        setView,
+      }).catch(() => { })
     }
     const sp = new URLSearchParams(window.location.search)
     const navState = (window.history.state || null) as NavigationState | null
@@ -482,7 +290,18 @@ export default function App() {
     const dataReady = (!wantsPost || postsRef.current.length > 0) && (!wantsDictionary || dictionaryEntriesRef.current.length > 0)
     if (!urlStateApplied.current && dataReady) {
       urlStateApplied.current = true
-      applyURLState(true, navState).catch(() => { })
+      applyUrlState({
+        replace: true,
+        navState,
+        applyFiltersFromSearch,
+        getDictionaryFromURL,
+        getPostFromURL,
+        openCard,
+        openDictionaryEntry,
+        setActive,
+        setActiveDictionary,
+        setView,
+      }).catch(() => { })
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
