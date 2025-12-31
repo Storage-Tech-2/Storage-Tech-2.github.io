@@ -123,7 +123,11 @@ export const handleInternalNavigation = ({
     const targetDict = getDictionaryFromURL(did);
     const state: NavigationState = { did, view: keepView ? "archive" : "dictionary", keepView };
     if (keepView) {
-      window.history.pushState(state, "", window.location.href);
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("did", did);
+      nextUrl.searchParams.delete("id");
+      nextUrl.searchParams.delete("view");
+      window.history.pushState(state, "", nextUrl.toString());
     } else {
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.set("did", did);
