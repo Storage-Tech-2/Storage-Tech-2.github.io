@@ -83,7 +83,7 @@ export default function App() {
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
   const [commentsLoading, setCommentsLoading] = useState<Record<string, boolean>>({})
   const commentsKey = (p: IndexedPost) => `${p.channel.path}/${p.entry.path}`
-  const ensureCommentsLoaded = async (p: IndexedPost) => {
+  const ensureCommentsLoaded = useCallback(async (p: IndexedPost) => {
     const key = commentsKey(p)
     if (commentsByKey[key] !== undefined) return
     setCommentsLoading(s => ({ ...s, [key]: true }))
@@ -95,7 +95,7 @@ export default function App() {
     } finally {
       setCommentsLoading(s => ({ ...s, [key]: false }))
     }
-  }
+  }, [commentsByKey])
 
   const includeTags = useMemo(() => Object.keys(tagState).filter(k => tagState[k] === 1).map(normalize), [tagState])
   const excludeTags = useMemo(() => Object.keys(tagState).filter(k => tagState[k] === -1).map(normalize), [tagState])
@@ -273,40 +273,40 @@ export default function App() {
   }, [postsByCode, postsById])
 
   // --------- URL helpers for sharable links ---------
-  function buildPostURL(p: IndexedPost) {
+  const buildPostURL = useCallback((p: IndexedPost) => {
     const url = new URL(window.location.href)
     url.searchParams.set('id', p.entry.id)
     url.searchParams.delete('did')
     url.searchParams.delete('view')
     return url.pathname + '?' + url.searchParams.toString()
-  }
-  function clearPostURL(replace = false) {
+  }, [])
+  const clearPostURL = useCallback((replace = false) => {
     const url = new URL(window.location.href)
     url.searchParams.delete('id')
     url.searchParams.delete('did')
     url.searchParams.delete('view')
     const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '')
     if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
-  }
-  function pushPostURL(p: IndexedPost, replace = false) {
+  }, [])
+  const pushPostURL = useCallback((p: IndexedPost, replace = false) => {
     const next = buildPostURL(p)
     const state = { postId: p.entry.id }
     if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
-  }
-  function getPostFromURL(idOverride?: string): IndexedPost | undefined {
+  }, [buildPostURL])
+  const getPostFromURL = useCallback((idOverride?: string): IndexedPost | undefined => {
     const sp = new URLSearchParams(window.location.search)
     const id = idOverride ?? sp.get('id');
     return postsRef.current.find(p => (id && p.entry.id === id))
-  }
+  }, [])
 
-  function buildDictionaryURL(entry: IndexedDictionaryEntry) {
+  const buildDictionaryURL = useCallback((entry: IndexedDictionaryEntry) => {
     const url = new URL(window.location.href)
     url.searchParams.set('did', entry.index.id)
     url.searchParams.set('view', 'dictionary')
     url.searchParams.delete('id')
     return url.pathname + '?' + url.searchParams.toString()
-  }
-  function clearDictionaryURL(replace = false, keepDictionaryView = true) {
+  }, [])
+  const clearDictionaryURL = useCallback((replace = false, keepDictionaryView = true) => {
     const url = new URL(window.location.href)
     url.searchParams.delete('did')
     if (keepDictionaryView) {
@@ -319,20 +319,20 @@ export default function App() {
     const next = url.pathname + (nextSearch ? '?' + nextSearch : '')
     if (nextSearch === currentSearch) return
     if (replace) window.history.replaceState({}, '', next); else window.history.pushState({}, '', next)
-  }
-  function pushDictionaryURL(entry: IndexedDictionaryEntry, replace = false) {
+  }, [])
+  const pushDictionaryURL = useCallback((entry: IndexedDictionaryEntry, replace = false) => {
     const next = buildDictionaryURL(entry)
     const state = { did: entry.index.id, view: 'dictionary' }
     if (replace) window.history.replaceState(state, '', next); else window.history.pushState(state, '', next)
-  }
-  function getDictionaryFromURL(didOverride?: string): IndexedDictionaryEntry | undefined {
+  }, [buildDictionaryURL])
+  const getDictionaryFromURL = useCallback((didOverride?: string): IndexedDictionaryEntry | undefined => {
     const sp = new URLSearchParams(window.location.search)
     const did = didOverride ?? sp.get('did');
     if (!did) return undefined
     return dictionaryEntriesRef.current.find(p => p.index.id === did) || {
       index: { id: did, terms: [did], summary: "", updatedAt: Date.now() },
     }
-  }
+  }, [])
 
   const switchToArchiveView = (replace = false) => {
     setView('archive')
@@ -355,7 +355,7 @@ export default function App() {
   }
 
   // Open modal and update URL
-  async function openCard(p: IndexedPost, replace = false) {
+  const openCard = useCallback(async (p: IndexedPost, replace = false) => {
     const loaded = await ensurePostLoaded(p)
     setView('archive')
     setActiveDictionary(null)
@@ -363,13 +363,13 @@ export default function App() {
     pushPostURL(loaded, replace)
     // kick off lazy comments fetch without blocking the modal
     ensureCommentsLoaded(loaded).catch(() => { })
-  }
+  }, [ensureCommentsLoaded, ensurePostLoaded, pushPostURL])
   function closeModal(pushHistory = true) {
     setActive(null)
     if (pushHistory) clearPostURL()
   }
 
-  async function openDictionaryEntry(entry: IndexedDictionaryEntry, replace = false, keepView = false, updateURL = true) {
+  const openDictionaryEntry = useCallback(async (entry: IndexedDictionaryEntry, replace = false, keepView = false, updateURL = true) => {
     // show modal immediately to avoid flicker while data loads
     setActiveDictionary(entry)
     if (!keepView) setView('dictionary')
@@ -377,7 +377,7 @@ export default function App() {
     const loaded = await ensureDictionaryEntryLoaded(entry)
     setActiveDictionary(loaded)
     if (updateURL) pushDictionaryURL(loaded, replace)
-  }
+  }, [ensureDictionaryEntryLoaded, pushDictionaryURL])
   function closeDictionaryModal(pushHistory = true) {
     setActiveDictionary(null)
     if (pushHistory) clearDictionaryURL(false, view === 'dictionary')
@@ -412,7 +412,7 @@ export default function App() {
       return false
     }
     return false
-  }, [view, posts, openCard, getDictionaryFromURL])
+  }, [view, posts, openCard, getDictionaryFromURL, openDictionaryEntry])
 
   // Handle body overflow hidden when modal open
   useEffect(() => {
@@ -487,7 +487,7 @@ export default function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
     // We want to rerun when the set of posts changes or after initial load
-  }, [posts.length, dictionaryEntries.length, applyFiltersFromSearch])
+  }, [posts.length, dictionaryEntries.length, applyFiltersFromSearch, openCard, openDictionaryEntry, getDictionaryFromURL, getPostFromURL])
 
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search)

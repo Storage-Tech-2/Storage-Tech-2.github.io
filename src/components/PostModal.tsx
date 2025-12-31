@@ -203,8 +203,6 @@ function CommentsList({
   comments,
   channelPath,
   entryPath,
-  dictionaryTooltips,
-  postTooltipLookup,
   onInternalLink,
   setLightbox,
 }: {
