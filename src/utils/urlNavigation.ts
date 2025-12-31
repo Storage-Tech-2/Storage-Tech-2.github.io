@@ -6,29 +6,42 @@ export type NavigationState = {
   did?: string;
   view?: "archive" | "dictionary";
   keepView?: boolean;
+  keepDictionaryViewForPost?: boolean;
 };
 
-export const buildPostURL = (p: IndexedPost) => {
+export const buildPostURL = (p: IndexedPost, opts?: { keepView?: boolean }) => {
   const url = new URL(window.location.href);
   url.searchParams.set("id", p.entry.id);
   url.searchParams.delete("did");
-  url.searchParams.delete("view");
+  if (!opts?.keepView) {
+    url.searchParams.delete("view");
+  } else if (!url.searchParams.get("view")) {
+    url.searchParams.set("view", "dictionary");
+  }
   return url.pathname + "?" + url.searchParams.toString();
 };
 
-export const clearPostURL = (replace = false) => {
+export const clearPostURL = (replace = false, preserveDictionary = false) => {
   const url = new URL(window.location.href);
   url.searchParams.delete("id");
   url.searchParams.delete("did");
-  url.searchParams.delete("view");
+  if (!preserveDictionary) {
+    url.searchParams.delete("view");
+  }
   const next = url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "");
   if (replace) window.history.replaceState({}, "", next);
   else window.history.pushState({}, "", next);
 };
 
-export const pushPostURL = (p: IndexedPost, replace = false) => {
-  const next = buildPostURL(p);
-  const state = { postId: p.entry.id };
+export const pushPostURL = (p: IndexedPost, replace = false, opts?: { keepView?: boolean }) => {
+  const next = buildPostURL(p, opts);
+  const state: NavigationState = { postId: p.entry.id };
+  if (opts?.keepView) {
+    state.view = "dictionary";
+    state.keepDictionaryViewForPost = true;
+    const currentDid = new URL(window.location.href).searchParams.get("did");
+    if (currentDid) state.did = currentDid;
+  }
   if (replace) window.history.replaceState(state, "", next);
   else window.history.pushState(state, "", next);
 };
@@ -105,7 +118,7 @@ type HandleInternalNavigationArgs = {
   posts: IndexedPost[];
   getDictionaryFromURL: (did?: string) => IndexedDictionaryEntry | undefined;
   openDictionaryEntry: (entry: IndexedDictionaryEntry, replace?: boolean, keepView?: boolean, updateURL?: boolean) => void | Promise<void>;
-  openCard: (post: IndexedPost, replace?: boolean) => void | Promise<void>;
+  openCard: (post: IndexedPost, replace?: boolean, keepView?: boolean) => void | Promise<void>;
 };
 
 export const handleInternalNavigation = ({
@@ -142,7 +155,7 @@ export const handleInternalNavigation = ({
   if (postId) {
     const targetPost = posts.find(p => p.entry.id === postId);
     if (targetPost) {
-      openCard(targetPost, false);
+      openCard(targetPost, false, view === "dictionary");
       return true;
     }
     return false;
@@ -191,7 +204,16 @@ export const applyUrlState = async ({
     } else {
       setActiveDictionary(null);
     }
-    setActive(null);
+    if (postId) {
+      const targetPost = getPostFromURL(postId);
+      if (targetPost) {
+        await openCard(targetPost, replace);
+      } else {
+        setActive(null);
+      }
+    } else {
+      setActive(null);
+    }
     return;
   }
   const targetPost = postId ? getPostFromURL(postId) : undefined;

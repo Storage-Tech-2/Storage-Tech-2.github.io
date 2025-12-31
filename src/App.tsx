@@ -206,18 +206,18 @@ export default function App() {
   }
 
   // Open modal and update URL
-  const openCard = useCallback(async (p: IndexedPost, replace = false) => {
+  const openCard = useCallback(async (p: IndexedPost, replace = false, keepView = false) => {
     const loaded = await ensurePostLoaded(p)
-    setView('archive')
+    if (!keepView) setView('archive')
     setActiveDictionary(null)
     setActive(loaded)
-    pushPostURL(loaded, replace)
+    pushPostURL(loaded, replace, { keepView })
     // kick off lazy comments fetch without blocking the modal
     ensureCommentsLoaded(loaded).catch(() => { })
   }, [ensureCommentsLoaded, ensurePostLoaded])
   function closeModal(pushHistory = true) {
     setActive(null)
-    if (pushHistory) clearPostURL()
+    if (pushHistory) clearPostURL(false, view === 'dictionary')
   }
 
   const openDictionaryEntry = useCallback(async (entry: IndexedDictionaryEntry, replace = false, keepView = false, updateURL = true) => {
@@ -448,10 +448,10 @@ export default function App() {
       )}
 
       {/* Details modal */}
-      {view === 'archive' && active && (
+      {active && (
         <PostModal
           active={active}
-          onClose={() => closeModal()}
+          onClose={() => closeModal(true)}
           activeUpdatedAt={activeUpdatedAt}
           activeArchivedAt={activeArchivedAt}
           dictionaryTooltips={dictionaryTooltips}

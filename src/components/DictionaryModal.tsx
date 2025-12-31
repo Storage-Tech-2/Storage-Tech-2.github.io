@@ -10,7 +10,7 @@ type Props = {
   postTooltipLookup: (ref: { id: string; code?: string }) => string | undefined
   handleInternalLink: (url: URL) => boolean
   dictionaryReferencedBy: { code: string; post?: IndexedPost }[]
-  openCard: (post: IndexedPost) => void
+  openCard: (post: IndexedPost, keepView?: boolean) => void
 }
 
 export function DictionaryModal({
@@ -73,7 +73,7 @@ export function DictionaryModal({
                         <button
                           key={code}
                           type="button"
-                          onClick={() => openCard(post)}
+                          onClick={() => openCard(post, false, true)}
                           className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
                         >
                           <div className="space-y-1">

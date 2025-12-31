@@ -19,7 +19,7 @@ type Props = {
   loading: boolean
   filtered: IndexedPost[]
   posts: IndexedPost[]
-  openCard: (p: IndexedPost) => void
+  openCard: (p: IndexedPost, replace?: boolean, keepView?: boolean) => void
   ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost>
   sortKey: SortKey
 }
