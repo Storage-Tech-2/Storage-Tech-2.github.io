@@ -258,19 +258,21 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
   const primary = entry.index.terms[0] || entry.index.id
   const extraCount = Math.max(0, (entry.index.terms?.length || 0) - 1)
   return (
-    <article className="group rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-      <button onClick={() => onOpen(entry)} className="block w-full text-left p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="text-sm font-semibold leading-tight">{primary}</div>
-            {extraCount > 0 && (
-              <div className="text-[11px] text-gray-500 dark:text-gray-400">{`+${extraCount} more ${extraCount === 1 ? "alias" : "aliases"}`}</div>
-            )}
-            {entry.index.summary && <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">{entry.index.summary}</div>}
-          </div>
+    <button
+      type="button"
+      onClick={() => onOpen(entry)}
+      className="group flex h-full w-full flex-col items-start rounded-2xl border bg-white text-left transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
+    >
+      <div className="p-4 text-left">
+        <div className="space-y-1">
+          <div className="text-sm font-semibold leading-tight">{primary}</div>
+          {extraCount > 0 && (
+            <div className="text-[11px] text-gray-500 dark:text-gray-400">{`+${extraCount} more ${extraCount === 1 ? "alias" : "aliases"}`}</div>
+          )}
+          {entry.index.summary && <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">{entry.index.summary}</div>}
         </div>
-      </button>
-    </article>
+      </div>
+    </button>
   )
 }
 
