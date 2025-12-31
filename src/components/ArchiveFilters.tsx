@@ -33,7 +33,7 @@ export function ArchiveFilters({
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Channels</span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 select-none">
             {channels.map(ch => (
               <label key={ch.code} title={ch.description} className={clsx("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs cursor-pointer", selectedChannels.includes(ch.code) ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-black" : "")}>
                 <input type="checkbox" className="hidden" checked={selectedChannels.includes(ch.code)} onChange={() => onToggleChannel(ch.code)} />
