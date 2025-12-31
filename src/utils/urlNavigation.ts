@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction } from "react";
-import { type IndexedDictionaryEntry, type IndexedPost } from "../types";
+import { type IndexedDictionaryEntry, type IndexedPost, type SortKey } from "../types";
 
 export type NavigationState = {
   postId?: string;
@@ -76,8 +76,14 @@ export const clearDictionaryURL = (replace = false, keepDictionaryView = true) =
   else window.history.pushState({}, "", next);
 };
 
-export const pushDictionaryURL = (entry: IndexedDictionaryEntry, replace = false) => {
-  const next = buildDictionaryURL(entry);
+export const pushDictionaryURL = (entry: IndexedDictionaryEntry, replace = false, dictionarySort?: "az" | "updated") => {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set("did", entry.index.id);
+  nextUrl.searchParams.set("view", "dictionary");
+  nextUrl.searchParams.delete("id");
+  nextUrl.searchParams.delete("sort");
+  if (dictionarySort) nextUrl.searchParams.set("dsort", dictionarySort);
+  const next = nextUrl.pathname + (nextUrl.searchParams.toString() ? "?" + nextUrl.searchParams.toString() : "");
   const state = { did: entry.index.id, view: "dictionary" };
   if (replace) window.history.replaceState(state, "", next);
   else window.history.pushState(state, "", next);
@@ -92,20 +98,24 @@ export const getDictionaryFromURL = (dictionaryEntries: IndexedDictionaryEntry[]
   };
 };
 
-export const pushArchiveViewState = (replace = false) => {
+export const pushArchiveViewState = (replace = false, archiveSort?: SortKey) => {
   const url = new URL(window.location.href);
   url.searchParams.delete("view");
   url.searchParams.delete("did");
+  url.searchParams.delete("dsort");
+  if (archiveSort) url.searchParams.set("sort", archiveSort);
   const next = url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "");
   const state: NavigationState = { view: "archive" };
   if (replace) window.history.replaceState(state, "", next);
   else window.history.pushState(state, "", next);
 };
 
-export const pushDictionaryViewState = (replace = false) => {
+export const pushDictionaryViewState = (replace = false, dictionarySort?: "az" | "updated") => {
   const url = new URL(window.location.href);
   url.searchParams.set("view", "dictionary");
   url.searchParams.delete("id");
+  url.searchParams.delete("sort");
+  if (dictionarySort) url.searchParams.set("dsort", dictionarySort);
   const next = url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "");
   const state: NavigationState = { view: "dictionary" };
   if (replace) window.history.replaceState(state, "", next);

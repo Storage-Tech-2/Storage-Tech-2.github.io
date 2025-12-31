@@ -197,13 +197,13 @@ export default function App() {
   const switchToArchiveView = (replace = false) => {
     setView('archive')
     setActiveDictionary(null)
-    pushArchiveViewState(replace)
+    pushArchiveViewState(replace, sortKey)
   }
 
   const switchToDictionaryView = (replace = false) => {
     setView('dictionary')
     setActive(null)
-    pushDictionaryViewState(replace)
+    pushDictionaryViewState(replace, dictionarySort)
   }
 
   // Open modal and update URL
@@ -228,8 +228,8 @@ export default function App() {
     setActive(null)
     const loaded = await ensureDictionaryEntryLoaded(entry)
     setActiveDictionary(loaded)
-    if (updateURL) pushDictionaryURL(loaded, replace)
-  }, [ensureDictionaryEntryLoaded])
+    if (updateURL) pushDictionaryURL(loaded, replace, dictionarySort)
+  }, [ensureDictionaryEntryLoaded, dictionarySort])
   function closeDictionaryModal(pushHistory = true) {
     setActiveDictionary(null)
     if (pushHistory) clearDictionaryURL(false, view === 'dictionary')
@@ -320,6 +320,18 @@ export default function App() {
     const sp = new URLSearchParams(window.location.search)
     applyFiltersFromSearch(sp)
   }, [owner, repo, branch, applyFiltersFromSearch])
+
+  useEffect(() => {
+    if (!filtersHydrated) return
+    const sp = new URLSearchParams(window.location.search)
+    if (view === 'dictionary') {
+      const sortParam = sp.get("dsort") === "updated" ? "updated" : "az"
+      setDictionarySort(sortParam)
+    } else {
+      const sortParam = sp.get("sort") as SortKey | null
+      if (sortParam && SORT_KEYS.includes(sortParam)) setSortKey(sortParam)
+    }
+  }, [view, filtersHydrated])
  
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -332,8 +344,13 @@ export default function App() {
       sp.delete("q")
     }
 
-
-    sp.set("sort", sortKey)
+    if (view === 'archive') {
+      sp.set("sort", sortKey)
+      sp.delete("dsort")
+    } else {
+      sp.set("dsort", dictionarySort)
+      sp.delete("sort")
+    }
 
     if (tagMode === 'OR') {
       sp.set("tagMode", tagMode)
@@ -368,7 +385,7 @@ export default function App() {
     if (nextSearch === currentSearch) return
     const next = url.pathname + (nextSearch ? `?${nextSearch}` : "")
     window.history.replaceState(window.history.state ?? {}, "", next)
-  }, [qCommitted, sortKey, tagMode, tagState, selectedChannels, filtersHydrated])
+  }, [qCommitted, sortKey, dictionarySort, tagMode, tagState, selectedChannels, filtersHydrated, view])
 
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
