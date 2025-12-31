@@ -593,6 +593,9 @@ function PostCard({ p, onOpen, ensurePostLoaded, sortKey }: { p: IndexedPost; on
 // ------------------------------
 
 type SortKey = "newest" | "oldest" | "archived" | "archivedOldest" | "az"
+const SORT_KEYS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"]
+const parseListParam = (value: string | null) => value ? value.split(",").map((v) => v.trim()).filter(Boolean) : []
+const serializeListParam = (values: string[]) => values.filter(Boolean).join(",")
 
 export default function App() {
   const [owner, setOwner] = useState(DEFAULT_OWNER)
@@ -613,6 +616,7 @@ export default function App() {
   const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>({})
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [sortKey, setSortKey] = useState<SortKey>("newest")
+  const [filtersHydrated, setFiltersHydrated] = useState(false)
   const [active, setActive] = useState<IndexedPost | null>(null)
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null)
   const [lightbox, setLightbox] = useState<Image | null>(null)
@@ -626,6 +630,30 @@ export default function App() {
     view?: 'archive' | 'dictionary',
     keepView?: boolean,
   }
+
+  const applyFiltersFromSearch = useCallback((sp: URLSearchParams) => {
+    const nextQ = sp.get("q") ?? ""
+    setQ(nextQ)
+
+    const sortParam = sp.get("sort") as SortKey | null
+    if (sortParam && SORT_KEYS.includes(sortParam)) setSortKey(sortParam)
+
+    const modeParam = sp.get("tagMode")
+    setTagMode(modeParam === "OR" ? "OR" : "AND")
+
+    const includeTagsRaw = parseListParam(sp.get("tags"))
+    const excludeTagsRaw = parseListParam(sp.get("xtags"))
+    setTagState(() => {
+      const next: Record<string, -1 | 0 | 1> = {}
+      includeTagsRaw.forEach((name) => { next[name] = 1 })
+      excludeTagsRaw.forEach((name) => { next[name] = -1 })
+      return next
+    })
+
+    const channelsParam = parseListParam(sp.get("channels"))
+    setSelectedChannels(channelsParam)
+    setFiltersHydrated(true)
+  }, [])
 
   // Comments cache keyed by `${channel.path}/${entry.path}`
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
@@ -987,11 +1015,12 @@ export default function App() {
 
   // Handle initial URL and back/forward navigation
   const urlStateApplied = useRef(false)
-  useEffect(() => { urlStateApplied.current = false }, [owner, repo, branch])
+  useEffect(() => { urlStateApplied.current = false; setFiltersHydrated(false) }, [owner, repo, branch])
 
   useEffect(() => {
     const applyURLState = async (replace = false, navState?: NavigationState | null) => {
       const sp = new URLSearchParams(window.location.search)
+      applyFiltersFromSearch(sp)
       const postId = navState?.postId ?? sp.get('id') ?? undefined
       const didParam = navState?.did ?? sp.get('did') ?? undefined
       const keepView = navState?.keepView ?? false
@@ -1030,7 +1059,61 @@ export default function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
     // We want to rerun when the set of posts changes or after initial load
-  }, [posts.length, dictionaryEntries.length])
+  }, [posts.length, dictionaryEntries.length, applyFiltersFromSearch])
+
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    applyFiltersFromSearch(sp)
+  }, [owner, repo, branch, applyFiltersFromSearch])
+ 
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const sp = url.searchParams
+    if (!filtersHydrated) return
+
+    if (q.trim()) {
+      sp.set("q", q)
+    } else {
+      sp.delete("q")
+    }
+
+
+    sp.set("sort", sortKey)
+
+    if (tagMode === 'OR') {
+      sp.set("tagMode", tagMode)
+    } else {
+      sp.delete("tagMode")
+    }
+
+    const includeTagsRaw = Object.entries(tagState).filter(([, v]) => v === 1).map(([k]) => k).sort()
+    const excludeTagsRaw = Object.entries(tagState).filter(([, v]) => v === -1).map(([k]) => k).sort()
+    const includeSerialized = serializeListParam(includeTagsRaw)
+    const excludeSerialized = serializeListParam(excludeTagsRaw)
+    if (includeSerialized) {
+      sp.set("tags", includeSerialized)
+    } else {
+      sp.delete("tags")
+    }
+    if (excludeSerialized) {
+      sp.set("xtags", excludeSerialized)
+    } else {
+      sp.delete("xtags")
+    }
+
+    const channelsSerialized = serializeListParam([...selectedChannels].sort())
+    if (channelsSerialized) {
+      sp.set("channels", channelsSerialized)
+    } else {
+      sp.delete("channels")
+    }
+
+    const nextSearch = sp.toString()
+    const currentSearch = window.location.search.replace(/^\?/, "")
+    if (nextSearch === currentSearch) return
+    const next = url.pathname + (nextSearch ? `?${nextSearch}` : "")
+    window.history.replaceState(window.history.state, "", next)
+  }, [q, sortKey, tagMode, tagState, selectedChannels, filtersHydrated])
 
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
@@ -1201,7 +1284,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-            </div>
+              </div>
               <button onClick={() => closeModal()} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Close</button>
             </header>
             <div className="p-4">
