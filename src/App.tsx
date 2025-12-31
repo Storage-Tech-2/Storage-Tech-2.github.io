@@ -55,6 +55,7 @@ export default function App() {
 
   // UI state
   const [q, setQ] = useState("")
+  const [qCommitted, setQCommitted] = useState("")
   const [tagMode, setTagMode] = useState<'OR' | 'AND'>('AND')
   const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>({})
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
@@ -71,12 +72,18 @@ export default function App() {
   const applyFiltersFromSearch = useCallback((sp: URLSearchParams) => {
     const next = extractFiltersFromSearch(sp, SORT_KEYS)
     setQ(next.q)
+    setQCommitted(next.q)
     if (next.sortKey) setSortKey(next.sortKey)
     setTagMode(next.tagMode)
     setTagState(next.tagState)
     setSelectedChannels(next.selectedChannels)
     setFiltersHydrated(true)
   }, [])
+
+  // Commit the current search term to the URL when the user finishes typing
+  const commitSearch = useCallback(() => {
+    setQCommitted(q)
+  }, [q])
 
   // Comments cache keyed by `${channel.path}/${entry.path}`
   const [commentsByKey, setCommentsByKey] = useState<Record<string, ArchiveComment[] | null>>({})
@@ -318,8 +325,8 @@ export default function App() {
     const sp = url.searchParams
     if (!filtersHydrated) return
 
-    if (q.trim()) {
-      sp.set("q", q)
+    if (qCommitted.trim()) {
+      sp.set("q", qCommitted)
     } else {
       sp.delete("q")
     }
@@ -359,8 +366,8 @@ export default function App() {
     const currentSearch = window.location.search.replace(/^\?/, "")
     if (nextSearch === currentSearch) return
     const next = url.pathname + (nextSearch ? `?${nextSearch}` : "")
-    window.history.replaceState(window.history.state, "", next)
-  }, [q, sortKey, tagMode, tagState, selectedChannels, filtersHydrated])
+    window.history.replaceState(window.history.state ?? {}, "", next)
+  }, [qCommitted, sortKey, tagMode, tagState, selectedChannels, filtersHydrated])
 
   const activeUpdatedAt = active ? getEntryUpdatedAt(active.entry) : undefined
   const activeArchivedAt = active ? getEntryArchivedAt(active.entry) : undefined
@@ -401,6 +408,7 @@ export default function App() {
         logoSrc={logoimg}
         q={q}
         onSearchChange={setQ}
+        onSearchCommit={commitSearch}
         sortKey={sortKey}
         onSortChange={(val) => setSortKey(val)}
         dictionaryQuery={dictionaryQuery}

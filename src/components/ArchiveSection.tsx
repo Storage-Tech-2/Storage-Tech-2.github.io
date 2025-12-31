@@ -1,4 +1,5 @@
-import React from "react"
+import React, { useCallback, useMemo } from "react"
+import { AutoSizer, List, WindowScroller } from "react-virtualized"
 import { type ChannelRef, type Tag, type IndexedPost, type SortKey } from "../types"
 import { ArchiveFilters } from "./ArchiveFilters"
 import { PostCard } from "./ArchiveUI"
@@ -64,12 +65,128 @@ export function ArchiveSection({
 
       <main className="mx-auto max-w-7xl px-4 pb-12">
         <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {posts.length} posts</div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((p) => (
-            <PostCard key={`${p.channel.path}/${p.entry.path}`} p={p} onOpen={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
-          ))}
-        </div>
+        <VirtualizedPostGrid filtered={filtered} openCard={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
       </main>
     </>
+  )
+}
+
+const GRID_GAP = 16
+const CARD_HEIGHT = 350
+const SCROLLBAR_FUDGE = 20
+const ROW_HEIGHT = CARD_HEIGHT + GRID_GAP
+
+function getColumnCount(width: number) {
+  const effectiveWidth = width + SCROLLBAR_FUDGE
+  // Adjusted breakpoints to account for container padding vs viewport width
+  if (effectiveWidth >= 1240) return 4
+  if (effectiveWidth >= 980) return 3
+  if (effectiveWidth >= 640) return 2
+  return 1
+}
+
+function VirtualizedPostGrid({
+  filtered,
+  openCard,
+  ensurePostLoaded,
+  sortKey,
+}: Pick<Props, "filtered" | "openCard" | "ensurePostLoaded" | "sortKey">) {
+  if (!filtered.length) return null
+
+  return (
+    <WindowScroller>
+      {({ height, isScrolling, onChildScroll, registerChild, scrollTop }) => (
+        <AutoSizer disableHeight>
+          {({ width }) => (
+            <VirtualizedGridContent
+              filtered={filtered}
+              openCard={openCard}
+              ensurePostLoaded={ensurePostLoaded}
+              sortKey={sortKey}
+              width={width}
+              height={height}
+              isScrolling={isScrolling}
+              onChildScroll={onChildScroll}
+              registerChild={registerChild}
+              scrollTop={scrollTop}
+            />
+          )}
+        </AutoSizer>
+      )}
+    </WindowScroller>
+  )
+}
+
+type GridContentProps = Pick<Props, "filtered" | "openCard" | "ensurePostLoaded" | "sortKey"> & {
+  width: number
+  height: number
+  isScrolling: boolean
+  onChildScroll: (params: { clientHeight: number; scrollHeight: number; scrollTop: number }) => void
+  registerChild: (el: Element | null) => void
+  scrollTop: number
+}
+
+function VirtualizedGridContent({
+  filtered,
+  openCard,
+  ensurePostLoaded,
+  sortKey,
+  width,
+  height,
+  isScrolling,
+  onChildScroll,
+  registerChild,
+  scrollTop,
+}: GridContentProps) {
+  const columnCount = useMemo(() => getColumnCount(width), [width])
+  const rowCount = useMemo(() => Math.ceil(filtered.length / columnCount), [filtered.length, columnCount])
+
+  const rowRenderer = useCallback(
+    ({ index, key, style }: { index: number; key: string; style: React.CSSProperties }) => {
+      const start = index * columnCount
+      const rowItems = filtered.slice(start, start + columnCount)
+      return (
+        <div key={key} style={{ ...style, paddingBottom: GRID_GAP }}>
+          <div
+            style={{
+              display: "grid",
+              gap: GRID_GAP,
+              gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+              alignItems: "stretch",
+            }}
+          >
+            {rowItems.map((p) => (
+              <div key={`${p.channel.path}/${p.entry.path}`} style={{ height: CARD_HEIGHT }}>
+                <PostCard
+                  p={p}
+                  onOpen={openCard}
+                  ensurePostLoaded={ensurePostLoaded}
+                  sortKey={sortKey}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    },
+    [columnCount, ensurePostLoaded, filtered, openCard, sortKey],
+  )
+
+  return (
+    <div ref={registerChild}>
+      <List
+        autoHeight
+        height={height}
+        width={width}
+        rowCount={rowCount}
+        rowHeight={ROW_HEIGHT}
+        rowRenderer={rowRenderer}
+        overscanRowCount={4}
+        isScrolling={isScrolling}
+        onScroll={onChildScroll}
+        scrollTop={scrollTop}
+        style={{ outline: "none" }}
+      />
+    </div>
   )
 }

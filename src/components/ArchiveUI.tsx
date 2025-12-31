@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react"
+import React, { useEffect, useMemo, useRef } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry, type IndexedPost, type SortKey } from "../types"
@@ -274,12 +274,22 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
   )
 }
 
-export function PostCard({ p, onOpen, ensurePostLoaded, sortKey }: { p: IndexedPost; onOpen: (p: IndexedPost) => void; ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost>; sortKey: SortKey }) {
+export function PostCard({ p, onOpen, ensurePostLoaded, sortKey, onHeightChange }: { p: IndexedPost; onOpen: (p: IndexedPost) => void; ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost>; sortKey: SortKey; onHeightChange?: () => void }) {
   const [ref, inView] = useInView<HTMLElement>({ rootMargin: "400px 0px", threshold: 0.01 })
+  const heightChangeRef = useRef(onHeightChange)
+
+  useEffect(() => {
+    heightChangeRef.current = onHeightChange
+  }, [onHeightChange])
+
   useEffect(() => {
     if (inView) ensurePostLoaded(p).catch(() => { })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView])
+
+  useEffect(() => {
+    heightChangeRef.current?.()
+  }, [p.data])
 
   const img0 = p.data?.images?.[0]
   const src = img0 ? (img0.path ? assetURL(p.channel.path, p.entry.path, img0.path) : img0.url) : undefined
@@ -294,23 +304,27 @@ export function PostCard({ p, onOpen, ensurePostLoaded, sortKey }: { p: IndexedP
     : undefined
 
   return (
-    <article ref={ref} className="group rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-      <button onClick={() => onOpen(p)} className="block w-full text-left">
+    <article ref={ref} className="group flex h-full flex-col rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+      <button onClick={() => onOpen(p)} className="flex h-full w-full flex-col text-left">
         <div className="aspect-video w-full overflow-hidden rounded-t-2xl bg-black/5 dark:bg-white/5">
           {src ? (
-            <img src={src} alt={img0?.description || img0?.name || "thumbnail"} className="h-full w-full object-contain" />
+            <img src={src} alt={img0?.description || img0?.name || "thumbnail"} className="h-full w-full object-contain" onLoad={() => heightChangeRef.current?.()} />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-gray-400">
               {p.data ? "No image" : "Loading..."}
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 p-3">
-          <div className="flex items-center justify-between">
+        <div className="flex flex-1 flex-col gap-2 p-3">
+          <div className="flex items-start justify-between gap-2">
             <h3 className="line-clamp-2 text-sm font-semibold">{p.entry.name}</h3>
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{p.entry.code}</span>
           </div>
-          {authorsLine && <div className="text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div>}
+          {authorsLine ? (
+            <div className="text-xs text-gray-600 dark:text-gray-300 min-h-[16px]">{authorsLine}</div>
+          ) : (
+            <div className="min-h-[16px]" />
+          )}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
             <ChannelBadge ch={p.channel} />
             <div className="flex flex-col items-end text-right">
@@ -318,10 +332,12 @@ export function PostCard({ p, onOpen, ensurePostLoaded, sortKey }: { p: IndexedP
             </div>
           </div>
           {(p.entry.tags && p.entry.tags.length) ? (
-            <div className="mt-1 flex flex-wrap gap-1">
+            <div className="mt-1 flex flex-wrap gap-1 min-h-[28px]">
               {sortTagsForDisplay(p.entry.tags).map(name => <TagPill key={name} name={name} />)}
             </div>
-          ) : null}
+          ) : (
+            <div className="mt-1 min-h-[28px]" />
+          )}
         </div>
       </button>
     </article>
