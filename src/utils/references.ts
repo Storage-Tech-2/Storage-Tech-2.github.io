@@ -1,4 +1,5 @@
 import { ReferenceType, type ArchivedPostReference, type Reference } from "../types"
+import { getAuthorName } from "./authors";
 
 export type RegexMatch = {
   pattern: string;
@@ -240,7 +241,7 @@ export function transformOutputWithReferences(
         resultParts.push(text.slice(hyperlink.start, hyperlink.end))
         currentIndex = hyperlink.end
       } else {
-        const textContent = ref.user.displayName || ref.user.username || "Unknown User"
+        const textContent = getAuthorName(ref.user) || "Unknown User"
         resultParts.push(`[@${textContent}](# "ID: ${ref.user.id}")`)
         currentIndex = match.end
       }

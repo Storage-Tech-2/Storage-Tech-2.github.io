@@ -1,5 +1,9 @@
 import { AuthorType, type Author } from "../types"
 
-export function getAuthorName(a: Author) {
-  return a.displayName || a.username || a.reason || (a.type === AuthorType.DiscordDeleted ? "Deleted" : "Unknown")
+export function getAuthorName(author: Author): string {
+    if (author.type === AuthorType.DiscordInGuild || author.type === AuthorType.DiscordLeftGuild) {
+        return author.displayName;
+    } else {
+        return author.username;
+    }
 }
