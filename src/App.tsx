@@ -518,7 +518,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-gray-500 dark:text-gray-400">
-        Built for the Storage Tech 2 archive. Copyright © 2025 All rights reserved.
+        Built for the Storage Tech 2 archive. See the code at <a href="https://github.com/Storage-Tech-2/Storage-Tech-2.github.io" className="underline">github.com/Storage-Tech-2/Storage-Tech-2.github.io</a>.
       </footer>
     </div>
   )

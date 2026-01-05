@@ -41,7 +41,7 @@ export function HeaderBar({
 }: Props) {
   return (
     <header className="sm:sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
-      <div className="mx-auto max-w-7xl px-4 py-3">
+      <div className="mx-auto w-full px-2 sm:px-4 lg:px-6 py-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 pb-1">
           <div className="flex items-center gap-3 flex-shrink-0">
             <img src={logoSrc} alt="Logo" className="h-10 w-10" />

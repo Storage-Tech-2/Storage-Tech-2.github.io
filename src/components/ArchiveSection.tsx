@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo } from "react"
 import { AutoSizer, List, WindowScroller } from "react-virtualized"
 import { type ChannelRef, type Tag, type IndexedPost, type SortKey } from "../types"
+import { normalize } from "../utils"
 import { ArchiveFilters } from "./ArchiveFilters"
-import { PostCard } from "./ArchiveUI"
+import { PostCard, TagChip } from "./ArchiveUI"
 
 type Props = {
   channels: ChannelRef[]
@@ -44,30 +45,46 @@ export function ArchiveSection({
   sortKey,
 }: Props) {
   return (
-    <>
-      <ArchiveFilters
-        channels={channels}
-        selectedChannels={selectedChannels}
-        channelCounts={channelCounts}
-        onToggleChannel={toggleChannel}
-        tagMode={tagMode}
-        onTagModeChange={setTagMode}
-        allTags={allTags}
-        tagState={tagState}
-        onToggleTag={toggleTag}
-        tagCounts={tagCounts}
-      />
+    <div className="mx-auto w-full px-2 sm:px-4 lg:px-6">
+      <div className="flex flex-col gap-6 pb-12 pt-4 lg:flex-row lg:items-start lg:gap-8">
+        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-2 lg:max-h-[calc(100vh-120px)] lg:overflow-auto pr-1">
+          <ArchiveFilters
+            channels={channels}
+            selectedChannels={selectedChannels}
+            channelCounts={channelCounts}
+            onToggleChannel={toggleChannel}
+          />
+        </aside>
 
-      <div className="mx-auto max-w-7xl px-4">
-        {error && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
-        {loading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading repository metadata...</div>}
+        <div className="flex-1">
+          {error && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+          {loading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading repository metadata...</div>}
+
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium">Tags</span>
+            <div className="inline-flex items-center gap-2 text-xs">
+              <label className="inline-flex items-center gap-1">
+                <input type="radio" name="tagMode" value="AND" checked={tagMode === "AND"} onChange={() => setTagMode("AND")} />
+                <span>Match all</span>
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input type="radio" name="tagMode" value="OR" checked={tagMode === "OR"} onChange={() => setTagMode("OR")} />
+                <span>Match any</span>
+              </label>
+              <span className="text-gray-500">Tip: click tag twice to exclude</span>
+            </div>
+          </div>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {allTags.map(tag => (
+              <TagChip key={tag.id} tag={tag} state={tagState[tag.name] || 0} count={tagCounts[normalize(tag.name)] || 0} onToggle={() => toggleTag(tag.name)} />
+            ))}
+          </div>
+
+          <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {posts.length} posts</div>
+          <VirtualizedPostGrid filtered={filtered} openCard={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
+        </div>
       </div>
-
-      <main className="mx-auto max-w-7xl px-4 pb-12">
-        <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {posts.length} posts</div>
-        <VirtualizedPostGrid filtered={filtered} openCard={openCard} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
-      </main>
-    </>
+    </div>
   )
 }
 
