@@ -23,6 +23,7 @@ type Props = {
   openCard: (p: IndexedPost, replace?: boolean, keepView?: boolean) => void
   ensurePostLoaded: (p: IndexedPost) => Promise<IndexedPost>
   sortKey: SortKey
+  resetFilters: () => void
 }
 
 export function ArchiveSection({
@@ -43,6 +44,7 @@ export function ArchiveSection({
   openCard,
   ensurePostLoaded,
   sortKey,
+  resetFilters,
 }: Props) {
   return (
     <div className="mx-auto w-full px-2 sm:px-4 lg:px-6">
@@ -53,6 +55,7 @@ export function ArchiveSection({
             selectedChannels={selectedChannels}
             channelCounts={channelCounts}
             onToggleChannel={toggleChannel}
+            onResetFilters={resetFilters}
           />
         </aside>
 

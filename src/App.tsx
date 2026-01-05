@@ -119,6 +119,12 @@ export default function App() {
     })
   }
 
+  const resetFilters = useCallback(() => {
+    setSelectedChannels([])
+    setTagState({})
+    setTagMode("AND")
+  }, [])
+
   // Compute tag universe from channel availableTags + entry tags + any loaded post tags
   const allTags = useMemo(() => {
     const channelPool = selectedChannels.length
@@ -460,6 +466,7 @@ export default function App() {
           openCard={openCard}
           ensurePostLoaded={ensurePostLoaded}
           sortKey={sortKey}
+          resetFilters={resetFilters}
         />
       ) : (
         <DictionarySection

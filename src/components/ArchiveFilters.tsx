@@ -7,6 +7,7 @@ type Props = {
   selectedChannels: string[]
   channelCounts: Record<string, number>
   onToggleChannel: (code: string) => void
+  onResetFilters: () => void
 }
 
 export function ArchiveFilters({
@@ -14,6 +15,7 @@ export function ArchiveFilters({
   selectedChannels,
   channelCounts,
   onToggleChannel,
+  onResetFilters,
 }: Props) {
   const groupedChannels = useMemo(() => {
     const order: string[] = []
@@ -48,7 +50,13 @@ export function ArchiveFilters({
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <span className="text-sm font-medium">Channels</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Collapsible by category</span>
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+          >
+            Reset filters
+          </button>
         </div>
           <div className="flex flex-col gap-3">
             {groupedChannels.map(group => {
