@@ -77,7 +77,13 @@ export function ArchiveFilters({
                   <summary className="flex cursor-pointer flex-col gap-1 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
                     <div className="flex items-center justify-between gap-2">
                       <span className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 transition-transform duration-150 group-open:rotate-90">▶</span>
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 10 10"
+                          className="h-3 w-3 text-gray-500 transition-transform duration-150 group-open:rotate-90"
+                        >
+                          <path d="M3 1l4 4-4 4V1z" fill="currentColor" />
+                        </svg>
                         <span className="uppercase tracking-wide text-[11px]">{group.category}</span>
                       </span>
                       <span className="text-[10px] text-gray-500 dark:text-gray-400">Total {total}</span>
