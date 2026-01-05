@@ -48,7 +48,7 @@ export function ArchiveFilters({
   return (
     <div className="w-full space-y-3 pb-3">
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-[5px]">
           <span className="text-sm font-medium">Channels</span>
           <button
             type="button"
