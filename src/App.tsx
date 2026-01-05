@@ -69,6 +69,7 @@ export default function App() {
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az")
   const [dictionaryDefinitions, setDictionaryDefinitions] = useState<Record<string, string>>({})
   const dictionaryFetchInFlight = useRef<Set<string>>(new Set())
+  const lastArchiveFilterSignature = useRef<string>("")
 
   const applyFiltersFromSearch = useCallback((sp: URLSearchParams) => {
     const next = extractFiltersFromSearch(sp, SORT_KEYS)
@@ -153,6 +154,20 @@ export default function App() {
     () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, sortKey, tagMode }),
     [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode],
   )
+
+  const archiveFilterSignature = useMemo(() => {
+    const sortedTagState = Object.keys(tagState).sort().reduce((acc, key) => {
+      acc[key] = tagState[key]
+      return acc
+    }, {} as Record<string, -1 | 0 | 1>)
+    return JSON.stringify({
+      q,
+      tagMode,
+      tagState: sortedTagState,
+      selectedChannels: [...selectedChannels].sort(),
+      sortKey,
+    })
+  }, [q, tagMode, tagState, selectedChannels, sortKey])
 
   const filteredDictionary = useMemo(
     () => filterDictionaryEntries(dictionaryEntries, dictionaryQuery, dictionarySort),
@@ -330,6 +345,18 @@ export default function App() {
     const sp = new URLSearchParams(window.location.search)
     applyFiltersFromSearch(sp)
   }, [owner, repo, branch, applyFiltersFromSearch])
+
+  useEffect(() => {
+    if (view !== 'archive') return
+    if (!lastArchiveFilterSignature.current) {
+      lastArchiveFilterSignature.current = archiveFilterSignature
+      return
+    }
+    if (lastArchiveFilterSignature.current !== archiveFilterSignature) {
+      lastArchiveFilterSignature.current = archiveFilterSignature
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  }, [archiveFilterSignature, view])
 
   useEffect(() => {
     if (!filtersHydrated) return
