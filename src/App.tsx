@@ -354,7 +354,7 @@ export default function App() {
     }
     if (lastArchiveFilterSignature.current !== archiveFilterSignature) {
       lastArchiveFilterSignature.current = archiveFilterSignature
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      window.scrollTo({ top: 0, behavior: "instant" })
     }
   }, [archiveFilterSignature, view])
 
