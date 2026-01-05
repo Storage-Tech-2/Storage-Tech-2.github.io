@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react"
+import React, { useCallback, useEffect, useMemo, useRef } from "react"
 import { AutoSizer, List, WindowScroller } from "react-virtualized"
 import { type ChannelRef, type Tag, type IndexedPost, type SortKey } from "../types"
 import { normalize } from "../utils"
@@ -46,10 +46,20 @@ export function ArchiveSection({
   sortKey,
   resetFilters,
 }: Props) {
+  const sidebarShellRef = useRef<HTMLElement | null>(null)
+
+  // Ensure the shell itself never retains a scroll offset (parent has overflow hidden)
+  useEffect(() => {
+    const el = sidebarShellRef.current
+    if (el && el.scrollTop !== 0) {
+      el.scrollTop = 0
+    }
+  }, [selectedChannels, tagState, tagMode, filtered.length])
+
   return (
     <div className="mx-auto w-full px-2 sm:px-4 lg:px-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
-        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
+        <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
           <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
             <ArchiveFilters
               channels={channels}
