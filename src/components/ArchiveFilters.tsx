@@ -1,4 +1,4 @@
-import React, { useMemo } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { type ChannelRef } from "../types"
 import { clsx } from "../utils"
 
@@ -29,6 +29,20 @@ export function ArchiveFilters({
     return order.map(category => ({ category, channels: groups[category] }))
   }, [channels])
 
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev }
+      groupedChannels.forEach(g => {
+        if (next[g.category] === undefined) {
+          next[g.category] = g.channels.some(ch => selectedChannels.includes(ch.code))
+        }
+      })
+      return next
+    })
+  }, [groupedChannels, selectedChannels])
+
   return (
     <div className="w-full space-y-3 pb-3">
       <div className="flex flex-col gap-2">
@@ -36,27 +50,40 @@ export function ArchiveFilters({
           <span className="text-sm font-medium">Channels</span>
           <span className="text-xs text-gray-500 dark:text-gray-400">Collapsible by category</span>
         </div>
-        <div className="flex flex-col gap-3">
-          {groupedChannels.map(group => {
-            const total = group.channels.reduce((sum, ch) => sum + (channelCounts[ch.code] || 0), 0)
-            const isOpen = group.channels.some(ch => selectedChannels.includes(ch.code))
-            return (
-              <details
-                key={group.category}
-                className="group rounded-lg border border-gray-200 bg-white/70 shadow-sm dark:border-gray-700 dark:bg-gray-900/60"
-                defaultOpen={isOpen}
-              >
-                <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                  <span className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-500 transition-transform duration-150 group-open:rotate-90">▶</span>
-                    <span className="uppercase tracking-wide text-[11px]">{group.category}</span>
-                  </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Total {total}</span>
-                </summary>
-                <div className="border-t border-gray-200 px-3 py-2 dark:border-gray-700">
-                  <div className="flex flex-col gap-2 select-none">
-                    {group.channels.map(ch => (
-                      (() => {
+          <div className="flex flex-col gap-3">
+            {groupedChannels.map(group => {
+              const total = group.channels.reduce((sum, ch) => sum + (channelCounts[ch.code] || 0), 0)
+              const selectedInGroup = group.channels.filter(ch => selectedChannels.includes(ch.code))
+              const defaultOpen = group.channels.some(ch => selectedChannels.includes(ch.code))
+              const isOpen = openGroups[group.category] ?? defaultOpen
+              return (
+                <details
+                  key={group.category}
+                  className="group rounded-lg border border-gray-200 bg-white/70 shadow-sm select-none dark:border-gray-700 dark:bg-gray-900/60"
+                  open={isOpen}
+                  onToggle={(e) => {
+                    const target = e.currentTarget as HTMLDetailsElement
+                    setOpenGroups((prev) => ({ ...prev, [group.category]: target.open }))
+                  }}
+                >
+                  <summary className="flex cursor-pointer flex-col gap-1 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 transition-transform duration-150 group-open:rotate-90">▶</span>
+                        <span className="uppercase tracking-wide text-[11px]">{group.category}</span>
+                      </span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Total {total}</span>
+                    </div>
+                    {!isOpen && selectedInGroup.length > 0 && (
+                      <div className="text-[11px] font-normal text-gray-600 dark:text-gray-300">
+                        Selected: {selectedInGroup.map(ch => ch.name || ch.code).join(", ")}
+                      </div>
+                    )}
+                  </summary>
+                  <div className="border-t border-gray-200 px-3 py-2 dark:border-gray-700">
+                    <div className="flex flex-col gap-2 select-none">
+                      {group.channels.map(ch => (
+                        (() => {
                         const selected = selectedChannels.includes(ch.code)
                         return (
                         <label
