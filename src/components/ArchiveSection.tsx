@@ -48,18 +48,20 @@ export function ArchiveSection({
 }: Props) {
   return (
     <div className="mx-auto w-full px-2 sm:px-4 lg:px-6">
-      <div className="flex flex-col gap-6 pb-12 pt-4 lg:flex-row lg:items-start lg:gap-8">
-        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-120px)] lg:overflow-auto pr-1 sidebar-scroll">
-          <ArchiveFilters
-            channels={channels}
-            selectedChannels={selectedChannels}
-            channelCounts={channelCounts}
-            onToggleChannel={toggleChannel}
-            onResetFilters={resetFilters}
-          />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-80px)] pr-1 sidebar-scroll">
+          <div className="sidebar-scroll-inner">
+            <ArchiveFilters
+              channels={channels}
+              selectedChannels={selectedChannels}
+              channelCounts={channelCounts}
+              onToggleChannel={toggleChannel}
+              onResetFilters={resetFilters}
+            />
+          </div>
         </aside>
 
-        <div className="flex-1">
+        <div className="flex-1 mt-2">
           {error && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
           {loading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading repository metadata...</div>}
 
