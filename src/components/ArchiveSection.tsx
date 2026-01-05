@@ -49,7 +49,7 @@ export function ArchiveSection({
   return (
     <div className="mx-auto w-full px-2 sm:px-4 lg:px-6">
       <div className="flex flex-col gap-6 pb-12 pt-4 lg:flex-row lg:items-start lg:gap-8">
-        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-120px)] lg:overflow-auto pr-1">
+        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-120px)] lg:overflow-auto pr-1 sidebar-scroll">
           <ArchiveFilters
             channels={channels}
             selectedChannels={selectedChannels}
