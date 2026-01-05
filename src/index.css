@@ -10,13 +10,13 @@
 .sidebar-scroll-inner {
   width: 100%;
   height: 100%;
-  max-height: inherit;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 17px;
   box-sizing: content-box;
   scrollbar-width: thin;
   scrollbar-color: #9ca3af transparent;
+  scrollbar-gutter: stable both-edges;
 }
 
 .dark .sidebar-scroll-inner {

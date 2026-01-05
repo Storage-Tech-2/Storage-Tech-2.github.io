@@ -48,9 +48,9 @@ export function ArchiveSection({
 }: Props) {
   return (
     <div className="mx-auto w-full px-2 sm:px-4 lg:px-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-80px)] pr-1 sidebar-scroll">
-          <div className="sidebar-scroll-inner">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
+        <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
+          <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
             <ArchiveFilters
               channels={channels}
               selectedChannels={selectedChannels}
