@@ -61,7 +61,7 @@ export function ArchiveSection({
           </div>
         </aside>
 
-        <div className="flex-1 mt-2">
+        <div className="flex-1 lg:pt-1.5">
           {error && <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
           {loading && <div className="mb-3 rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Loading repository metadata...</div>}
 
