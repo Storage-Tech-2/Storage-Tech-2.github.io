@@ -1,4 +1,4 @@
-import { AuthorType, type Author } from "../types"
+import { AuthorType, type AllAuthorPropertiesAccessor, type Author } from "../types"
 
 export function getAuthorName(author: Author): string {
     if (author.type === AuthorType.DiscordInGuild || author.type === AuthorType.DiscordLeftGuild) {
@@ -6,4 +6,8 @@ export function getAuthorName(author: Author): string {
     } else {
         return author.username;
     }
+}
+
+export function getAuthorIconURL(author: Author): string | undefined {
+    return (author as AllAuthorPropertiesAccessor).iconURL;
 }

@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry, type IndexedPost, type SortKey } from "../types"
 import { useInView } from "../hooks/useInView"
-import { assetURL, clsx, formatDate, getAuthorName, getYouTubeEmbedURL, postToMarkdown, timeAgo, transformOutputWithReferences } from "../utils"
+import { assetURL, clsx, formatDate, getAuthorIconURL, getAuthorName, getYouTubeEmbedURL, postToMarkdown, timeAgo, transformOutputWithReferences } from "../utils"
 import { type Attachment, type Author, type Image, type Reference, type StyleInfo, type SubmissionRecords, type Tag, type ArchivedPostReference } from "../types"
 import { getSpecialTagMeta, sortTagsForDisplay } from "../utils/tagDisplay"
 
@@ -73,9 +73,11 @@ export function EndorsersLine({ endorsers }: { endorsers: Author[] }) {
 
 export function AuthorInline({ a }: { a: Author }) {
   const name = getAuthorName(a)
+  const iconURL = getAuthorIconURL(a);
+
   return (
     <span className="inline-flex items-center gap-1 text-sm text-gray-800 dark:text-gray-100">
-      {a.iconURL ? <img src={a.iconURL} alt="" className="h-4 w-4 rounded-full" /> : <span className="h-4 w-4 rounded-full bg-gray-300 inline-block" />}
+      {iconURL ? <img src={iconURL} alt="" className="h-4 w-4 rounded-full" /> : <span className="h-4 w-4 rounded-full bg-gray-300 inline-block" />}
       {a.url ? <a href={a.url} target="_blank" rel="noreferrer" className="hover:underline">{name}</a> : name}
     </span>
   )
