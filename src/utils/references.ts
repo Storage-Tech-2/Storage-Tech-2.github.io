@@ -48,52 +48,79 @@ export function findRegexMatches(text: string, patterns: RegExp[]): RegexMatch[]
 }
 
 function shouldIncludeMatch(text: string, term: string, start: number, end: number): boolean {
-  const isTermAllCaps = term.toUpperCase() === term
-  const matchedText = text.slice(start, end)
 
-  if (isTermAllCaps && matchedText !== term) return false
 
-  const before = start > 0 ? text[start - 1] : undefined
-  const after = end < text.length ? text[end] : undefined
+    const isTermAllCaps = term.toUpperCase() === term;
+    const matchedText = text.slice(start, end);
 
-  if (/^[0-9]/.test(term)) {
-    if (before && (/[0-9.]/.test(before))) return false
-  }
-
-  if (/[0-9x.]$/.test(term)) {
-    if (after && /[0-9]/.test(after)) return false
-  }
-
-  const isWordChar = (ch: string | undefined): boolean => ch !== undefined && /[A-Za-z]/.test(ch)
-
-  const startSatisfied = isWordChar(before) === false
-  let endingSatisfied = isWordChar(after) === false
-
-  if (startSatisfied && endingSatisfied) return true
-
-  const hasNoNumbers = !/[0-9]/.test(term)
-
-  if (hasNoNumbers && startSatisfied && !endingSatisfied) {
-    const getSliceAtEnd = (len: number): string => text.slice(end, Math.min(end + len, text.length))
-    const getCharAt = (pos: number): string | undefined => {
-      pos += end
-      return pos < text.length ? text[pos] : undefined
+    if (isTermAllCaps && matchedText !== term) { // case-sensitive match required
+        return false;
     }
 
-    if (getCharAt(0) === "s" && !isWordChar(getCharAt(1))) {
-      endingSatisfied = true
-    } else if (getSliceAtEnd(2) === "ed" && !isWordChar(getCharAt(2))) {
-      endingSatisfied = true
-    } else if (getSliceAtEnd(3) === "ing" && !isWordChar(getCharAt(3))) {
-      endingSatisfied = true
-    } else if (getSliceAtEnd(2) === "er" && !isWordChar(getCharAt(2))) {
-      endingSatisfied = true
+
+    const before = start > 0 ? text[start - 1] : undefined;
+    const after = end < text.length ? text[end] : undefined;
+
+    // check if term starts with leading number
+    if (/^[0-9]/.test(term)) {
+
+        // prev char must not be a number or decimal point
+        if (before && (/[0-9.]/.test(before))) {
+            return false;
+        }
     }
 
-    if (endingSatisfied) return true
-  }
+    // check if term ends with trailing number
+    if (/[0-9x.]$/.test(term)) {
+        // next char must not be a number
+        if (after && /[0-9]/.test(after)) {
+            return false;
+        }
+    }
 
-  return false
+
+    const isWordChar = (ch: string | undefined): boolean => {
+        return ch !== undefined && /[A-Za-z]/.test(ch);
+    }
+
+    const startSatisfied = isWordChar(before) === false;
+    let endingSatisfied = isWordChar(after) === false;
+
+    if (startSatisfied && endingSatisfied) {
+        return true;
+    }
+
+    const lastWord = term.split(" ").pop() || "";
+    const hasNoNumbers = !/[0-9]/.test(lastWord);
+
+    if (hasNoNumbers && startSatisfied && !endingSatisfied) { // just some words
+        // check if next character is possessive
+        const getSliceAtEnd = (len: number): string => {
+            return text.slice(end, Math.min(end + len, text.length));
+        }
+        const getCharAt = (pos: number): string | undefined => {
+            pos += end;
+            return pos < text.length ? text[pos] : undefined;
+        }
+
+        if (getCharAt(0) === "s" && !isWordChar(getCharAt(1))) {
+            endingSatisfied = true;
+        } else if (getSliceAtEnd(2) === "ed" && !isWordChar(getCharAt(2))) {
+            endingSatisfied = true;
+        } else if (getSliceAtEnd(3) === "ing" && !isWordChar(getCharAt(3))) {
+            endingSatisfied = true;
+        } else if (getSliceAtEnd(2) === "er" && !isWordChar(getCharAt(2))) {
+            endingSatisfied = true;
+        } else if (getSliceAtEnd(3) === "est" && !isWordChar(getCharAt(3))) {
+            endingSatisfied = true;
+        }
+
+        if (endingSatisfied) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 export function findMatchesWithinText(text: string, references: Reference[]): {
