@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Image, type ArchiveComment, type StyleInfo, type Reference, ReferenceType, type ArchivedPostReference, type Tag } from "./types";
 import { DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry, type IndexedPost, type SortKey } from "./types";
-import logoimg from "./assets/logo.png";
+import { siteConfig } from "./siteConfig";
 import { useArchive, loadCommentsData } from "./hooks/useArchiveData";
 import { useDictionary } from "./hooks/useDictionaryData";
 import { HeaderBar } from "./components/HeaderBar";
@@ -269,6 +269,8 @@ export default function App() {
     openCard,
   }), [view, posts, getDictionaryFromURL, openDictionaryEntry, openCard])
 
+  const archiveRepoUrl = `https://github.com/${owner}/${repo}`
+
   // Handle body overflow hidden when modal open
   useEffect(() => {
     if (active || activeDictionary) {
@@ -281,7 +283,7 @@ export default function App() {
 
   // Update page title based on visible content
   useEffect(() => {
-    const baseTitle = "Storage Tech 2"
+    const baseTitle = siteConfig.siteName
     if (active?.entry) {
       const code = active.entry.code ? ` (${active.entry.code})` : ""
       document.title = `${active.entry.name}${code} | ${baseTitle}`
@@ -459,8 +461,10 @@ export default function App() {
         owner={owner}
         repo={repo}
         branch={branch}
+        siteName={siteConfig.siteName}
         view={view}
-        logoSrc={logoimg}
+        logoSrc={siteConfig.logoSrc}
+        discordInviteUrl={siteConfig.discordInviteUrl}
         q={q}
         onSearchChange={setQ}
         onSearchCommit={commitSearch}
@@ -552,7 +556,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-gray-500 dark:text-gray-400">
-        Built for the Storage Tech 2 archive. See the code at <a href="https://github.com/Storage-Tech-2/Storage-Tech-2.github.io" className="underline">github.com/Storage-Tech-2/Storage-Tech-2.github.io</a>.
+        Built for the {siteConfig.siteName} archive. See the code on <a href="https://github.com/Storage-Tech-2/Storage-Tech-2.github.io" className="underline">Github</a>.
       </footer>
     </div>
   )

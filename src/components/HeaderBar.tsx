@@ -6,8 +6,10 @@ type Props = {
   owner: string
   repo: string
   branch: string
+  siteName: string
   view: "archive" | "dictionary"
   logoSrc: string
+  discordInviteUrl?: string
   q: string
   onSearchChange: (val: string) => void
   onSearchCommit: () => void
@@ -25,8 +27,10 @@ export function HeaderBar({
   owner,
   repo,
   branch,
+  siteName,
   view,
   logoSrc,
+  discordInviteUrl,
   q,
   onSearchChange,
   onSearchCommit,
@@ -39,6 +43,7 @@ export function HeaderBar({
   onArchiveClick,
   onDictionaryClick,
 }: Props) {
+  const archiveRepoUrl = `https://github.com/${owner}/${repo}`
   return (
     <header className="sm:sticky top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
       <div className="mx-auto w-full px-2 sm:px-4 lg:px-6 py-3">
@@ -46,8 +51,8 @@ export function HeaderBar({
           <div className="flex items-center gap-3 flex-shrink-0">
             <img src={logoSrc} alt="Logo" className="h-10 w-10" />
             <div>
-              <div className="text-xl font-bold"><a href="/">Storage Tech 2</a></div>
-              <div className="text-xs text-gray-500"><a href="https://github.com/Storage-Tech-2/Archive">{owner}/{repo}@{branch}</a></div>
+              <div className="text-xl font-bold"><a href="/">{siteName}</a></div>
+              <div className="text-xs text-gray-500"><a href={archiveRepoUrl}>{owner}/{repo}@{branch}</a></div>
             </div>
           </div>
 
@@ -90,9 +95,11 @@ export function HeaderBar({
             </>
           )}
 
-          <a href="https://discord.gg/hztJMTsx2m" target="_blank" rel="noreferrer" className="flex-shrink-0 rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-            Join Discord
-          </a>
+          {discordInviteUrl ? (
+            <a href={discordInviteUrl} target="_blank" rel="noreferrer" className="flex-shrink-0 rounded-xl border px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+              Join Discord
+            </a>
+          ) : null}
         </div>
       </div>
     </header>
