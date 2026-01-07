@@ -36,9 +36,10 @@ export function ArchiveFilters({
   useEffect(() => {
     setOpenGroups((prev) => {
       const next = { ...prev }
+      const singleCategory = groupedChannels.length === 1
       groupedChannels.forEach(g => {
         if (next[g.category] === undefined) {
-          next[g.category] = g.channels.some(ch => selectedChannels.includes(ch.code))
+          next[g.category] = singleCategory || g.channels.some(ch => selectedChannels.includes(ch.code))
         }
       })
       return next
