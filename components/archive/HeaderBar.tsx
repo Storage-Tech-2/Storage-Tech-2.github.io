@@ -50,7 +50,7 @@ export function HeaderBar({
 }: Props) {
   const archiveRepoUrl = `https://github.com/${owner}/${repo}`;
   return (
-    <header className="top-0 z-20 bg-white/80 backdrop-blur dark:bg-gray-900/80 sm:sticky">
+    <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
         <div className="flex flex-wrap items-center gap-2 pb-1 sm:gap-3">
           <div className="flex shrink-0 items-center gap-3">
@@ -74,7 +74,7 @@ export function HeaderBar({
               href="/"
               className={clsx(
                 "rounded-xl border px-3 py-2 text-sm",
-                view === "archive" ? "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500" : "border-gray-300 bg-white dark:border-gray-800 dark:bg-gray-900",
+                view === "archive" ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900",
               )}
               onClick={onArchiveClick}
             >
@@ -84,7 +84,7 @@ export function HeaderBar({
               href="/dictionary"
               className={clsx(
                 "rounded-xl border px-3 py-2 text-sm",
-                view === "dictionary" ? "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500" : "border-gray-300 bg-white dark:border-gray-800 dark:bg-gray-900",
+                view === "dictionary" ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900",
               )}
               onClick={onDictionaryClick}
             >

@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+*,:before,:after {
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: #e5e7eb;
+}
+
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

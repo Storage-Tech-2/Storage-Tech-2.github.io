@@ -263,7 +263,7 @@ export function ArchiveShell({
 
       <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
-          <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
+          <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-24 pr-1 sidebar-scroll">
             <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
               <ArchiveFilters
                 channels={channels}

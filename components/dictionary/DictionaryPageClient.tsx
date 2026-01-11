@@ -49,11 +49,11 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
     const fromSession = hasUrlState ? null : readDictionarySession();
     const next = fromSession
       ? {
-          query: fromSession.query || "",
-          committedQuery: fromSession.committedQuery ?? fromSession.query ?? "",
-          sort: (fromSession.sort === "updated" ? "updated" : "az") as "az" | "updated",
-          slug: fromSession.slug ?? null,
-        }
+        query: fromSession.query || "",
+        committedQuery: fromSession.committedQuery ?? fromSession.query ?? "",
+        sort: (fromSession.sort === "updated" ? "updated" : "az") as "az" | "updated",
+        slug: fromSession.slug ?? null,
+      }
       : fromUrl;
     startTransition(() => {
       setQuery(next.query);
@@ -94,7 +94,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       .then((fresh) => {
         if (!cancelled) setLiveEntries(fresh.entries);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -192,27 +192,22 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
         discordInviteUrl={siteConfig.discordInviteUrl}
         q={query}
         onSearchChange={setQuery}
-        onSearchCommit={() => {}}
+        onSearchCommit={() => { }}
         sortKey={"newest" as SortKey}
-        onSortChange={() => {}}
+        onSortChange={() => { }}
         dictionaryQuery={query}
         onDictionarySearchChange={setQuery}
         onDictionarySearchCommit={() => setCommittedQuery(query)}
         dictionarySort={sort}
         onDictionarySortChange={setSort}
         onArchiveClick={() => router.push("/")}
-        onDictionaryClick={() => {}}
+        onDictionaryClick={() => { }}
       />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 pb-12 pt-4 lg:px-4">
-        <div className="rounded-xl border bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Dictionary</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Browse all terms without leaving the page.</p>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+      <main className="mx-auto max-w-7xl px-4 pb-12 pt-6">
+        <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {liveEntries.length} terms • Sorted {sort === "az" ? "A to Z" : "by updated time"}</div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((entry) => (
             <DictionaryCard
               key={entry.index.id}
@@ -221,8 +216,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
             />
           ))}
         </div>
-      </div>
-    </main>
+      </main>
 
       {active ? (
         <DictionaryModal

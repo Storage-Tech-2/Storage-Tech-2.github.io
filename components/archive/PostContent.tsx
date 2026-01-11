@@ -24,7 +24,7 @@ type Props = {
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
   const [liveData, setLiveData] = useState<ArchiveEntryData | undefined>(data ?? post.data);
   const payload = liveData ?? post.data;
-  const [lightbox, setLightbox] = useState<{ src: string; alt: string; index: number } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const dragStartRef = useRef<number | null>(null);
@@ -152,6 +152,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                 src: activeImage.path || activeImage.url,
                 alt: activeImage.description || activeImage.name,
                 index: activeImageIndex,
+                mode: "gallery",
               });
             }}
           >
@@ -195,6 +196,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                   src: activeImage.path || activeImage.url,
                   alt: activeImage.description || activeImage.name,
                   index: activeImageIndex,
+                  mode: "gallery",
                 });
               }}
             >
@@ -295,7 +297,17 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
           <h3 className="text-xl font-semibold tracking-wide text-gray-700 dark:text-gray-200">Attachments</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {attachments.map((att) => (
-              <AttachmentCard key={att.id} att={att} onView={() => setLightbox({ src: att.path || att.url, alt: att.description || att.name })} />
+              <AttachmentCard
+                key={att.id}
+                att={att}
+                onView={() =>
+                  setLightbox({
+                    src: att.path || att.url,
+                    alt: att.description || att.name,
+                    mode: "single",
+                  })
+                }
+              />
             ))}
           </div>
         </section>
@@ -317,7 +329,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
           <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: imageAspect, maxHeight: "80vh" }}>
               <Image src={lightbox.src} alt={lightbox.alt} fill className="object-contain" sizes="90vw" unoptimized />
-              {images.length > 1 ? (
+              {lightbox.mode === "gallery" && images.length > 1 ? (
                 <>
                   <button
                     type="button"
@@ -329,6 +341,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                           src: images[next].path || images[next].url,
                           alt: images[next].description || images[next].name,
                           index: next,
+                          mode: "gallery",
                         });
                         return next;
                       })
@@ -346,6 +359,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                           src: images[next].path || images[next].url,
                           alt: images[next].description || images[next].name,
                           index: next,
+                          mode: "gallery",
                         });
                         return next;
                       })
@@ -366,10 +380,12 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                 Close
               </button>
             </div>
-            {activeImage?.description ? (
-              <p className="mt-2 text-sm text-white/80">{activeImage.description}</p>
+            {lightbox.mode === "gallery" ? (
+              activeImage?.description ? <p className="mt-2 text-sm text-white/80">{activeImage.description}</p> : null
+            ) : lightbox.alt ? (
+              <p className="mt-2 text-sm text-white/80">{lightbox.alt}</p>
             ) : null}
-            {images.length > 1 ? (
+            {lightbox.mode === "gallery" && images.length > 1 ? (
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {images.map((img, index) => (
                   <button
@@ -377,7 +393,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                     type="button"
                     onClick={() => {
                       setActiveImageIndex(index);
-                      setLightbox({ src: img.path || img.url, alt: img.description || img.name, index });
+                      setLightbox({ src: img.path || img.url, alt: img.description || img.name, index, mode: "gallery" });
                     }}
                     className={`relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
                     title={img.description || img.name}
