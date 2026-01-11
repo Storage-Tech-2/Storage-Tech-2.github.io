@@ -103,6 +103,14 @@ export async function fetchChannelData(
   return fetchJSONRaw<ChannelData>(path, owner, repo, branch, cache);
 }
 
+export type PostWithArchive = {
+  archive: ArchiveIndex;
+  post: ArchiveListItem;
+  data: ArchiveEntryData;
+};
+
+const postPayloadCache = new Map<string, Promise<PostWithArchive | null>>();
+
 export async function fetchPostData(
   channelPath: string,
   entry: EntryRef,
@@ -113,6 +121,30 @@ export async function fetchPostData(
 ): Promise<ArchiveEntryData> {
   const path = `${channelPath}/${entry.path}/data.json`;
   return fetchJSONRaw<ArchiveEntryData>(path, owner, repo, branch, cache);
+}
+
+export function buildPostPayloadKey(slug: string, cache: RequestCache) {
+  return `${cache}:${slug.toLowerCase()}`;
+}
+
+export async function fetchPostWithArchive(
+  slug: string,
+  cache: RequestCache = "force-cache",
+): Promise<PostWithArchive | null> {
+  const key = buildPostPayloadKey(slug, cache);
+  const existing = postPayloadCache.get(key);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const archive = await fetchArchiveIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
+    const match = findPostBySlug(archive.posts, slug);
+    if (!match) return null;
+    const data = await fetchPostData(match.channel.path, match.entry, DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
+    return { archive, post: match, data };
+  })();
+
+  postPayloadCache.set(key, promise);
+  return promise;
 }
 
 export async function fetchCommentsData(

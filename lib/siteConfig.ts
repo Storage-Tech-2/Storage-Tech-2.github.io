@@ -1,5 +1,6 @@
 export type SiteConfig = {
   siteName: string;
+  siteDescription: string;
   logoSrc: string;
   siteUrl: string;
   archiveRepo: {
@@ -13,6 +14,7 @@ export type SiteConfig = {
 
 export const siteConfig: SiteConfig = {
   siteName: "Storage Tech 2",
+  siteDescription: "A community-run platform to make Minecraft storage technologies accessible to everyone. Resources, community spaces, and tools to help you learn and develop storage technologies in Minecraft. Check out our archive of tech and join us today!",
   logoSrc: "/logo.png",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://storagetech2.org",
   archiveRepo: {

@@ -80,7 +80,7 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
 
       - name: Build previews
-        run: tsx scripts/prefetch-previews.ts
+        run: ${{ steps.detect-package-manager.outputs.runner }} tsx scripts/prefetch-previews.ts
 
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build

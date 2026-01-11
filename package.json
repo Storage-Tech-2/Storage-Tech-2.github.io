@@ -16,7 +16,8 @@
     "react-markdown": "^10.1.0",
     "react-virtualized": "^9.22.6",
     "remark-gfm": "^4.0.1",
-    "sharp": "^0.34.4"
+    "sharp": "^0.34.4",
+    "tsx": "^4.20.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
@@ -27,7 +28,6 @@
     "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.1",
-    "tsx": "^4.20.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }
