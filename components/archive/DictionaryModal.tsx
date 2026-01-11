@@ -4,7 +4,7 @@ import { MarkdownText } from "./ui";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry } from "@/lib/types";
-import { transformOutputWithReferences } from "@/lib/utils/references";
+import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 
 type Props = {
   entry: IndexedDictionaryEntry;
@@ -14,7 +14,7 @@ type Props = {
 
 export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
   const decorated = entry.data
-    ? transformOutputWithReferences(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id]).result
+    ? transformOutputWithReferencesForWebsite(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id])
     : "";
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={onClose}>

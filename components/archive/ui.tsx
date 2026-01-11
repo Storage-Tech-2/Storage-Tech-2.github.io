@@ -10,7 +10,7 @@ import { getAuthorIconURL, getAuthorName } from "@/lib/utils/authors";
 import { getYouTubeEmbedURL } from "@/lib/utils/media";
 import { postToMarkdown } from "@/lib/utils/markdown";
 import { getSpecialTagMeta, sortTagsForDisplay } from "@/lib/utils/tagDisplay";
-import { transformOutputWithReferences } from "@/lib/utils/references";
+import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import {
   type ArchivedPostReference,
   type Attachment,
@@ -159,9 +159,9 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
             {ext && !att.youtube ? ` · ${ext}` : ""}
           </span>
         </div>
-        <h5 className="wrap-break-word text-sm font-semibold leading-snug">{title}</h5>
-        {!att.youtube && <div className="wrap-break-words text-[11px] text-gray-500">{att.name}</div>}
-        {att.description && <div className="wrap-break-words text-xs text-gray-700 dark:text-gray-300">{att.description}</div>}
+        <h5 className="text-sm font-semibold leading-snug break-words">{title}</h5>
+        {!att.youtube && <div className="text-[11px] text-gray-500 break-words">{att.name}</div>}
+        {att.description && <div className="text-xs text-gray-700 dark:text-gray-300 break-words">{att.description}</div>}
 
         {att.litematic ? (
           <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300">
@@ -231,18 +231,9 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
 
 export function ImageThumb({ img, onClick }: { img: ArchiveImage; onClick?: () => void }) {
   const src = img.path ? img.path : img.url;
-  const width = img.width || 1280;
-  const height = img.height || 720;
   return (
-    <button className="block overflow-hidden rounded-lg bg-black/5 dark:bg-white/5" onClick={onClick} title={img.description}>
-      <Image
-        src={src}
-        alt={img.description || img.name}
-        width={width}
-        height={height}
-        className="h-auto w-full max-h-[60vh] object-contain"
-        unoptimized
-      />
+    <button className="block overflow-hidden rounded-lg border bg-black/5 dark:bg-white/5" onClick={onClick} title={img.description}>
+      <Image src={src} alt={img.description || img.name} width={640} height={360} className="h-40 w-full object-contain" unoptimized />
     </button>
   );
 }
@@ -348,7 +339,7 @@ export function RecordRenderer({
 }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles]);
   const decorated = useMemo(
-    () => transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id], postTooltipLookup).result,
+    () => transformOutputWithReferencesForWebsite(markdown, references || [], (id) => dictionaryTooltips?.[id], postTooltipLookup),
     [markdown, references, dictionaryTooltips, postTooltipLookup],
   );
 
