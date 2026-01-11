@@ -13,7 +13,7 @@ export default async function Home() {
       initialArchive={archive}
       initialDictionary={dictionary}
       pageNumber={0}
-      pageSize={disablePagination ? undefined : ARCHIVE_PAGE_SIZE}
+      pageSize={ARCHIVE_PAGE_SIZE}
       pageCount={pageCount}
     />
   );

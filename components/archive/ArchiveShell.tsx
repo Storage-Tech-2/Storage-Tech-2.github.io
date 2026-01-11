@@ -31,8 +31,8 @@ type Props = {
   owner?: string;
   repo?: string;
   branch?: string;
-  pageNumber?: number;
-  pageSize?: number;
+  pageNumber: number;
+  pageSize: number;
   pageCount?: number;
 };
 
@@ -78,14 +78,14 @@ export function ArchiveShell({
     const fromSession = hasUrlState(fromUrl) ? null : readArchiveSession();
     const next = fromSession
       ? {
-          q: fromSession.q || "",
-          committedQ: fromSession.committedQ ?? fromSession.q ?? "",
-          tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
-          tagState: fromSession.tagState || {},
-          selectedChannels: fromSession.selectedChannels || [],
-          selectedAuthors: fromSession.selectedAuthors || [],
-          sortKey: fromSession.sortKey || "newest",
-        }
+        q: fromSession.q || "",
+        committedQ: fromSession.committedQ ?? fromSession.q ?? "",
+        tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
+        tagState: fromSession.tagState || {},
+        selectedChannels: fromSession.selectedChannels || [],
+        selectedAuthors: fromSession.selectedAuthors || [],
+        sortKey: fromSession.sortKey || "newest",
+      }
       : fromUrl;
     startTransition(() => {
       setQ(next.q || "");
@@ -283,19 +283,13 @@ export function ArchiveShell({
     () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode }),
     [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode],
   );
+
+  const showPagination = !disablePagination && pageCount && pageCount > 1 && (pageNumber > 0 || !clientReady);
+
   const pagedPosts = useMemo(() => {
-    if (!pageSize) return filteredPosts;
     const start = Math.max(0, Math.max(pageNumber - 1, 0) * pageSize);
     return filteredPosts.slice(start, start + pageSize);
   }, [filteredPosts, pageNumber, pageSize]);
-  const clientPosts = useMemo(() => (pageSize ? pagedPosts : filteredPosts), [pageSize, pagedPosts, filteredPosts]);
-  const [clientHidePagination, setClientHidePagination] = useState(false);
-  useEffect(() => {
-    if (pageNumber > 0) return;
-    const frame = requestAnimationFrame(() => setClientHidePagination(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-  const showPagination = !disablePagination && !!pageCount && pageCount > 1 && (pageNumber > 0 || !clientHidePagination);
 
   const pagination = showPagination ? (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
@@ -420,7 +414,7 @@ export function ArchiveShell({
         dictionarySort={dictionarySort}
         onDictionarySortChange={setDictionarySort}
         onArchiveClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        onDictionaryClick={() => {}}
+        onDictionaryClick={() => { }}
       />
 
       <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
@@ -445,58 +439,58 @@ export function ArchiveShell({
           </aside>
 
           <div className="flex-1 lg:pt-1.5">
-          {error ? <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
-          {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
+            {error ? <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
+            {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
 
-          <div>
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium">Tags</span>
-              <div className="inline-flex items-center gap-2 text-xs">
-                <label className="inline-flex items-center gap-1">
-                  <input type="radio" name="tagMode" value="AND" checked={tagMode === "AND"} onChange={() => setTagMode("AND")} />
-                  <span>Match all</span>
-                </label>
-                <label className="inline-flex items-center gap-1">
-                  <input type="radio" name="tagMode" value="OR" checked={tagMode === "OR"} onChange={() => setTagMode("OR")} />
-                  <span>Match any</span>
-                </label>
-                <span className="text-gray-500">Tip: click tag twice to exclude</span>
+            <div>
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium">Tags</span>
+                <div className="inline-flex items-center gap-2 text-xs">
+                  <label className="inline-flex items-center gap-1">
+                    <input type="radio" name="tagMode" value="AND" checked={tagMode === "AND"} onChange={() => setTagMode("AND")} />
+                    <span>Match all</span>
+                  </label>
+                  <label className="inline-flex items-center gap-1">
+                    <input type="radio" name="tagMode" value="OR" checked={tagMode === "OR"} onChange={() => setTagMode("OR")} />
+                    <span>Match any</span>
+                  </label>
+                  <span className="text-gray-500">Tip: click tag twice to exclude</span>
+                </div>
+              </div>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <TagChip
+                    key={tag.id}
+                    tag={tag}
+                    state={tagState[tag.name] || 0}
+                    count={tagCounts[normalize(tag.name)] || 0}
+                    onToggle={() => {
+                      setTagState((prev) => {
+                        const cur = prev[tag.name] || 0;
+                        const next = cur === 0 ? 1 : cur === 1 ? -1 : 0;
+                        return { ...prev, [tag.name]: next };
+                      });
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                {(pageSize && showPagination) ? (
+                  <span>
+                    Showing {Math.min(filteredPosts.length, Math.max(0, (pageNumber - 1) * pageSize + 1))}-
+                    {Math.min(filteredPosts.length, pageNumber * pageSize)} of {filteredPosts.length}/{posts.length} posts
+                  </span>
+                ) : (
+                  <span>
+                    Showing 1-{filteredPosts.length} of {filteredPosts.length}/{posts.length} posts
+                  </span>
+                )}
               </div>
             </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-              {allTags.map((tag) => (
-                <TagChip
-                  key={tag.id}
-                  tag={tag}
-                  state={tagState[tag.name] || 0}
-                  count={tagCounts[normalize(tag.name)] || 0}
-                  onToggle={() => {
-                    setTagState((prev) => {
-                      const cur = prev[tag.name] || 0;
-                      const next = cur === 0 ? 1 : cur === 1 ? -1 : 0;
-                      return { ...prev, [tag.name]: next };
-                    });
-                  }}
-                />
-              ))}
-            </div>
-            <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-              {(pageSize && showPagination) ? (
-                <span>
-                  Showing {Math.min(filteredPosts.length, Math.max(0, (pageNumber - 1) * pageSize + 1))}-
-                  {Math.min(filteredPosts.length, pageNumber * pageSize)} of {filteredPosts.length}/{posts.length} posts
-                </span>
-              ) : (
-                <span>
-                  Showing 1-{filteredPosts.length} of {filteredPosts.length}/{posts.length} posts
-                </span>
-              )}
-            </div>
-          </div>
 
-            {clientReady ? (
+            {(clientReady && pageNumber === 0) ? (
               <>
-                <VirtualizedGrid posts={clientPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} forcePagination={pageNumber > 0}/>
+                <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
                 {pagination}
               </>
             ) : (
