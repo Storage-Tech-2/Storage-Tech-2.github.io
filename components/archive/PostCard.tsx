@@ -43,7 +43,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
       : undefined;
 
   return (
-    <article ref={ref} className="group flex h-full min-h-[380px] flex-col rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+    <article ref={ref} className="group flex h-full min-h-95 flex-col rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
       <Link
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
@@ -51,7 +51,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
           onNavigate(post);
         }}
       >
-        <div className="relative aspect-video min-h-[180px] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-linear-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800">
           {displaySrc ? (
             <Image
               src={displaySrc}
@@ -71,14 +71,14 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
             <h3 className="line-clamp-2 text-sm font-semibold">{post.entry.name}</h3>
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.code}</span>
           </div>
-          {authorsLine ? <div className="min-h-[16px] text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div> : <div className="min-h-[16px]" />}
+          {authorsLine ? <div className="min-h-4 text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div> : <div className="min-h-4" />}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
             <ChannelBadge ch={post.channel} />
             <div className="flex flex-col items-end text-right">
               {displayTs !== undefined && <span title={displayTs ? formatDate(displayTs) : undefined}>{displayTs ? timeAgo(displayTs) : ""}</span>}
             </div>
           </div>
-          <div className="min-h-[54px]">
+          <div className="min-h-13.5">
             <TagList tags={post.entry.tags || []} />
           </div>
         </div>

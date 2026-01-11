@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "tsx scripts/prefetch-previews.ts",
+    "images": "tsx scripts/prefetch-previews.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

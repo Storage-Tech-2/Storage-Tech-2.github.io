@@ -16,7 +16,7 @@ export async function generateStaticParams() {
 }
 
 export default async function ArchivePage({ params }: Params) {
-  const pageNumber = Number.parseInt(params.page, 10);
+  const pageNumber = Number.parseInt((await params).page, 10);
   if (!Number.isFinite(pageNumber) || pageNumber < 2) return notFound();
   const [archive, dictionary] = await Promise.all([fetchArchiveIndex(), fetchDictionaryIndex()]);
   const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);

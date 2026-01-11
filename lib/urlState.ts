@@ -85,6 +85,8 @@ export function setDictionaryStateToUrl(state: DictionaryState) {
 
 export function readArchiveSession(): ArchiveFilters | null {
   if (typeof window === "undefined") return null;
+  const nav = performance?.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
+  if (nav?.type === "reload") return null;
   const saved = sessionStorage.getItem("archive-filters");
   if (!saved) return null;
   try {
@@ -103,6 +105,8 @@ export function writeArchiveSession(filters: ArchiveFilters) {
 
 export function readDictionarySession(): DictionaryState | null {
   if (typeof window === "undefined") return null;
+  const nav = performance?.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
+  if (nav?.type === "reload") return null;
   const saved = sessionStorage.getItem("dictionary-state");
   if (!saved) return null;
   try {

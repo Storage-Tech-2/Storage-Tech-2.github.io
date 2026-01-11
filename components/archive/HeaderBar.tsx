@@ -53,7 +53,7 @@ export function HeaderBar({
     <header className="top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
         <div className="flex flex-wrap items-center gap-2 pb-1 sm:gap-3">
-          <div className="flex flex-shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <Link href="/" className="h-10 w-10">
               <Image src={logoSrc} alt="Logo" width={40} height={40} className="h-10 w-10" />
             </Link>
@@ -69,7 +69,7 @@ export function HeaderBar({
             </div>
           </div>
 
-          <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/"
               className={clsx(
@@ -94,7 +94,7 @@ export function HeaderBar({
 
           {view === "archive" ? (
             <>
-              <div className="relative min-w-[200px] flex-1">
+              <div className="relative min-w-50 flex-1">
                 <input
                   value={q}
                   onChange={(e) => onSearchChange(e.target.value)}
@@ -110,7 +110,7 @@ export function HeaderBar({
               <select
                 value={sortKey}
                 onChange={(e) => onSortChange(e.target.value as SortKey)}
-                className="flex-shrink-0 rounded-xl border bg-white px-3 py-2 dark:bg-gray-900"
+                className="shrink-0 rounded-xl border bg-white px-3 py-2 dark:bg-gray-900"
               >
                 <option value="newest">Updated (newest)</option>
                 <option value="oldest">Updated (oldest)</option>
@@ -121,7 +121,7 @@ export function HeaderBar({
             </>
           ) : (
             <>
-              <div className="relative min-w-[200px] flex-1">
+              <div className="relative min-w-50 flex-1">
                 <input
                   value={dictionaryQuery}
                   onChange={(e) => onDictionarySearchChange(e.target.value)}
@@ -137,7 +137,7 @@ export function HeaderBar({
               <select
                 value={dictionarySort}
                 onChange={(e) => onDictionarySortChange(e.target.value as "az" | "updated")}
-                className="flex-shrink-0 rounded-xl border bg-white px-3 py-2 dark:bg-gray-900"
+                className="shrink-0 rounded-xl border bg-white px-3 py-2 dark:bg-gray-900"
               >
                 <option value="az">A to Z</option>
                 <option value="updated">Updated (newest)</option>
@@ -150,7 +150,7 @@ export function HeaderBar({
               href={discordInviteUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex-shrink-0 rounded-xl border bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="shrink-0 rounded-xl border bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               Join Discord
             </a>

@@ -159,9 +159,9 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
             {ext && !att.youtube ? ` · ${ext}` : ""}
           </span>
         </div>
-        <h5 className="break-words text-sm font-semibold leading-snug">{title}</h5>
-        {!att.youtube && <div className="break-words text-[11px] text-gray-500">{att.name}</div>}
-        {att.description && <div className="break-words text-xs text-gray-700 dark:text-gray-300">{att.description}</div>}
+        <h5 className="wrap-break-word text-sm font-semibold leading-snug">{title}</h5>
+        {!att.youtube && <div className="wrap-break-words text-[11px] text-gray-500">{att.name}</div>}
+        {att.description && <div className="wrap-break-words text-xs text-gray-700 dark:text-gray-300">{att.description}</div>}
 
         {att.litematic ? (
           <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300">

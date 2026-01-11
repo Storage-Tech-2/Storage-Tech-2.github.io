@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArchiveFilters } from "./ArchiveFilters";
 import { TagChip } from "./ui";
@@ -53,48 +53,56 @@ export function ArchiveShell({
     branch,
   });
 
-  const initialFilters = useMemo(() => {
-    const fromUrl = getArchiveFiltersFromUrl();
-    const hasUrlState =
-      fromUrl.committedQ ||
-      fromUrl.sortKey !== "newest" ||
-      fromUrl.tagMode !== "AND" ||
-      Object.keys(fromUrl.tagState).length > 0 ||
-      fromUrl.selectedChannels.length > 0;
-    if (hasUrlState) return fromUrl;
-    const fromSession = readArchiveSession();
-    if (fromSession) {
-      return {
-        q: fromSession.q || "",
-        committedQ: fromSession.committedQ ?? fromSession.q ?? "",
-        tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
-        tagState: fromSession.tagState || {},
-        selectedChannels: fromSession.selectedChannels || [],
-        sortKey: fromSession.sortKey || "newest",
-      };
-    }
-    return fromUrl;
-  }, []);
-
-  const [q, setQ] = useState(initialFilters.q);
-  const [committedQ, setCommittedQ] = useState(initialFilters.committedQ);
-  const [tagMode, setTagMode] = useState<"OR" | "AND">(initialFilters.tagMode);
-  const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>(initialFilters.tagState);
-  const [selectedChannels, setSelectedChannels] = useState<string[]>(initialFilters.selectedChannels);
-  const [sortKey, setSortKey] = useState<SortKey>(initialFilters.sortKey);
+  const [q, setQ] = useState("");
+  const [committedQ, setCommittedQ] = useState("");
+  const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
+  const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>({});
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const sidebarShellRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
+    const hasUrlState = (state: ReturnType<typeof getArchiveFiltersFromUrl>) =>
+      state.committedQ ||
+      state.sortKey !== "newest" ||
+      state.tagMode !== "AND" ||
+      Object.keys(state.tagState).length > 0 ||
+      state.selectedChannels.length > 0;
+    const fromUrl = getArchiveFiltersFromUrl();
+    const fromSession = hasUrlState(fromUrl) ? null : readArchiveSession();
+    const next = fromSession
+      ? {
+          q: fromSession.q || "",
+          committedQ: fromSession.committedQ ?? fromSession.q ?? "",
+          tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
+          tagState: fromSession.tagState || {},
+          selectedChannels: fromSession.selectedChannels || [],
+          sortKey: fromSession.sortKey || "newest",
+        }
+      : fromUrl;
+    startTransition(() => {
+      setQ(next.q || "");
+      setCommittedQ(next.committedQ || "");
+      setTagMode(next.tagMode);
+      setTagState(next.tagState || {});
+      setSelectedChannels(next.selectedChannels || []);
+      setSortKey(next.sortKey || "newest");
+    });
+  }, []);
+
+  useEffect(() => {
     const handlePopState = () => {
       if (typeof window === "undefined") return;
       const parsed = getArchiveFiltersFromUrl();
-      setQ(parsed.q || "");
-      setCommittedQ(parsed.committedQ || "");
-      setTagMode(parsed.tagMode);
-      setTagState(parsed.tagState || {});
-      setSelectedChannels(parsed.selectedChannels || []);
-      setSortKey(parsed.sortKey || "newest");
+      startTransition(() => {
+        setQ(parsed.q || "");
+        setCommittedQ(parsed.committedQ || "");
+        setTagMode(parsed.tagMode);
+        setTagState(parsed.tagState || {});
+        setSelectedChannels(parsed.selectedChannels || []);
+        setSortKey(parsed.sortKey || "newest");
+      });
     };
     window.addEventListener("popstate", handlePopState);
     return () => {
@@ -152,7 +160,7 @@ export function ArchiveShell({
       selectedChannels,
       sortKey,
     });
-  }, [committedQ, sortKey, tagMode, tagState, selectedChannels]);
+  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, q]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -255,7 +263,7 @@ export function ArchiveShell({
 
       <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
-          <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
+          <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
             <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
               <ArchiveFilters
                 channels={channels}
@@ -333,7 +341,7 @@ export function ArchiveShell({
                 {pageCount && pageCount > 1 ? (
                   <div className="mt-6 flex items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                     {pageNumber > 1 ? (
-                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={pageNumber === 2 ? "/" : `/page-${pageNumber - 1}`}>
+                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={pageNumber === 2 ? "/" : `/page/${pageNumber - 1}`}>
                         ← Previous
                       </a>
                     ) : (
@@ -343,7 +351,7 @@ export function ArchiveShell({
                       Page {pageNumber} of {pageCount}
                     </span>
                     {pageNumber < pageCount ? (
-                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={`/page-${pageNumber + 1}`}>
+                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={`/page/${pageNumber + 1}`}>
                         Next →
                       </a>
                     ) : (
