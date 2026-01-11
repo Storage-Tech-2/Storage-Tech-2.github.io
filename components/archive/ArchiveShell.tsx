@@ -235,7 +235,12 @@ export function ArchiveShell({
     () => (disableInfiniteScroll && pageSize ? pagedPosts : filteredPosts),
     [pageSize, pagedPosts, filteredPosts],
   );
-  const showPagination = !disablePagination && !!pageCount && pageCount > 1 && typeof window === "undefined";
+  const [clientHidePagination, setClientHidePagination] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setClientHidePagination(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  const showPagination = !disablePagination && !!pageCount && pageCount > 1 && !clientHidePagination;
 
   const pagination = showPagination ? (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
