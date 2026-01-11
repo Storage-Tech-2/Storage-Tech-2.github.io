@@ -235,7 +235,7 @@ export function transformOutputWithReferencesWrapper(
     return resultParts.join('');
 }
 
-const DiscordLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/g
+const DiscordLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/;
 
 export function transformOutputWithReferencesForWebsite(
     text: string,
@@ -282,7 +282,7 @@ export function transformOutputWithReferencesForWebsite(
                 } else {
 
                     // check if matchedText is a discord url, if so replace
-                    if (DiscordLinkPattern.test(matchedText)) {
+                    if (DiscordLinkPattern.test(matchedText.trim())) {
                       matchedText = reference.code + (safeTitle ? ` (${safeTitle})` : "");
                     } else if (safeTitle) {
                       return `[${matchedText}](${newURL} "${safeTitle}")`;
