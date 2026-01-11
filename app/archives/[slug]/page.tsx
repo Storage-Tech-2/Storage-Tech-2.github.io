@@ -9,6 +9,7 @@ import { siteConfig } from "@/lib/siteConfig";
 import { disableArchivePrerender } from "@/lib/runtimeFlags";
 import { submissionRecordToMarkdown } from "@/lib/utils/markdown";
 import { getEffectiveStyle } from "@/lib/utils/styles";
+import { truncateStringWithEllipsis } from "@/lib/utils/strings";
 
 export const dynamic = "force-static";
 
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!data) return { title: "Entry not found" };
   const preview = getPreviewBySlug(match.slug);
   const ogImage = preview ? new URL(preview.localPath, siteConfig.siteUrl).toString() : undefined;
-  const description = (data.records["description"] ? submissionRecordToMarkdown(data.records["description"], getEffectiveStyle("description", archive.config.postStyle, data.styles)).slice(0, 160) : '') || `Archive entry ${match.entry.code} from ${match.channel.name}`;
+  const description = truncateStringWithEllipsis((data.records["description"] ? submissionRecordToMarkdown(data.records["description"], getEffectiveStyle("description", archive.config.postStyle, data.styles)) : '') || `Archive entry ${match.entry.code} from ${match.channel.name}`, 200);
   return {
     title: `${match.entry.name} | ${siteConfig.siteName}`,
     description,

@@ -5,6 +5,7 @@ import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "@/lib/types";
 import { disableDictionaryPrerender } from "@/lib/runtimeFlags";
 import { siteConfig } from "@/lib/siteConfig";
+import { truncateStringWithEllipsis } from "@/lib/utils/strings";
 
 export const dynamic = "force-static";
 
@@ -29,8 +30,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 
   const description =
-    match.summary?.trim().slice(0, 160) ||
-    `Dictionary entry ${match.id} from ${siteConfig.siteName}`;
+    truncateStringWithEllipsis(match.summary?.trim() ||
+    `Dictionary entry ${match.id} from ${siteConfig.siteName}`, 200);
   const title = `${match.terms?.[0] ?? match.id} | ${siteConfig.siteName} Dictionary`;
 
   return {
