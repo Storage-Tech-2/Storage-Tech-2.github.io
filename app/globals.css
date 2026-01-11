@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+*,:before,:after {
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: #e5e7eb;
+}
+
 ::selection {
   background: #cbd5e1;
   color: #0f172a;
