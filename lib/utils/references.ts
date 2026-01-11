@@ -1,6 +1,7 @@
 import { ReferenceType, type ArchivedPostReference, type Reference } from "../types";
 import { buildDictionarySlug } from "../dictionary";
 import { getAuthorName } from "./authors";
+import { buildEntrySlug } from "../archive";
 
 export type RegexMatch = {
   pattern: string;
@@ -234,12 +235,12 @@ export function transformOutputWithReferencesWrapper(
     return resultParts.join('');
 }
 
+const DiscordLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/g
 
 export function transformOutputWithReferencesForWebsite(
     text: string,
     references: Reference[],
-    dictionaryTooltipLookup?: (id: string) => string | undefined,
-    postTooltipLookup?: (ref: ArchivedPostReference) => string | undefined,
+    dictionaryTooltipLookup?: (id: string) => string | undefined
 ): string {
     return transformOutputWithReferencesWrapper(
         text,
@@ -264,9 +265,8 @@ export function transformOutputWithReferencesForWebsite(
                     }
                 }
             } else if (reference.type === ReferenceType.ARCHIVED_POST) {
-                const slug = encodeURIComponent(reference.code || reference.id);
-                const newURL = reference.url || `/archives/${slug}`;
-                const tooltip = postTooltipLookup?.(reference);
+                const newURL = `/archives/${buildEntrySlug(reference)}`
+                const tooltip = reference.name;
                 const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
                 if (isWithinHyperlink) {
                     const linkText = hyperlinkText || "";
@@ -277,14 +277,18 @@ export function transformOutputWithReferencesForWebsite(
                             return `[${linkText}](${newURL})`;
                         }
                     } else {
-                        return; // skip, already linked but text does not match code
+                        return `[${linkText}](${newURL} "${safeTitle || linkText}")`;
                     }
                 } else {
-                    if (safeTitle) {
-                        return `[${matchedText}](${newURL} "${safeTitle}")`;
-                    } else {
-                        return `[${matchedText}](${newURL})`;
+
+                    // check if matchedText is a discord url, if so replace
+                    if (DiscordLinkPattern.test(matchedText)) {
+                      matchedText = reference.code + (safeTitle ? ` ${safeTitle}` : "");
+                    } else if (safeTitle) {
+                      return `[${matchedText}](${newURL} "${safeTitle}")`;
                     }
+
+                    return `[${matchedText}](${newURL})`;
                 }
             } else if (reference.type === ReferenceType.DISCORD_LINK) {
                 if (!isWithinHyperlink) {

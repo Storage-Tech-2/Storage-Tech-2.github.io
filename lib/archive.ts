@@ -2,6 +2,7 @@ import { asyncPool, fetchJSONRaw } from "./github";
 import {
   ArchiveComment,
   ArchiveConfig,
+  ArchivedPostReference,
   ArchiveEntryData,
   ChannelData,
   ChannelRef,
@@ -36,8 +37,8 @@ export function slugifyName(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function buildEntrySlug(entry: EntryRef) {
-  const base = entry.code || entry.id || "entry";
+export function buildEntrySlug(entry: EntryRef | ArchivedPostReference) {
+  const base = entry.code;
   const name = entry.name ? slugifyName(entry.name) : "";
   if (!name) return base;
   return `${base}-${name}`;

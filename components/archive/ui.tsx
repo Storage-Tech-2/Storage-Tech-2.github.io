@@ -326,7 +326,6 @@ export function RecordRenderer({
   schemaStyles,
   references,
   dictionaryTooltips,
-  postTooltipLookup,
   onInternalLink,
 }: {
   records: SubmissionRecords;
@@ -334,13 +333,12 @@ export function RecordRenderer({
   schemaStyles?: Record<string, StyleInfo>;
   references?: Reference[];
   dictionaryTooltips?: Record<string, string>;
-  postTooltipLookup?: (ref: ArchivedPostReference) => string | undefined;
   onInternalLink?: (url: URL) => boolean;
 }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles]);
   const decorated = useMemo(
-    () => transformOutputWithReferencesForWebsite(markdown, references || [], (id) => dictionaryTooltips?.[id], postTooltipLookup),
-    [markdown, references, dictionaryTooltips, postTooltipLookup],
+    () => transformOutputWithReferencesForWebsite(markdown, references || [], (id) => dictionaryTooltips?.[id]),
+    [markdown, references, dictionaryTooltips],
   );
 
   if (!decorated) return null;

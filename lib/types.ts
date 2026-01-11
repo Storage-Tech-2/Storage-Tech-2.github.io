@@ -138,6 +138,7 @@ export type DictionaryTermReference = ReferenceBase & {
 export type ArchivedPostReference = ReferenceBase & {
   type: ReferenceType.ARCHIVED_POST;
   id: Snowflake;
+  name: string;
   code: string;
   url: string;
 };
