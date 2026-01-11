@@ -1,3 +1,6 @@
-export const disableLiveFetch =
-  process.env.NEXT_PUBLIC_DISABLE_LIVE_FETCH === "1" ||
-  process.env.NEXT_PUBLIC_DISABLE_LIVE_FETCH === "true";
+export const disableLiveFetch = false;
+export const disableArchivePrerender = false;
+export const disableDictionaryPrerender = false;
+export const disablePreviewOptimization = false;
+export const disableInfiniteScroll = false;
+export const disablePagination = false;

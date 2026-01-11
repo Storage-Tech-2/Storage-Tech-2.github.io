@@ -2,6 +2,7 @@ import { DictionaryPageClient } from "@/components/dictionary/DictionaryPageClie
 import { fetchDictionaryIndex } from "@/lib/archive";
 import { buildDictionarySlug } from "@/lib/dictionary";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "@/lib/types";
+import { disableDictionaryPrerender } from "@/lib/runtimeFlags";
 
 export const dynamic = "force-static";
 
@@ -10,6 +11,9 @@ type Params = {
 };
 
 export async function generateStaticParams() {
+  if (disableDictionaryPrerender) return [
+    { slug: "example-entry" },
+  ];
   const dictionary = await fetchDictionaryIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH);
   return dictionary.entries.map((entry) => ({ slug: buildDictionarySlug(entry.index) }));
 }

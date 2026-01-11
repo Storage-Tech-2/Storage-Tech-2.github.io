@@ -22,6 +22,8 @@ import {
   setArchiveFiltersToUrl,
   writeArchiveSession,
 } from "@/lib/urlState";
+import { buildDictionarySlug } from "@/lib/dictionary";
+import { disableInfiniteScroll, disablePagination } from "@/lib/runtimeFlags";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -46,7 +48,7 @@ export function ArchiveShell({
 }: Props) {
   const router = useRouter();
   const { posts, channels, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive, owner, repo, branch });
-  useDictionaryData({
+  const { entries: dictionaryEntries } = useDictionaryData({
     initial: initialDictionary,
     owner,
     repo,
@@ -111,6 +113,7 @@ export function ArchiveShell({
   }, []);
 
   const pendingScrollRef = useRef<number | null>(null);
+  const legacyRedirectHandledRef = useRef(false);
 
   const [clientReady, setClientReady] = useState(false);
   useEffect(() => {
@@ -118,6 +121,33 @@ export function ArchiveShell({
     return () => cancelAnimationFrame(id);
   }, []);
   const commitSearch = () => setCommittedQ(q);
+
+  useEffect(() => {
+    if (legacyRedirectHandledRef.current) return;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const legacyId = sp.get("id");
+    const legacyDid = sp.get("did");
+    if (!legacyId && !legacyDid) return;
+    if (legacyId) {
+      const found = posts.find(
+        (p) => p.entry.id === legacyId || p.entry.code === legacyId || p.slug.toLowerCase() === legacyId.toLowerCase(),
+      );
+      if (found) {
+        legacyRedirectHandledRef.current = true;
+        router.replace(`/archives/${found.slug}`);
+        return;
+      }
+    }
+    if (legacyDid) {
+      const entry = dictionaryEntries.find((e) => e.index.id === legacyDid);
+      if (entry) {
+        legacyRedirectHandledRef.current = true;
+        const slug = buildDictionarySlug(entry.index);
+        router.replace(`/dictionary/${encodeURIComponent(slug)}`);
+      }
+    }
+  }, [posts, dictionaryEntries, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
@@ -201,6 +231,59 @@ export function ArchiveShell({
     const start = Math.max(0, (pageNumber - 1) * pageSize);
     return filteredPosts.slice(start, start + pageSize);
   }, [filteredPosts, pageNumber, pageSize]);
+  const clientPosts = useMemo(
+    () => (disableInfiniteScroll && pageSize ? pagedPosts : filteredPosts),
+    [pageSize, pagedPosts, filteredPosts],
+  );
+  const showPagination = !disablePagination && !!pageCount && pageCount > 1;
+
+  const pagination = showPagination ? (
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+      {pageNumber > 1 ? (
+        <a
+          className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+          href={pageNumber === 2 ? "/" : `/page/${pageNumber - 1}`}
+        >
+          ← Previous
+        </a>
+      ) : (
+        <span className="rounded-full border border-transparent px-3 py-1 text-sm font-semibold text-gray-400">← Previous</span>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        {Array.from({ length: pageCount }, (_, i) => {
+          const page = i + 1;
+          const href = page === 1 ? "/" : `/page/${page}`;
+          return page === pageNumber ? (
+            <span
+              key={page}
+              className="rounded-full border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-sm"
+              aria-current="page"
+            >
+              {page}
+            </span>
+          ) : (
+            <a
+              key={page}
+              className="rounded-full border border-transparent px-3 py-1 text-xs font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800"
+              href={href}
+            >
+              {page}
+            </a>
+          );
+        })}
+      </div>
+      {pageNumber < pageCount ? (
+        <a
+          className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+          href={`/page/${pageNumber + 1}`}
+        >
+          Next →
+        </a>
+      ) : (
+        <span className="rounded-full border border-transparent px-3 py-1 text-sm font-semibold text-gray-400">Next →</span>
+      )}
+    </div>
+  ) : null;
 
   const channelCounts = useMemo(
     () => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q),
@@ -321,7 +404,10 @@ export function ArchiveShell({
           </div>
 
             {clientReady ? (
-              <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
+              <>
+                <VirtualizedGrid posts={clientPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
+                {pagination}
+              </>
             ) : (
               <>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -335,27 +421,7 @@ export function ArchiveShell({
                     />
                   ))}
                 </div>
-                {pageCount && pageCount > 1 ? (
-                  <div className="mt-6 flex items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                    {pageNumber > 1 ? (
-                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={pageNumber === 2 ? "/" : `/page/${pageNumber - 1}`}>
-                        ← Previous
-                      </a>
-                    ) : (
-                      <span className="opacity-50">← Previous</span>
-                    )}
-                    <span>
-                      Page {pageNumber} of {pageCount}
-                    </span>
-                    {pageNumber < pageCount ? (
-                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={`/page/${pageNumber + 1}`}>
-                        Next →
-                      </a>
-                    ) : (
-                      <span className="opacity-50">Next →</span>
-                    )}
-                  </div>
-                ) : null}
+                {pagination}
               </>
             )}
 

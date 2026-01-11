@@ -5,6 +5,7 @@ import { AutoSizer, List, WindowScroller } from "react-virtualized";
 import { PostCard } from "./PostCard";
 import { type ArchiveListItem } from "@/lib/archive";
 import { type SortKey } from "@/lib/types";
+import { disableInfiniteScroll } from "@/lib/runtimeFlags";
 
 const GRID_GAP = 16;
 const CARD_HEIGHT = 380;
@@ -27,10 +28,11 @@ function getColumnCount(width: number) {
 }
 
 export function VirtualizedGrid({ posts, sortKey, onNavigate, ensurePostLoaded }: Props) {
-  if (typeof window === "undefined") {
+ 
+  if (typeof window === "undefined" || disableInfiniteScroll) {
     const fallback = posts.slice(0, 24);
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {fallback.map((post) => (
           <PostCard key={`${post.channel.path}/${post.entry.path}`} post={post} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={onNavigate} />
         ))}

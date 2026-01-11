@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { asyncPool, assetURL } from "../lib/github";
 import { buildEntrySlug, fetchArchiveConfig, fetchChannelData, fetchDictionaryIndex, fetchPostData } from "../lib/archive";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type ChannelRef, type EntryRef } from "../lib/types";
+import { disablePreviewOptimization } from "../lib/runtimeFlags";
 
 type PostRef = {
   channel: ChannelRef;
@@ -24,7 +25,20 @@ const MAX_WIDTH = Number.parseInt(process.env.PREVIEW_MAX_WIDTH || "1200", 10);
 const QUALITY = Number.parseInt(process.env.PREVIEW_QUALITY || "80", 10);
 
 async function main() {
-  if (skip) {
+  if (skip || disablePreviewOptimization) {
+    // save empty index file
+    await fs.mkdir(path.dirname(indexPath), { recursive: true });
+    await fs.writeFile(
+      indexPath,
+      JSON.stringify(
+        {
+          generatedAt: new Date().toISOString(),
+          items: [],
+        },
+        null,
+        2,
+      ),
+    );
     console.log("Skipping preview download (SKIP_PREVIEW_DOWNLOAD=1).");
     return;
   }

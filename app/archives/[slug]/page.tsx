@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, findPostBySlug } from "@/lib/archive";
 import { getPreviewBySlug } from "@/lib/previews";
 import { siteConfig } from "@/lib/siteConfig";
+import { disableArchivePrerender } from "@/lib/runtimeFlags";
 
 export const dynamic = "force-static";
 
@@ -14,6 +15,9 @@ type Params = {
 };
 
 export async function generateStaticParams() {
+  if (disableArchivePrerender) return [
+    { slug: "example-entry" },
+  ];
   const archive = await fetchArchiveIndex();
   return archive.posts.map((post) => ({ slug: post.slug }));
 }
