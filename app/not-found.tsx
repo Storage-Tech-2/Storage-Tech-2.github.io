@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { PostContent } from "@/components/archive/PostContent";
 import { Footer } from "@/components/layout/Footer";
 import {
@@ -14,20 +14,29 @@ import {
   findPostBySlug,
   type ArchiveListItem,
 } from "@/lib/archive";
+import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { type ArchiveEntryData } from "@/lib/types";
+import { type ArchiveEntryData, type IndexedDictionaryEntry } from "@/lib/types";
 
 export default function NotFound() {
+  const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [post, setPost] = useState<ArchiveListItem | null>(null);
   const [data, setData] = useState<ArchiveEntryData | null>(null);
   const [dictionaryTooltips, setDictionaryTooltips] = useState<Record<string, string>>({});
+  const [dictionaryEntry, setDictionaryEntry] = useState<IndexedDictionaryEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const archiveSlug = useMemo(() => {
     if (!pathname) return null;
     const match = pathname.match(/\/archives\/(.+)/);
+    return match?.[1] ? decodeURIComponent(match[1].replace(/\/+$/, "")) : null;
+  }, [pathname]);
+
+  const dictionarySlug = useMemo(() => {
+    if (!pathname) return null;
+    const match = pathname.match(/\/dictionary\/(.+)/);
     return match?.[1] ? decodeURIComponent(match[1].replace(/\/+$/, "")) : null;
   }, [pathname]);
 
@@ -90,6 +99,52 @@ export default function NotFound() {
     };
   }, [archiveSlug]);
 
+  useEffect(() => {
+    if (!dictionarySlug) return;
+    if (disableLiveFetch) return;
+    let cancelled = false;
+    async function run() {
+      setLoading(true);
+      setError(null);
+      if (!dictionarySlug) {
+        return;
+      }
+      try {
+        const dictionary = await fetchDictionaryIndex(undefined, undefined, undefined, "no-store");
+        if (cancelled) return;
+        const entryIndex = findDictionaryEntryBySlug(dictionary.entries.map((entry) => entry.index), dictionarySlug);
+        if (!entryIndex) {
+          setError("We could not find this dictionary entry.");
+          setDictionaryEntry(null);
+          return;
+        }
+        setDictionaryEntry({ index: entryIndex });
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message || "Unable to load dictionary data.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [dictionarySlug]);
+
+  const canonicalArchiveSlug = archiveSlug && post ? buildEntrySlug(post.entry) : null;
+  const canonicalDictionarySlug = dictionarySlug && dictionaryEntry ? buildDictionarySlug(dictionaryEntry.index) : null;
+
+  useEffect(() => {
+    if (!router) return;
+    if (canonicalArchiveSlug && archiveSlug && canonicalArchiveSlug !== archiveSlug) {
+      router.replace(`/archives/${encodeURIComponent(canonicalArchiveSlug)}`);
+      return;
+    }
+    if (canonicalDictionarySlug && dictionarySlug && canonicalDictionarySlug !== dictionarySlug) {
+      router.replace(`/dictionary/${encodeURIComponent(canonicalDictionarySlug)}`);
+    }
+  }, [router, canonicalArchiveSlug, canonicalDictionarySlug, archiveSlug, dictionarySlug]);
+
   if (archiveSlug && post && data) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-10 lg:px-6">
@@ -110,11 +165,20 @@ export default function NotFound() {
             We looked for <code className="rounded bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">{archiveSlug}</code> in the archive but could not render it.
             {error ? ` ${error}` : " Try again in a few moments."}
           </p>
+        ) : dictionarySlug ? (
+          <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
+            We looked for <code className="rounded bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">{dictionarySlug}</code> in the dictionary but could not render it.
+            {error ? ` ${error}` : " Try again in a few moments."}
+          </p>
         ) : (
           <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">The page you are looking for does not exist.</p>
         )}
-        <Link href="/" prefetch={false} className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900">
-          Back to archive
+        <Link
+          href={dictionarySlug ? "/dictionary" : "/"}
+          prefetch={false}
+          className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+        >
+          {dictionarySlug ? "Back to dictionary" : "Back to archive"}
         </Link>
         {loading ? <p className="text-xs text-gray-500">Checking for a newer archive entry…</p> : null}
       </main>

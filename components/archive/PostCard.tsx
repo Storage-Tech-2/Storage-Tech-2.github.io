@@ -51,7 +51,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
           onNavigate(post);
         }}
       >
-        <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-linear-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
           {displaySrc ? (
             <Image
               src={displaySrc}
