@@ -57,9 +57,10 @@ export function HeaderBar({
             <Link href="/" className="h-10 w-10">
               <Image src={logoSrc} alt="Logo" width={40} height={40} className="h-10 w-10" />
             </Link>
+            <Link href="/">
             <div>
               <div className="text-xl font-bold">
-                <Link href="/">{siteName}</Link>
+                {siteName}
               </div>
               <div className="text-xs text-gray-500">
                
@@ -67,6 +68,7 @@ export function HeaderBar({
                 
               </div>
             </div>
+            </Link>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
