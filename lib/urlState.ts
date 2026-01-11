@@ -50,6 +50,7 @@ export function setArchiveFiltersToUrl(filters: ArchiveFilters) {
   if (typeof window === "undefined") return;
   const include = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === 1);
   const exclude = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === -1);
+  const url = new URL(window.location.href);
   const sp = new URLSearchParams();
   if (filters.committedQ.trim()) sp.set("q", filters.committedQ.trim());
   if (filters.sortKey !== "newest") sp.set("sort", filters.sortKey);
@@ -58,8 +59,9 @@ export function setArchiveFiltersToUrl(filters: ArchiveFilters) {
   if (exclude.length) sp.set("xtags", serializeListParam(exclude));
   if (filters.selectedChannels.length) sp.set("channels", serializeListParam(filters.selectedChannels));
   if (filters.selectedAuthors.length) sp.set("authors", serializeListParam(filters.selectedAuthors));
+ 
   const query = sp.toString();
-  const next = query ? `/?${query}` : "/";
+  const next = query ? `${url.pathname}?${query}` : url.pathname;
   window.history.replaceState(window.history.state, "", next);
 }
 

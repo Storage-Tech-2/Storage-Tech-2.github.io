@@ -294,6 +294,7 @@ export function ArchiveShell({
   );
   const [clientHidePagination, setClientHidePagination] = useState(false);
   useEffect(() => {
+    if (pageNumber > 1) return;
     const frame = requestAnimationFrame(() => setClientHidePagination(true));
     return () => cancelAnimationFrame(frame);
   }, []);
@@ -491,7 +492,7 @@ export function ArchiveShell({
 
             {clientReady ? (
               <>
-                <VirtualizedGrid posts={clientPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
+                <VirtualizedGrid posts={clientPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} forcePagination={pageNumber > 1}/>
                 {pagination}
               </>
             ) : (

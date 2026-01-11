@@ -17,6 +17,7 @@ type Props = {
   sortKey: SortKey;
   onNavigate: (post: ArchiveListItem) => void;
   ensurePostLoaded: (p: ArchiveListItem) => Promise<ArchiveListItem>;
+  forcePagination?: boolean;
 };
 
 function getColumnCount(width: number) {
@@ -27,9 +28,9 @@ function getColumnCount(width: number) {
   return 1;
 }
 
-export function VirtualizedGrid({ posts, sortKey, onNavigate, ensurePostLoaded }: Props) {
+export function VirtualizedGrid({ posts, sortKey, onNavigate, ensurePostLoaded, forcePagination }: Props) {
  
-  if (typeof window === "undefined" || disableInfiniteScroll) {
+  if (typeof window === "undefined" || disableInfiniteScroll || forcePagination) {
     const fallback = posts.slice(0, 24);
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
