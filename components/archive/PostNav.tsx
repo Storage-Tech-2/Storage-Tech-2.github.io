@@ -19,9 +19,6 @@ export function PostNav() {
         href="/"
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
         prefetch={false}
-        onClick={() => {
-          if (typeof window !== "undefined") sessionStorage.setItem("archive-scroll", `${window.scrollY}`);
-        }}
       >
         Archive home
       </Link>

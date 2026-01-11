@@ -23,8 +23,19 @@ type Props = {
 export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<"az" | "updated">("az");
+  const initialFilters = useMemo(() => {
+    if (typeof window === "undefined") {
+      return { query: "", sort: "az" as const };
+    }
+    const sp = new URLSearchParams(window.location.search);
+    const q = sp.get("q") || "";
+    const sortParam = sp.get("sort");
+    const sortValue = sortParam === "updated" ? "updated" : "az";
+    return { query: q, sort: sortValue };
+  }, []);
+
+  const [query, setQuery] = useState(initialFilters.query);
+  const [sort, setSort] = useState<"az" | "updated">(initialFilters.sort);
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
   const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
   const [liveEntries, setLiveEntries] = useState(entries);
@@ -37,12 +48,19 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   }, [pathname]);
 
   useEffect(() => {
-    const sp = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-    if (!sp) return;
-    const q = sp.get("q");
-    const sortParam = sp.get("sort");
-    if (q) setQuery(q);
-    if (sortParam === "az" || sortParam === "updated") setSort(sortParam);
+    const handlePopState = () => {
+      if (typeof window === "undefined") return;
+      const sp = new URLSearchParams(window.location.search);
+      const q = sp.get("q") || "";
+      const sortParam = sp.get("sort");
+      const sortValue = sortParam === "updated" ? "updated" : "az";
+      setQuery(q);
+      setSort(sortValue);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   useEffect(() => {

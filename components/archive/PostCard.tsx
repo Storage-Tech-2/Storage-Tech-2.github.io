@@ -43,7 +43,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
       : undefined;
 
   return (
-    <article ref={ref} className="group flex h-full flex-col rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+    <article ref={ref} className="group flex h-full min-h-[380px] flex-col rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
       <Link
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
@@ -78,7 +78,9 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
               {displayTs !== undefined && <span title={displayTs ? formatDate(displayTs) : undefined}>{displayTs ? timeAgo(displayTs) : ""}</span>}
             </div>
           </div>
-          <TagList tags={post.entry.tags || []} />
+          <div className="min-h-[54px]">
+            <TagList tags={post.entry.tags || []} />
+          </div>
         </div>
       </Link>
     </article>

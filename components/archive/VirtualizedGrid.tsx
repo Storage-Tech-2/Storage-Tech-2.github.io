@@ -7,7 +7,7 @@ import { type ArchiveListItem } from "@/lib/archive";
 import { type SortKey } from "@/lib/types";
 
 const GRID_GAP = 16;
-const CARD_HEIGHT = 340;
+const CARD_HEIGHT = 380;
 const SCROLLBAR_FUDGE = 20;
 const ROW_HEIGHT = CARD_HEIGHT + GRID_GAP;
 

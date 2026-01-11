@@ -41,47 +41,50 @@ export function ArchiveShell({
     branch,
   });
 
-  const [q, setQ] = useState("");
-  const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
-  const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>({});
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<SortKey>("newest");
+  const initialFilters = useMemo(() => {
+    if (typeof window === "undefined") {
+      return {
+        q: "",
+        tagMode: "AND" as const,
+        tagState: {} as Record<string, -1 | 0 | 1>,
+        selectedChannels: [] as string[],
+        sortKey: "newest" as SortKey,
+      };
+    }
+    const sp = new URLSearchParams(window.location.search);
+    const parsed = extractFiltersFromSearch(sp, ["newest", "oldest", "archived", "archivedOldest", "az"]);
+    return {
+      q: parsed.q || "",
+      tagMode: parsed.tagMode,
+      tagState: parsed.tagState || {},
+      selectedChannels: parsed.selectedChannels || [],
+      sortKey: parsed.sortKey || "newest",
+    };
+  }, []);
+
+  const [q, setQ] = useState(initialFilters.q);
+  const [tagMode, setTagMode] = useState<"OR" | "AND">(initialFilters.tagMode);
+  const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>(initialFilters.tagState);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(initialFilters.selectedChannels);
+  const [sortKey, setSortKey] = useState<SortKey>(initialFilters.sortKey);
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const sidebarShellRef = useRef<HTMLElement | null>(null);
-  const initializedFromUrl = useRef(false);
-
-  // Restore state from session storage
   useEffect(() => {
-    if (initializedFromUrl.current) return;
-    if (typeof window === "undefined") return;
-    initializedFromUrl.current = true;
-    const sp = new URLSearchParams(window.location.search);
-    const hasUrlState =
-      sp.has("q") || sp.has("sort") || sp.has("tagMode") || sp.has("tags") || sp.has("xtags") || sp.has("channels");
-    if (hasUrlState) {
+    const handlePopState = () => {
+      if (typeof window === "undefined") return;
+      const sp = new URLSearchParams(window.location.search);
       const parsed = extractFiltersFromSearch(sp, ["newest", "oldest", "archived", "archivedOldest", "az"]);
-      if (parsed.q) setQ(parsed.q);
-      if (parsed.tagMode) setTagMode(parsed.tagMode);
-      if (parsed.tagState) setTagState(parsed.tagState);
-      if (parsed.selectedChannels) setSelectedChannels(parsed.selectedChannels);
-      if (parsed.sortKey) setSortKey(parsed.sortKey);
-      return;
-    }
-    /* eslint-disable react-hooks/set-state-in-effect */
-    const saved = sessionStorage.getItem("archive-filters");
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed.q) setQ(parsed.q);
-      if (parsed.tagMode) setTagMode(parsed.tagMode);
-      if (parsed.tagState) setTagState(parsed.tagState);
-      if (parsed.selectedChannels) setSelectedChannels(parsed.selectedChannels);
-      if (parsed.sortKey) setSortKey(parsed.sortKey);
-    } catch {
-      // ignore malformed state
-    }
-    /* eslint-enable react-hooks/set-state-in-effect */
+      setQ(parsed.q || "");
+      setTagMode(parsed.tagMode);
+      setTagState(parsed.tagState || {});
+      setSelectedChannels(parsed.selectedChannels || []);
+      setSortKey(parsed.sortKey || "newest");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   const pendingScrollRef = useRef<number | null>(null);
@@ -124,19 +127,6 @@ export function ArchiveShell({
       window.removeEventListener("pageshow", restoreScroll);
     };
   }, [clientReady]);
-
-  useEffect(() => {
-    sessionStorage.setItem(
-      "archive-filters",
-      JSON.stringify({
-        q,
-        tagMode,
-        tagState,
-        selectedChannels,
-        sortKey,
-      }),
-    );
-  }, [q, tagMode, tagState, selectedChannels, sortKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -209,7 +199,6 @@ export function ArchiveShell({
       if (y === null) return;
       window.scrollTo(0, y);
       pendingScrollRef.current = null;
-      sessionStorage.removeItem("archive-scroll");
     });
   }, [clientReady, filteredPosts.length]);
 
