@@ -158,7 +158,7 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
             {ext && !att.youtube ? ` · ${ext}` : ""}
           </span>
         </div>
-        <h5 className="text-sm font-semibold leading-snug break-words">{title}</h5>
+        <h5 className="text-sm font-semibold leading-snug wrap-break-word">{title}</h5>
         {!att.youtube && <div className="text-[11px] text-gray-500 break-words">{att.name}</div>}
         {att.description && <div className="text-xs text-gray-700 dark:text-gray-300 break-words">{att.description}</div>}
 

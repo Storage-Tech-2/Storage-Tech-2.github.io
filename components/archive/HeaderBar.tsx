@@ -94,7 +94,7 @@ export function HeaderBar({
 
           {view === "archive" ? (
             <>
-              <div className="relative min-w-[200px] w-full flex-1 sm:w-auto">
+              <div className="relative min-w-50 w-full flex-1 sm:w-auto">
                 <input
                   value={q}
                   onChange={(e) => onSearchChange(e.target.value)}
@@ -121,7 +121,7 @@ export function HeaderBar({
             </>
           ) : (
             <>
-              <div className="relative min-w-[200px] w-full flex-1 sm:w-auto">
+              <div className="relative min-w-50 w-full flex-1 sm:w-auto">
                 <input
                   value={dictionaryQuery}
                   onChange={(e) => onDictionarySearchChange(e.target.value)}

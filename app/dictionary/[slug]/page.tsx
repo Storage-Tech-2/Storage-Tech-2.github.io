@@ -53,6 +53,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default async function DictionaryEntryPage(_params: Params) {
   const dictionary = await fetchDictionaryIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH);
   return <DictionaryPageClient entries={dictionary.entries} owner={DEFAULT_OWNER} repo={DEFAULT_REPO} branch={DEFAULT_BRANCH} />;

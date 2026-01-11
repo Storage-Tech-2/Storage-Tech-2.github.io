@@ -1,4 +1,4 @@
-import { ReferenceType, type ArchivedPostReference, type Reference } from "../types";
+import { ReferenceType, type Reference } from "../types";
 import { buildDictionarySlug } from "../dictionary";
 import { getAuthorName } from "./authors";
 import { buildEntrySlug } from "../archive";

@@ -1,8 +1,8 @@
 'use client';
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, MarkdownText, RecordRenderer, TagList } from "./ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
 import { fetchCommentsData, fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
@@ -53,6 +53,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
 
   useEffect(() => {
     if (disableLiveFetch) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setComments(null);
       setCommentsLoading(false);
       return;
@@ -238,7 +239,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                   key={img.id}
                   type="button"
                   onClick={() => setActiveImageIndex(index)}
-                  className={`relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
+                  className={`relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
                   title={img.description || img.name}
                 >
                   <Image src={img.path || img.url} alt={img.description || img.name} fill className="object-contain" sizes="112px" unoptimized />
@@ -284,7 +285,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                   const url = (a as { url?: string }).url;
                   return (
                     <li key={i} className="flex gap-3 rounded-xl border p-3 dark:border-gray-800">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         {iconURL ? (
                           <Image src={iconURL} alt={name} className="h-10 w-10 rounded-full object-cover" width={40} height={40} unoptimized />
                         ) : (
@@ -430,7 +431,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                       setActiveImageIndex(index);
                       setLightbox({ src: img.path || img.url, alt: img.description || img.name, index, mode: "gallery" });
                     }}
-                    className={`relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
+                    className={`relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
                     title={img.description || img.name}
                   >
                     <Image src={img.path || img.url} alt={img.description || img.name} fill className="object-contain" sizes="112px" unoptimized />

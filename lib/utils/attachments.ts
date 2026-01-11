@@ -33,7 +33,7 @@ export function replaceAttachmentsInText(text: string, attachments: Attachment[]
     for (let i = 1; i < split.length; i += 1) {
       const prev = split[i - 1];
       if (prev.endsWith("](") && split[i].startsWith(")")) {
-        replaced.push(match.canDownload ? match.path : url);
+        replaced.push((match.canDownload ? match.path : url) || "");
       } else {
         replaced.push(`[${match.name || "Attachment"}](${match.canDownload ? match.path : url})`);
       }
