@@ -50,7 +50,7 @@ export function HeaderBar({
 }: Props) {
   const archiveRepoUrl = `https://github.com/${owner}/${repo}`;
   return (
-    <header className="top-0 z-20 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80 sm:sticky">
+    <header className="top-0 z-20 bg-white/80 backdrop-blur dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
         <div className="flex flex-wrap items-center gap-2 pb-1 sm:gap-3">
           <div className="flex shrink-0 items-center gap-3">
@@ -73,7 +73,7 @@ export function HeaderBar({
             <Link
               href="/"
               className={clsx(
-                "rounded-xl border px-3 py-2 text-sm",
+                "rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-gray-800",
                 view === "archive" ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900",
               )}
               onClick={onArchiveClick}
@@ -83,7 +83,7 @@ export function HeaderBar({
             <Link
               href="/dictionary"
               className={clsx(
-                "rounded-xl border px-3 py-2 text-sm",
+                "rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-gray-800",
                 view === "dictionary" ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900",
               )}
               onClick={onDictionaryClick}
@@ -94,7 +94,7 @@ export function HeaderBar({
 
           {view === "archive" ? (
             <>
-              <div className="relative min-w-50 flex-1">
+              <div className="relative min-w-[200px] w-full flex-1 sm:w-auto">
                 <input
                   value={q}
                   onChange={(e) => onSearchChange(e.target.value)}
@@ -110,7 +110,7 @@ export function HeaderBar({
               <select
                 value={sortKey}
                 onChange={(e) => onSortChange(e.target.value as SortKey)}
-                className="shrink-0 rounded-xl border bg-white px-3 py-2 dark:bg-gray-900"
+                className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
               >
                 <option value="newest">Updated (newest)</option>
                 <option value="oldest">Updated (oldest)</option>
@@ -121,7 +121,7 @@ export function HeaderBar({
             </>
           ) : (
             <>
-              <div className="relative min-w-50 flex-1">
+              <div className="relative min-w-[200px] w-full flex-1 sm:w-auto">
                 <input
                   value={dictionaryQuery}
                   onChange={(e) => onDictionarySearchChange(e.target.value)}
@@ -137,7 +137,7 @@ export function HeaderBar({
               <select
                 value={dictionarySort}
                 onChange={(e) => onDictionarySortChange(e.target.value as "az" | "updated")}
-                className="shrink-0 rounded-xl border bg-white px-3 py-2 dark:bg-gray-900"
+                className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
               >
                 <option value="az">A to Z</option>
                 <option value="updated">Updated (newest)</option>
@@ -150,7 +150,7 @@ export function HeaderBar({
               href={discordInviteUrl}
               target="_blank"
               rel="noreferrer"
-              className="shrink-0 rounded-xl border bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="shrink-0 rounded-xl border border-blue-600 bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 dark:border-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               Join Discord
             </a>

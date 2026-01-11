@@ -129,6 +129,7 @@ function VirtualizedGridContent({
         isScrolling={isScrolling}
         onScroll={onChildScroll}
         scrollTop={scrollTop}
+        overscanRowCount={2}
       />
     </div>
   );

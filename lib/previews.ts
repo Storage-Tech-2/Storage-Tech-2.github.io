@@ -1,10 +1,9 @@
 const fallbackIndex: PreviewIndex = { generatedAt: "", items: [] };
 let previewIndex: PreviewIndex = fallbackIndex;
 try {
-  // Avoid hard build-time dependency on the JSON file.
-  // eslint-disable-next-line no-eval
-  const req = eval("require") as (path: string) => unknown;
-  previewIndex = (req("./generated/previews.json") as PreviewIndex) ?? fallbackIndex;
+  // "./generated/previews.json"
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  previewIndex = require("../generated/previews.json") as PreviewIndex;
 } catch {
   previewIndex = fallbackIndex;
 }

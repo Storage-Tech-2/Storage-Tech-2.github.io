@@ -313,13 +313,10 @@ export function ArchiveShell({
                 />
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <span>
                 Showing {filteredPosts.length} of {posts.length} posts
               </span>
-              <button onClick={resetFilters} className="text-blue-600 hover:underline dark:text-blue-400">
-                Reset filters
-              </button>
             </div>
           </div>
 

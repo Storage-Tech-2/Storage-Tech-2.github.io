@@ -43,7 +43,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
       : undefined;
 
   return (
-    <article ref={ref} className="group flex h-full min-h-95 flex-col rounded-2xl border bg-white transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+    <article ref={ref} className="group flex h-full min-h-95 flex-col rounded-2xl bg-white transition hover:shadow-md dark:bg-gray-900">
       <Link
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
