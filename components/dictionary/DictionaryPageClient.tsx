@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
+import { Footer } from "@/components/layout/Footer";
 import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { filterDictionaryEntries } from "@/lib/filtering";
@@ -86,9 +87,9 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
     const next = queryString ? `${path}?${queryString}` : path;
     const current = `${window.location.pathname}${window.location.search}`;
     if (current !== next) {
-      router.replace(next);
+      window.history.replaceState(null, "", next);
     }
-  }, [query, sort, currentSlug, router]);
+  }, [query, sort, currentSlug]);
 
   useEffect(() => {
     if (!pathSlug) {
@@ -122,7 +123,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       const sp = new URLSearchParams(window.location.search);
       const queryString = sp.toString();
       const next = queryString ? `/dictionary/${encodeURIComponent(slug)}?${queryString}` : `/dictionary/${encodeURIComponent(slug)}`;
-      router.push(next);
+      window.history.replaceState(null, "", next);
     }
     if (ent.data || disableLiveFetch) {
       setActive(ent);
@@ -194,7 +195,11 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
               const sp = new URLSearchParams(window.location.search);
               const queryString = sp.toString();
               const next = queryString ? `/dictionary?${queryString}` : "/dictionary";
-              router.replace(next);
+              if (pathSlug) {
+                router.replace(next);
+              } else {
+                window.history.replaceState(null, "", next);
+              }
             }
           }}
           dictionaryTooltips={dictionaryTooltips}
@@ -202,6 +207,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       ) : loadingEntryId ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 text-sm text-white">Loading term…</div>
       ) : null}
+      <Footer />
     </div>
   );
 }

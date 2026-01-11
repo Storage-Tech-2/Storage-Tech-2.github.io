@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/prefetch-previews.mjs",
+    "prebuild": "tsx scripts/prefetch-previews.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -27,6 +27,7 @@
     "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.1",
+    "tsx": "^4.20.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }

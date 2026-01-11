@@ -15,6 +15,7 @@ import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type IndexedDictionaryEntr
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
 import { siteConfig } from "@/lib/siteConfig";
+import { Footer } from "@/components/layout/Footer";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -83,24 +84,46 @@ export function ArchiveShell({
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
+  const pendingScrollRef = useRef<number | null>(null);
+
+  const [clientReady, setClientReady] = useState(false);
   useEffect(() => {
-    const restoreScroll = () => {
+    const id = requestAnimationFrame(() => setClientReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const commitSearch = () => setQ((val) => val);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    const captureScroll = () => {
       const savedScroll = sessionStorage.getItem("archive-scroll");
       if (!savedScroll) return;
       const y = parseInt(savedScroll, 10);
-      if (!Number.isNaN(y)) {
-        requestAnimationFrame(() => window.scrollTo(0, y));
-      }
+      if (!Number.isNaN(y)) pendingScrollRef.current = y;
+    };
+    const restoreScroll = () => {
+      if (!clientReady) return;
+      const y = pendingScrollRef.current;
+      if (y === null) return;
+      requestAnimationFrame(() => window.scrollTo(0, y));
+      pendingScrollRef.current = null;
       sessionStorage.removeItem("archive-scroll");
     };
+    captureScroll();
     restoreScroll();
+    window.addEventListener("popstate", captureScroll);
     window.addEventListener("popstate", restoreScroll);
+    window.addEventListener("pageshow", captureScroll);
     window.addEventListener("pageshow", restoreScroll);
     return () => {
+      window.removeEventListener("popstate", captureScroll);
       window.removeEventListener("popstate", restoreScroll);
+      window.removeEventListener("pageshow", captureScroll);
       window.removeEventListener("pageshow", restoreScroll);
     };
-  }, []);
+  }, [clientReady]);
 
   useEffect(() => {
     sessionStorage.setItem(
@@ -173,17 +196,22 @@ export function ArchiveShell({
     setSortKey("newest");
   };
 
-  const [clientReady, setClientReady] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setClientReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  const commitSearch = () => setQ((val) => val);
-
   useEffect(() => {
     const el = sidebarShellRef.current;
     if (el && el.scrollTop !== 0) el.scrollTop = 0;
   }, [selectedChannels, tagState, tagMode, filteredPosts.length]);
+
+  useEffect(() => {
+    if (!clientReady) return;
+    if (pendingScrollRef.current === null) return;
+    requestAnimationFrame(() => {
+      const y = pendingScrollRef.current;
+      if (y === null) return;
+      window.scrollTo(0, y);
+      pendingScrollRef.current = null;
+      sessionStorage.removeItem("archive-scroll");
+    });
+  }, [clientReady, filteredPosts.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
@@ -289,6 +317,7 @@ export function ArchiveShell({
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
