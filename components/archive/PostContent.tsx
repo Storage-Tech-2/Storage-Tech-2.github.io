@@ -1,12 +1,10 @@
 'use client';
 
-'use client';
-
 import Image from "next/image";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AttachmentCard, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
-import { fetchDictionaryEntry } from "@/lib/archive";
+import { fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
 import { assetURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
@@ -20,9 +18,27 @@ type Props = {
 };
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
-  const payload = data ?? post.data;
+  const [liveData, setLiveData] = useState<ArchiveEntryData | undefined>(data ?? post.data);
+  const payload = liveData ?? post.data;
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setLiveData(data ?? post.data));
+    return () => cancelAnimationFrame(id);
+  }, [data, post.data]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPostData(post.channel.path, post.entry, undefined, undefined, undefined, "no-store")
+      .then((fresh) => {
+        if (!cancelled) setLiveData(fresh);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [post.channel.path, post.entry]);
 
   const handleInternalLink = useCallback((url: URL) => {
     if (url.origin !== (typeof window !== "undefined" ? window.location.origin : url.origin)) return false;

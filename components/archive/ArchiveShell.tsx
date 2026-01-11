@@ -32,7 +32,7 @@ export function ArchiveShell({
   branch = DEFAULT_BRANCH,
 }: Props) {
   const router = useRouter();
-  const { posts, channels, loading, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive, owner, repo, branch });
+  const { posts, channels, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive, owner, repo, branch });
   useDictionaryData({
     initial: initialDictionary,
     owner,
@@ -161,10 +161,10 @@ export function ArchiveShell({
         onDictionaryClick={() => {}}
       />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-3 pb-12 pt-4 lg:flex-row lg:items-start lg:px-4">
-        <aside className="sidebar-scroll lg:sticky lg:top-16 lg:w-72 xl:w-80">
-          <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-130px)]">
-            <div className="rounded-xl border bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
+          <aside className="sidebar-scroll lg:sticky lg:top-20 lg:w-80 xl:w-96 flex-shrink-0 pr-1">
+            <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
               <ArchiveFilters
                 channels={channels}
                 selectedChannels={selectedChannels}
@@ -175,14 +175,13 @@ export function ArchiveShell({
                 onResetFilters={resetFilters}
               />
             </div>
-          </div>
-        </aside>
+          </aside>
 
-        <div className="flex flex-1 flex-col gap-4 lg:pt-1.5">
+          <div className="flex-1 lg:pt-1.5">
           {error ? <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
-          {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null}
+          {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
+          <div>
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Tags</span>
               <div className="inline-flex items-center gap-2 text-xs">
@@ -224,22 +223,23 @@ export function ArchiveShell({
             </div>
           </div>
 
-          {clientReady ? (
-            <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredPosts.map((post) => (
-                <PostCard
-                  key={`${post.channel.path}/${post.entry.path}`}
-                  post={post}
-                  sortKey={sortKey}
-                  ensurePostLoaded={ensurePostLoaded}
-                  onNavigate={handleOpenPost}
-                />
-              ))}
-            </div>
-          )}
+            {clientReady ? (
+              <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredPosts.map((post) => (
+                  <PostCard
+                    key={`${post.channel.path}/${post.entry.path}`}
+                    post={post}
+                    sortKey={sortKey}
+                    ensurePostLoaded={ensurePostLoaded}
+                    onNavigate={handleOpenPost}
+                  />
+                ))}
+              </div>
+            )}
 
+          </div>
         </div>
       </div>
     </div>

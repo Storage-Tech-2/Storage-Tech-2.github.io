@@ -20,8 +20,8 @@ type Props = {
 
 function getColumnCount(width: number) {
   const effectiveWidth = width + SCROLLBAR_FUDGE;
-  if (effectiveWidth >= 1240) return 4;
-  if (effectiveWidth >= 980) return 3;
+  if (effectiveWidth >= 1280) return 4;
+  if (effectiveWidth >= 1024) return 3;
   if (effectiveWidth >= 640) return 2;
   return 1;
 }
@@ -85,7 +85,10 @@ function VirtualizedGridContent({
   registerChild,
   scrollTop,
 }: GridContentProps) {
-  const columnCount = useMemo(() => getColumnCount(width), [width]);
+  const columnCount = useMemo(() => {
+    const viewport = typeof window !== "undefined" ? window.innerWidth : width;
+    return getColumnCount(Math.max(width, viewport));
+  }, [width]);
   const rowCount = useMemo(() => Math.ceil(posts.length / columnCount), [posts.length, columnCount]);
 
   const rowRenderer = useCallback(

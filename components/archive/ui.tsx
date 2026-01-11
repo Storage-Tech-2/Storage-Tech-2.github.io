@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { assetURL } from "@/lib/github";
@@ -347,16 +347,10 @@ export function RecordRenderer({
   onInternalLink?: (url: URL) => boolean;
 }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles]);
-  const [decorated, setDecorated] = useState(markdown);
-
-  useEffect(() => {
-    setDecorated(markdown);
-  }, [markdown]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setDecorated(transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id], postTooltipLookup).result);
-  }, [markdown, references, dictionaryTooltips, postTooltipLookup]);
+  const decorated = useMemo(
+    () => transformOutputWithReferences(markdown, references || [], (id) => dictionaryTooltips?.[id], postTooltipLookup).result,
+    [markdown, references, dictionaryTooltips, postTooltipLookup],
+  );
 
   if (!decorated) return null;
   return <MarkdownText text={decorated} onInternalLink={onInternalLink} />;

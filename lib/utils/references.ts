@@ -152,9 +152,6 @@ export function transformOutputWithReferences(
   dictionaryTooltipLookup?: (id: string) => string | undefined,
   postTooltipLookup?: (ref: ArchivedPostReference) => string | undefined,
 ): { result: string } {
-  if (typeof window === "undefined") {
-    return { result: text };
-  }
   const matches = findMatchesWithinText(text, references);
   if (matches.length === 0) return { result: text };
 
@@ -219,24 +216,22 @@ export function transformOutputWithReferences(
         resultParts.push(text.slice(hyperlink.start, hyperlink.end));
         currentIndex = hyperlink.end;
       } else {
-        const newURL = new URL(window.location.href);
-        newURL.searchParams.set("did", ref.id);
+        const newURL = `/dictionary?did=${encodeURIComponent(ref.id)}`;
         const linkText = text.slice(match.start, match.end);
-        const withTitle = safeTitle ? `[${linkText}](${newURL.href} "Definition: ${safeTitle}")` : `[${linkText}](${newURL.href})`;
+        const withTitle = safeTitle ? `[${linkText}](${newURL} "Definition: ${safeTitle}")` : `[${linkText}](${newURL})`;
         resultParts.push(withTitle);
         currentIndex = match.end;
         excludedIDs.add(ref.id);
       }
     } else if (ref.type === ReferenceType.ARCHIVED_POST) {
-      const newURL = new URL(window.location.href);
-      newURL.searchParams.set("id", ref.id);
-      newURL.searchParams.delete("did");
+      const slug = encodeURIComponent(ref.code || ref.id);
+      const newURL = ref.url || `/archives/${slug}`;
       const tooltip = postTooltipLookup?.(ref);
       const safeTitle = makeTextSafeForTooltip(tooltip);
       if (hyperlink) {
         const linkText = hyperlink.groups[0] || "";
         if (linkText.toUpperCase() === ref.code) {
-          const linkedText = safeTitle ? `[${linkText}](${newURL.href} "${safeTitle}")` : `[${linkText}](${newURL.href})`;
+          const linkedText = safeTitle ? `[${linkText}](${newURL} "${safeTitle}")` : `[${linkText}](${newURL})`;
           resultParts.push(linkedText);
           currentIndex = hyperlink.end;
         } else {
@@ -245,8 +240,8 @@ export function transformOutputWithReferences(
         }
       } else {
         const linkedText = safeTitle
-          ? `[${text.slice(match.start, match.end)}](${newURL.href} "${safeTitle}")`
-          : `[${text.slice(match.start, match.end)}](${newURL.href})`;
+          ? `[${text.slice(match.start, match.end)}](${newURL} "${safeTitle}")`
+          : `[${text.slice(match.start, match.end)}](${newURL})`;
         resultParts.push(linkedText);
         currentIndex = match.end;
       }
