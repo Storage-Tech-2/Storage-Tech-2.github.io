@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PostContent } from "@/components/archive/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
 import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, findPostBySlug } from "@/lib/archive";
+import { getPreviewBySlug } from "@/lib/previews";
 import { siteConfig } from "@/lib/siteConfig";
 
 export const dynamic = "force-static";
@@ -20,13 +21,36 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const archive = await fetchArchiveIndex();
   const match = findPostBySlug(archive.posts, decodeURIComponent((await params).slug));
   if (!match) return { title: "Entry not found" };
+  const preview = getPreviewBySlug(match.slug);
+  const ogImage = preview ? new URL(preview.localPath, siteConfig.siteUrl).toString() : undefined;
+  const description = `Archive entry ${match.entry.code} from ${match.channel.name}`;
   return {
     title: `${match.entry.name} | ${siteConfig.siteName}`,
-    description: `Archive entry ${match.entry.code} from ${match.channel.name}`,
+    description,
+    alternates: {
+      canonical: `/archives/${match.slug}`,
+    },
     openGraph: {
+      type: "article",
       title: `${match.entry.name} | ${siteConfig.siteName}`,
-      description: `Archive entry ${match.entry.code} from ${match.channel.name}`,
+      description,
       url: `/archives/${match.slug}`,
+      images: ogImage
+        ? [
+            {
+              url: ogImage,
+              width: preview?.width,
+              height: preview?.height,
+              alt: match.entry.name,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title: `${match.entry.name} | ${siteConfig.siteName}`,
+      description,
+      images: ogImage ? [ogImage] : undefined,
     },
   };
 }

@@ -9,6 +9,7 @@ import { type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type SortKey } from "@/lib/types";
 import { getAuthorName } from "@/lib/utils/authors";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
+import { getPreviewByEntryId } from "@/lib/previews";
 
 type Props = {
   post: ArchiveListItem;
@@ -24,8 +25,11 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
     if (inView) ensurePostLoaded(post).catch(() => {});
   }, [inView, ensurePostLoaded, post]);
 
+  const preview = getPreviewByEntryId(post.entry.id);
   const hero = post.data?.images?.[0];
   const heroSrc = hero ? buildImagePath(post.channel.path, post.entry.path, hero) : null;
+  const displaySrc =
+    preview && (!heroSrc || heroSrc === preview.sourceUrl) ? preview.localPath : heroSrc;
 
   const updatedAt = getEntryUpdatedAt(post.entry);
   const archivedAt = getEntryArchivedAt(post.entry);
@@ -48,10 +52,10 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
         }}
       >
         <div className="relative aspect-video min-h-[180px] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800">
-          {heroSrc ? (
+          {displaySrc ? (
             <Image
-              src={heroSrc}
-              alt={hero?.description || hero?.name || "thumbnail"}
+              src={displaySrc}
+              alt={hero?.description || hero?.name || post.entry.name || "thumbnail"}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain"

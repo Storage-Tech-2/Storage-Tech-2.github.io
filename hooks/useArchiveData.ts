@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArchiveIndex, ArchiveListItem, buildEntrySlug, fetchArchiveIndex, fetchPostData } from "@/lib/archive";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type EntryRef } from "@/lib/types";
+import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
   owner?: string;
@@ -22,6 +23,10 @@ export function useArchiveData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_
   const inflight = useRef(new Map<string, Promise<ArchiveListItem>>());
 
   useEffect(() => {
+    if (disableLiveFetch) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     async function run() {
       if (initial) {
@@ -64,6 +69,7 @@ export function useArchiveData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_
   }, [owner, repo, branch, initial]);
 
   const ensurePostLoaded = async (post: ArchiveListItem) => {
+    if (disableLiveFetch) return post;
     if (post.data) return post;
     const cacheKey = keyForEntry(post.channel.path, post.entry);
     const existing = inflight.current.get(cacheKey);

@@ -57,7 +57,7 @@ export async function fetchArchiveIndex(
   branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<ArchiveIndex> {
-  const config = await fetchJSONRaw<ArchiveConfig>("config.json", owner, repo, branch, cache);
+  const config = await fetchArchiveConfig(owner, repo, branch, cache);
   const channels = config.archiveChannels || [];
 
   const channelDatas = await asyncPool(6, channels, async (channel) => {
@@ -76,6 +76,26 @@ export async function fetchArchiveIndex(
   posts.sort((a, b) => (b.entry.updatedAt ?? 0) - (a.entry.updatedAt ?? 0));
 
   return { config, channels, posts };
+}
+
+export async function fetchArchiveConfig(
+  owner = DEFAULT_OWNER,
+  repo = DEFAULT_REPO,
+  branch = DEFAULT_BRANCH,
+  cache: RequestCache = "force-cache",
+): Promise<ArchiveConfig> {
+  return fetchJSONRaw<ArchiveConfig>("config.json", owner, repo, branch, cache);
+}
+
+export async function fetchChannelData(
+  channelPath: string,
+  owner = DEFAULT_OWNER,
+  repo = DEFAULT_REPO,
+  branch = DEFAULT_BRANCH,
+  cache: RequestCache = "force-cache",
+): Promise<ChannelData> {
+  const path = `${channelPath}/data.json`;
+  return fetchJSONRaw<ChannelData>(path, owner, repo, branch, cache);
 }
 
 export async function fetchPostData(

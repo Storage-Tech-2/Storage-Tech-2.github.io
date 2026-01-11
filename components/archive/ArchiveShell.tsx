@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArchiveFilters } from "./ArchiveFilters";
 import { TagChip } from "./ui";
@@ -10,7 +10,7 @@ import { VirtualizedGrid } from "./VirtualizedGrid";
 import { useArchiveData } from "@/hooks/useArchiveData";
 import { useDictionaryData } from "@/hooks/useDictionaryData";
 import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
-import { filterPosts, computeChannelCounts, computeTagCounts } from "@/lib/filtering";
+import { filterPosts, computeChannelCounts, computeTagCounts, extractFiltersFromSearch, serializeListParam } from "@/lib/filtering";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
@@ -47,11 +47,28 @@ export function ArchiveShell({
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
+  const sidebarShellRef = useRef<HTMLElement | null>(null);
+  const initializedFromUrl = useRef(false);
 
   // Restore state from session storage
   useEffect(() => {
+    if (initializedFromUrl.current) return;
+    if (typeof window === "undefined") return;
+    initializedFromUrl.current = true;
+    const sp = new URLSearchParams(window.location.search);
+    const hasUrlState =
+      sp.has("q") || sp.has("sort") || sp.has("tagMode") || sp.has("tags") || sp.has("xtags") || sp.has("channels");
+    if (hasUrlState) {
+      const parsed = extractFiltersFromSearch(sp, ["newest", "oldest", "archived", "archivedOldest", "az"]);
+      if (parsed.q) setQ(parsed.q);
+      if (parsed.tagMode) setTagMode(parsed.tagMode);
+      if (parsed.tagState) setTagState(parsed.tagState);
+      if (parsed.selectedChannels) setSelectedChannels(parsed.selectedChannels);
+      if (parsed.sortKey) setSortKey(parsed.sortKey);
+      return;
+    }
     /* eslint-disable react-hooks/set-state-in-effect */
-    const saved = typeof window !== "undefined" ? sessionStorage.getItem("archive-filters") : null;
+    const saved = sessionStorage.getItem("archive-filters");
     if (!saved) return;
     try {
       const parsed = JSON.parse(saved);
@@ -67,13 +84,22 @@ export function ArchiveShell({
   }, []);
 
   useEffect(() => {
-    const savedScroll = sessionStorage.getItem("archive-scroll");
-    if (!savedScroll) return;
-    const y = parseInt(savedScroll, 10);
-    if (!Number.isNaN(y)) {
-      requestAnimationFrame(() => window.scrollTo(0, y));
-    }
-    sessionStorage.removeItem("archive-scroll");
+    const restoreScroll = () => {
+      const savedScroll = sessionStorage.getItem("archive-scroll");
+      if (!savedScroll) return;
+      const y = parseInt(savedScroll, 10);
+      if (!Number.isNaN(y)) {
+        requestAnimationFrame(() => window.scrollTo(0, y));
+      }
+      sessionStorage.removeItem("archive-scroll");
+    };
+    restoreScroll();
+    window.addEventListener("popstate", restoreScroll);
+    window.addEventListener("pageshow", restoreScroll);
+    return () => {
+      window.removeEventListener("popstate", restoreScroll);
+      window.removeEventListener("pageshow", restoreScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -88,6 +114,22 @@ export function ArchiveShell({
       }),
     );
   }, [q, tagMode, tagState, selectedChannels, sortKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const include = Object.keys(tagState).filter((k) => tagState[k] === 1);
+    const exclude = Object.keys(tagState).filter((k) => tagState[k] === -1);
+    const sp = new URLSearchParams();
+    if (q.trim()) sp.set("q", q.trim());
+    if (sortKey !== "newest") sp.set("sort", sortKey);
+    if (tagMode === "OR") sp.set("tagMode", "OR");
+    if (include.length) sp.set("tags", serializeListParam(include));
+    if (exclude.length) sp.set("xtags", serializeListParam(exclude));
+    if (selectedChannels.length) sp.set("channels", serializeListParam(selectedChannels));
+    const query = sp.toString();
+    const next = query ? `/?${query}` : "/";
+    window.history.replaceState(null, "", next);
+  }, [q, sortKey, tagMode, tagState, selectedChannels]);
 
   const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
   const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);
@@ -138,6 +180,11 @@ export function ArchiveShell({
   }, []);
   const commitSearch = () => setQ((val) => val);
 
+  useEffect(() => {
+    const el = sidebarShellRef.current;
+    if (el && el.scrollTop !== 0) el.scrollTop = 0;
+  }, [selectedChannels, tagState, tagMode, filteredPosts.length]);
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <HeaderBar
@@ -163,7 +210,7 @@ export function ArchiveShell({
 
       <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
-          <aside className="sidebar-scroll lg:sticky lg:top-20 lg:w-80 xl:w-96 flex-shrink-0 pr-1">
+          <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20 pr-1 sidebar-scroll">
             <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
               <ArchiveFilters
                 channels={channels}

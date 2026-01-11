@@ -16,6 +16,26 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: `${siteConfig.siteName} Archive`,
   description: "Static-exported archive for Storage Tech 2 with live GitHub-powered data.",
+  metadataBase: new URL(siteConfig.siteUrl),
+  openGraph: {
+    title: `${siteConfig.siteName} Archive`,
+    description: "Static-exported archive for Storage Tech 2 with live GitHub-powered data.",
+    url: "/",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: `${siteConfig.siteName} logo`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: `${siteConfig.siteName} Archive`,
+    description: "Static-exported archive for Storage Tech 2 with live GitHub-powered data.",
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({

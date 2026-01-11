@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type DictionaryEntry, type IndexedDictionaryEntry } from "@/lib/types";
+import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
   owner?: string;
@@ -16,6 +17,10 @@ export function useDictionaryData({ initial, owner = DEFAULT_OWNER, repo = DEFAU
   const inflight = useRef(new Map<string, Promise<DictionaryEntry>>());
 
   useEffect(() => {
+    if (disableLiveFetch) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     async function run() {
       if (initial) setLoading(true);
@@ -51,6 +56,7 @@ export function useDictionaryData({ initial, owner = DEFAULT_OWNER, repo = DEFAU
   }, [owner, repo, branch, initial]);
 
   const ensureEntryLoaded = async (entry: IndexedDictionaryEntry) => {
+    if (disableLiveFetch) return entry.data;
     if (entry.data) return entry.data;
     const existing = inflight.current.get(entry.index.id);
     if (existing) return existing;

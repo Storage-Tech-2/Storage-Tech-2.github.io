@@ -1,4 +1,5 @@
 import { ReferenceType, type ArchivedPostReference, type Reference } from "../types";
+import { buildDictionarySlug } from "../dictionary";
 import { getAuthorName } from "./authors";
 
 export type RegexMatch = {
@@ -216,7 +217,8 @@ export function transformOutputWithReferences(
         resultParts.push(text.slice(hyperlink.start, hyperlink.end));
         currentIndex = hyperlink.end;
       } else {
-        const newURL = `/dictionary?did=${encodeURIComponent(ref.id)}`;
+        const slug = buildDictionarySlug({ id: ref.id, terms: [ref.term] });
+        const newURL = `/dictionary/${encodeURIComponent(slug)}`;
         const linkText = text.slice(match.start, match.end);
         const withTitle = safeTitle ? `[${linkText}](${newURL} "Definition: ${safeTitle}")` : `[${linkText}](${newURL})`;
         resultParts.push(withTitle);

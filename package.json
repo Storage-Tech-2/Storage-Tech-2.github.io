@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/prefetch-previews.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -14,7 +15,8 @@
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
     "react-virtualized": "^9.22.6",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",

@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { AttachmentCard, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
 import { fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
+import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { assetURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
+import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
 import { type ArchiveEntryData, type IndexedDictionaryEntry, type StyleInfo } from "@/lib/types";
 
@@ -29,6 +31,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   }, [data, post.data]);
 
   useEffect(() => {
+    if (disableLiveFetch) return;
     let cancelled = false;
     fetchPostData(post.channel.path, post.entry, undefined, undefined, undefined, "no-store")
       .then((fresh) => {
@@ -41,8 +44,13 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   }, [post.channel.path, post.entry]);
 
   const handleInternalLink = useCallback((url: URL) => {
+    if (disableLiveFetch) return false;
     if (url.origin !== (typeof window !== "undefined" ? window.location.origin : url.origin)) return false;
-    const did = url.searchParams.get("did");
+    let did = url.searchParams.get("did");
+    if (!did && url.pathname.startsWith("/dictionary/")) {
+      const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
+      did = getDictionaryIdFromSlug(decodeURIComponent(slug));
+    }
     if (!did) return false;
     fetchDictionaryEntry(did)
       .then((entryData) => {

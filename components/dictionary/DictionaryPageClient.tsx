@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
 import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
+import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { filterDictionaryEntries } from "@/lib/filtering";
+import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 
@@ -19,17 +21,39 @@ type Props = {
 
 export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
   const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
   const [liveEntries, setLiveEntries] = useState(entries);
+  const [currentSlug, setCurrentSlug] = useState<string | null>(null);
+  const pathSlug = useMemo(() => {
+    if (!pathname) return null;
+    const match = pathname.match(/^\/dictionary\/(.+)$/);
+    if (!match) return null;
+    return decodeURIComponent(match[1].replace(/\/+$/, ""));
+  }, [pathname]);
+
+  useEffect(() => {
+    const sp = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    if (!sp) return;
+    const q = sp.get("q");
+    const sortParam = sp.get("sort");
+    if (q) setQuery(q);
+    if (sortParam === "az" || sortParam === "updated") setSort(sortParam);
+  }, []);
 
   useEffect(() => {
     setLiveEntries(entries);
   }, [entries]);
 
   useEffect(() => {
+    if (pathSlug) setCurrentSlug(pathSlug);
+  }, [pathSlug]);
+
+  useEffect(() => {
+    if (disableLiveFetch) return;
     let cancelled = false;
     fetchDictionaryIndex(owner, repo, branch, "no-store")
       .then((fresh) => {
@@ -51,6 +75,71 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
     });
     return map;
   }, [liveEntries]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams();
+    if (query.trim()) sp.set("q", query.trim());
+    if (sort !== "az") sp.set("sort", sort);
+    const queryString = sp.toString();
+    const path = currentSlug ? `/dictionary/${encodeURIComponent(currentSlug)}` : "/dictionary";
+    const next = queryString ? `${path}?${queryString}` : path;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current !== next) {
+      router.replace(next);
+    }
+  }, [query, sort, currentSlug, router]);
+
+  useEffect(() => {
+    if (!pathSlug) {
+      return;
+    }
+    const entryIndex = findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
+    if (!entryIndex) return;
+    if (active?.index.id === entryIndex.id) return;
+    const full = liveEntries.find((e) => e.index.id === entryIndex.id) || { index: entryIndex };
+    if (full.data || disableLiveFetch) {
+      setActive(full as IndexedDictionaryEntry);
+      return;
+    }
+    setLoadingEntryId(entryIndex.id);
+    fetchDictionaryEntry(entryIndex.id, owner, repo, branch, "no-store")
+      .then((data) => {
+        setActive({ ...full, data });
+      })
+      .catch(() => {
+        setActive(full as IndexedDictionaryEntry);
+      })
+      .finally(() => {
+        setLoadingEntryId(null);
+      });
+  }, [pathSlug, liveEntries, owner, repo, branch, active]);
+
+  const openEntry = (ent: IndexedDictionaryEntry) => {
+    const slug = buildDictionarySlug(ent.index);
+    setCurrentSlug(slug);
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const queryString = sp.toString();
+      const next = queryString ? `/dictionary/${encodeURIComponent(slug)}?${queryString}` : `/dictionary/${encodeURIComponent(slug)}`;
+      router.push(next);
+    }
+    if (ent.data || disableLiveFetch) {
+      setActive(ent);
+      return;
+    }
+    setLoadingEntryId(ent.index.id);
+    fetchDictionaryEntry(ent.index.id, owner, repo, branch, "no-store")
+      .then((data) => {
+        setActive({ ...ent, data });
+      })
+      .catch(() => {
+        setActive(ent);
+      })
+      .finally(() => {
+        setLoadingEntryId(null);
+      });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
@@ -88,23 +177,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
             <DictionaryCard
               key={entry.index.id}
               entry={entry}
-              onOpen={(ent) => {
-                if (ent.data) {
-                  setActive(ent);
-                  return;
-                }
-                setLoadingEntryId(ent.index.id);
-                fetchDictionaryEntry(ent.index.id, owner, repo, branch, "no-store")
-                  .then((data) => {
-                    setActive({ ...ent, data });
-                  })
-                  .catch(() => {
-                    setActive(ent);
-                  })
-                  .finally(() => {
-                    setLoadingEntryId(null);
-                  });
-              }}
+              onOpen={openEntry}
             />
           ))}
         </div>
@@ -112,7 +185,20 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
     </main>
 
       {active ? (
-        <DictionaryModal entry={active} onClose={() => setActive(null)} dictionaryTooltips={dictionaryTooltips} />
+        <DictionaryModal
+          entry={active}
+          onClose={() => {
+            setActive(null);
+            setCurrentSlug(null);
+            if (typeof window !== "undefined") {
+              const sp = new URLSearchParams(window.location.search);
+              const queryString = sp.toString();
+              const next = queryString ? `/dictionary?${queryString}` : "/dictionary";
+              router.replace(next);
+            }
+          }}
+          dictionaryTooltips={dictionaryTooltips}
+        />
       ) : loadingEntryId ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 text-sm text-white">Loading term…</div>
       ) : null}

@@ -2,6 +2,7 @@
 
 import { MarkdownText } from "./ui";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
+import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferences } from "@/lib/utils/references";
 
@@ -77,7 +78,9 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-gray-500">Loading term...</div>
+            <div className="text-sm text-gray-500">
+              {disableLiveFetch ? "Definition unavailable in static snapshot." : "Loading term..."}
+            </div>
           )}
         </div>
       </article>

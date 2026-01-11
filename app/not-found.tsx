@@ -4,7 +4,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PostContent } from "@/components/archive/PostContent";
-import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, findPostBySlug, type ArchiveListItem } from "@/lib/archive";
+import {
+  buildEntrySlug,
+  fetchArchiveConfig,
+  fetchChannelData,
+  fetchDictionaryIndex,
+  fetchPostData,
+  findPostBySlug,
+  type ArchiveListItem,
+} from "@/lib/archive";
+import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type ArchiveEntryData } from "@/lib/types";
 
 export default function NotFound() {
@@ -23,15 +32,32 @@ export default function NotFound() {
 
   useEffect(() => {
     if (!archiveSlug) return;
+    if (disableLiveFetch) return;
     const slug = archiveSlug;
     let cancelled = false;
     async function run() {
       setLoading(true);
       setError(null);
       try {
-        const archive = await fetchArchiveIndex(undefined, undefined, undefined, "no-store");
+        const entryCode = slug.split("-")[0];
+        const config = await fetchArchiveConfig(undefined, undefined, undefined, "no-store");
         if (cancelled) return;
-        const found = findPostBySlug(archive.posts, slug);
+        const channels = config.archiveChannels || [];
+        const channel = channels.find((ch) => entryCode.startsWith(ch.code));
+        if (!channel) {
+          setError("We could not match this entry to a channel.");
+          setPost(null);
+          setData(null);
+          return;
+        }
+        const channelData = await fetchChannelData(channel.path, undefined, undefined, undefined, "no-store");
+        if (cancelled) return;
+        const posts: ArchiveListItem[] = (channelData.entries || []).map((entry) => ({
+          channel,
+          entry,
+          slug: buildEntrySlug(entry),
+        }));
+        const found = findPostBySlug(posts, slug);
         if (!found) {
           setError("We could not find this entry in the archive.");
           setPost(null);
