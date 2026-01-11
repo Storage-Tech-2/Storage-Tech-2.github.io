@@ -52,7 +52,7 @@ export default function RootLayout({
           type="image/<generated>"
           sizes="<generated>"
         />
-        <GoogleAnalytics gaId="G-KL3TXYKD6GF" />
+        <GoogleAnalytics gaId="G-77Y9ZBT4TY" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 dark:bg-black dark:text-white`}>
         {children}
