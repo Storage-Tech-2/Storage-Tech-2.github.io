@@ -12,7 +12,6 @@ import { postToMarkdown } from "@/lib/utils/markdown";
 import { getSpecialTagMeta, sortTagsForDisplay } from "@/lib/utils/tagDisplay";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import {
-  type ArchivedPostReference,
   type Attachment,
   type Author,
   type Image as ArchiveImage,

@@ -112,16 +112,6 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
                 </div>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                {entry.data.threadURL ? (
-                  <a
-                    href={entry.data.threadURL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    Forum Thread
-                  </a>
-                ) : null}
                 {entry.data.statusURL ? (
                   <a
                     href={entry.data.statusURL}
@@ -129,7 +119,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
                     rel="noreferrer"
                     className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    Status
+                    View Discord Thread
                   </a>
                 ) : null}
               </div>

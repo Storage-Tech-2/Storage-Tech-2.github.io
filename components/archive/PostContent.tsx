@@ -2,17 +2,18 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AttachmentCard, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, MarkdownText, RecordRenderer, TagList } from "./ui";
+import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
-import { fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
+import { fetchCommentsData, fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { assetURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
-import { type ArchiveEntryData, type Author, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
+import { type ArchiveEntryData, type ArchiveComment, type Author, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
 import { getAuthorName } from "@/lib/utils/authors";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
+import { replaceAttachmentsInText } from "@/lib/utils/attachments";
 
 type Props = {
   post: ArchiveListItem;
@@ -29,6 +30,8 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const dragStartRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
+  const [comments, setComments] = useState<ArchiveComment[] | null>(null);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setLiveData(data ?? post.data));
@@ -43,6 +46,30 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         if (!cancelled) setLiveData(fresh);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [post.channel.path, post.entry]);
+
+  useEffect(() => {
+    if (disableLiveFetch) {
+      setComments(null);
+      setCommentsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setComments(null);
+    setCommentsLoading(true);
+    fetchCommentsData(post.channel.path, post.entry, undefined, undefined, undefined, "no-store")
+      .then((items) => {
+        if (!cancelled) setComments(items);
+      })
+      .catch(() => {
+        if (!cancelled) setComments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCommentsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -313,6 +340,14 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         </section>
       ) : null}
 
+      {commentsLoading ? (
+        <div className="text-sm text-gray-500">Loading comments...</div>
+      ) : comments?.length ? (
+        <section className="space-y-3">
+          <CommentsList comments={comments} channelPath={post.channel.path} entryPath={post.entry.path} onInternalLink={handleInternalLink} setLightbox={setLightbox} />
+        </section>
+      ) : null}
+
       {payload?.post?.threadURL ? (
         <a
           href={payload.post.threadURL}
@@ -411,5 +446,65 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         <DictionaryModal entry={activeDictionary} onClose={() => setActiveDictionary(null)} dictionaryTooltips={dictionaryTooltips} />
       ) : null}
     </article>
+  );
+}
+
+function CommentsList({
+  comments,
+  channelPath,
+  entryPath,
+  onInternalLink,
+  setLightbox,
+}: {
+  comments: ArchiveComment[];
+  channelPath: string;
+  entryPath: string;
+  onInternalLink: (url: URL) => boolean;
+  setLightbox: (img: { src: string; alt: string; index?: number; mode: "gallery" | "single" }) => void;
+}) {
+  return (
+    <div>
+      <h3 className="text-xl font-semibold tracking-wide text-gray-700 dark:text-gray-200">Comments</h3>
+      <ol className="space-y-3">
+        {comments.map((c) => {
+          const attachments = (c.attachments || []).map((att) => ({
+            ...att,
+            path: att.path ? assetURL(channelPath, entryPath, att.path) : att.path,
+          }));
+          return (
+            <li key={c.id} className="rounded-xl border p-3 dark:border-gray-800">
+              <div className="flex items-center justify-between gap-2">
+                <AuthorInline a={c.sender} />
+                <span className="text-xs text-gray-500" title={formatDate(c.timestamp)}>
+                  {timeAgo(c.timestamp)}
+                </span>
+              </div>
+              {c.content ? (
+                <div className="mt-2 text-sm">
+                  <MarkdownText text={replaceAttachmentsInText(c.content, attachments)} onInternalLink={onInternalLink} />
+                </div>
+              ) : null}
+              {attachments.length ? (
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {attachments.map((att) => (
+                    <AttachmentCard
+                      key={att.id}
+                      att={att}
+                      onView={() =>
+                        setLightbox({
+                          src: att.path || att.url,
+                          alt: att.description || att.name,
+                          mode: "single",
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
