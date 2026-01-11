@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AttachmentCard, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, RecordRenderer, TagList } from "./ui";
+import { AttachmentCard, AuthorsLine, ChannelBadge, EndorsersLine, ImageThumb, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
 import { fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
@@ -10,7 +10,9 @@ import { assetURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
-import { type ArchiveEntryData, type IndexedDictionaryEntry, type StyleInfo } from "@/lib/types";
+import { type ArchiveEntryData, type Author, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
+import { getAuthorName } from "@/lib/utils/authors";
+import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 
 type Props = {
   post: ArchiveListItem;
@@ -22,10 +24,11 @@ type Props = {
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
   const [liveData, setLiveData] = useState<ArchiveEntryData | undefined>(data ?? post.data);
   const payload = liveData ?? post.data;
-  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string; index: number } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const dragStartRef = useRef<number | null>(null);
+  const didDragRef = useRef(false);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setLiveData(data ?? post.data));
@@ -81,12 +84,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   })) ?? [];
   const activeImage = images[activeImageIndex] || null;
 
-  const imageAspect = useMemo(() => {
-    if (!activeImage) return "16/9";
-    const w = activeImage.width || 16;
-    const h = activeImage.height || 9;
-    return `${w}/${h}`;
-  }, [activeImage]);
+  const imageAspect = "16/9";
 
   const attachments = payload?.attachments?.map((att) => ({
     ...att,
@@ -135,15 +133,25 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
             style={{ aspectRatio: imageAspect, maxHeight: "70vh" }}
             onPointerDown={(e) => {
               dragStartRef.current = e.clientX;
+              didDragRef.current = false;
             }}
             onPointerUp={(e) => {
               if (dragStartRef.current === null) return;
               const delta = e.clientX - dragStartRef.current;
               dragStartRef.current = null;
               if (Math.abs(delta) < 40) return;
+              didDragRef.current = true;
               setActiveImageIndex((idx) => {
                 if (delta < 0) return Math.min(images.length - 1, idx + 1);
                 return Math.max(0, idx - 1);
+              });
+            }}
+            onClick={() => {
+              if (!activeImage || didDragRef.current) return;
+              setLightbox({
+                src: activeImage.path || activeImage.url,
+                alt: activeImage.description || activeImage.name,
+                index: activeImageIndex,
               });
             }}
           >
@@ -183,7 +191,11 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
               className="absolute right-3 top-3 rounded-full border bg-white/80 px-2 py-1 text-xs shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
               onClick={() => {
                 if (!activeImage) return;
-                setLightbox({ src: activeImage.path || activeImage.url, alt: activeImage.description || activeImage.name });
+                setLightbox({
+                  src: activeImage.path || activeImage.url,
+                  alt: activeImage.description || activeImage.name,
+                  index: activeImageIndex,
+                });
               }}
             >
               View
@@ -221,6 +233,63 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         <div className="text-sm text-gray-500">Loading post body...</div>
       )}
 
+      {payload ? (
+        (() => {
+          const acknowledgements = (payload as { acknowledgements?: Array<Partial<Author> & { reason?: string }> }).acknowledgements || [];
+          const authorReferences = (payload as { author_references?: Reference[] }).author_references;
+          if (!acknowledgements.length) return null;
+          return (
+            <div>
+              <h4 className="mb-2 text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-300">Acknowledgements</h4>
+              <ul className="space-y-3">
+                {acknowledgements.map((a, i) => {
+                  const decorated = transformOutputWithReferencesForWebsite(
+                    a.reason || "",
+                    authorReferences || [],
+                    (id) => dictionaryTooltips?.[id],
+                  );
+                  const name = getAuthorName(a as Author);
+                  const handle = a.username && a.username !== name ? a.username : null;
+                  const initial = name.trim().charAt(0).toUpperCase() || "?";
+                  const iconURL = (a as { iconURL?: string }).iconURL;
+                  const url = (a as { url?: string }).url;
+                  return (
+                    <li key={i} className="flex gap-3 rounded-xl border p-3 dark:border-gray-800">
+                      <div className="flex-shrink-0">
+                        {iconURL ? (
+                          <Image src={iconURL} alt={name} className="h-10 w-10 rounded-full object-cover" width={40} height={40} unoptimized />
+                        ) : (
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                            {initial}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {url ? (
+                              <a href={url} target="_blank" rel="noreferrer" className="hover:underline">
+                                {name}
+                              </a>
+                            ) : (
+                              name
+                            )}
+                          </span>
+                          {handle ? <span className="text-xs text-gray-500">@{handle}</span> : null}
+                        </div>
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                          <MarkdownText text={decorated} onInternalLink={handleInternalLink} />
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })()
+      ) : null}
+
       {attachments.length ? (
         <section className="space-y-3">
           <h3 className="text-xl font-semibold tracking-wide text-gray-700 dark:text-gray-200">Attachments</h3>
@@ -244,14 +313,80 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
       ) : null}
 
       {lightbox ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => {
-            setLightbox(null);
-          }}
-        >
-          <div className="relative h-full max-h-[90vh] w-full max-w-5xl">
-            <Image src={lightbox.src} alt={lightbox.alt} fill className="object-contain" sizes="90vw" unoptimized />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightbox(null)}>
+          <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+            <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: imageAspect, maxHeight: "80vh" }}>
+              <Image src={lightbox.src} alt={lightbox.alt} fill className="object-contain" sizes="90vw" unoptimized />
+              {images.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border bg-white/80 px-3 py-1 text-sm shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
+                    onClick={() =>
+                      setActiveImageIndex((idx) => {
+                        const next = Math.max(0, idx - 1);
+                        setLightbox({
+                          src: images[next].path || images[next].url,
+                          alt: images[next].description || images[next].name,
+                          index: next,
+                        });
+                        return next;
+                      })
+                    }
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border bg-white/80 px-3 py-1 text-sm shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
+                    onClick={() =>
+                      setActiveImageIndex((idx) => {
+                        const next = Math.min(images.length - 1, idx + 1);
+                        setLightbox({
+                          src: images[next].path || images[next].url,
+                          alt: images[next].description || images[next].name,
+                          index: next,
+                        });
+                        return next;
+                      })
+                    }
+                  >
+                    →
+                  </button>
+                </>
+              ) : null}
+              <button
+                type="button"
+                className="absolute right-3 top-3 rounded-full border bg-white/80 px-2 py-1 text-xs shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightbox(null);
+                }}
+              >
+                Close
+              </button>
+            </div>
+            {activeImage?.description ? (
+              <p className="mt-2 text-sm text-white/80">{activeImage.description}</p>
+            ) : null}
+            {images.length > 1 ? (
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                {images.map((img, index) => (
+                  <button
+                    key={img.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveImageIndex(index);
+                      setLightbox({ src: img.path || img.url, alt: img.description || img.name, index });
+                    }}
+                    className={`relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
+                    title={img.description || img.name}
+                  >
+                    <Image src={img.path || img.url} alt={img.description || img.name} fill className="object-contain" sizes="112px" unoptimized />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

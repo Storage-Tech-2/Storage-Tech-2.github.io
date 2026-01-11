@@ -73,8 +73,8 @@ export function HeaderBar({
             <Link
               href="/"
               className={clsx(
-                "rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-gray-800",
-                view === "archive" ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900",
+                "rounded-xl border px-3 py-2 text-sm",
+                view === "archive" ? "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500" : "border-gray-300 bg-white dark:border-gray-800 dark:bg-gray-900",
               )}
               onClick={onArchiveClick}
             >
@@ -83,8 +83,8 @@ export function HeaderBar({
             <Link
               href="/dictionary"
               className={clsx(
-                "rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-gray-800",
-                view === "dictionary" ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-white dark:bg-gray-900",
+                "rounded-xl border px-3 py-2 text-sm",
+                view === "dictionary" ? "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500" : "border-gray-300 bg-white dark:border-gray-800 dark:bg-gray-900",
               )}
               onClick={onDictionaryClick}
             >
@@ -103,14 +103,14 @@ export function HeaderBar({
                     if (e.key === "Enter") onSearchCommit();
                   }}
                   placeholder="Search posts, codes, tags"
-                  className="w-full rounded-xl border bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
                 />
                 <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
               </div>
               <select
                 value={sortKey}
                 onChange={(e) => onSortChange(e.target.value as SortKey)}
-                className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
+                className="shrink-0 rounded-xl border border-gray-300 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
               >
                 <option value="newest">Updated (newest)</option>
                 <option value="oldest">Updated (oldest)</option>
@@ -130,14 +130,14 @@ export function HeaderBar({
                     if (e.key === "Enter") onDictionarySearchCommit?.();
                   }}
                   placeholder="Search dictionary terms"
-                  className="w-full rounded-xl border bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
                 />
                 <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
               </div>
               <select
                 value={dictionarySort}
                 onChange={(e) => onDictionarySortChange(e.target.value as "az" | "updated")}
-                className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
+                className="shrink-0 rounded-xl border border-gray-300 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
               >
                 <option value="az">A to Z</option>
                 <option value="updated">Updated (newest)</option>

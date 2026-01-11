@@ -283,7 +283,7 @@ export function transformOutputWithReferencesForWebsite(
 
                     // check if matchedText is a discord url, if so replace
                     if (DiscordLinkPattern.test(matchedText)) {
-                      matchedText = reference.code + (safeTitle ? ` ${safeTitle}` : "");
+                      matchedText = reference.code + (safeTitle ? ` (${safeTitle})` : "");
                     } else if (safeTitle) {
                       return `[${matchedText}](${newURL} "${safeTitle}")`;
                     }

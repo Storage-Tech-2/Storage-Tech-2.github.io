@@ -1,9 +1,11 @@
 'use client';
 
-import { MarkdownText } from "./ui";
+import { useEffect, useState } from "react";
+import { ChannelBadge, MarkdownText } from "./ui";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { type IndexedDictionaryEntry } from "@/lib/types";
+import { fetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
+import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 
 type Props = {
@@ -16,6 +18,24 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
   const decorated = entry.data
     ? transformOutputWithReferencesForWebsite(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id])
     : "";
+  const [referencedBy, setReferencedBy] = useState<Array<{ code: string; post?: ArchiveListItem }>>([]);
+
+  useEffect(() => {
+    if (disableLiveFetch) return;
+    const referencedCodes = (entry.data as { referencedBy?: string[] } | undefined)?.referencedBy;
+    if (!referencedCodes?.length) return;
+    let cancelled = false;
+    fetchArchiveIndex(undefined, undefined, undefined, "no-store")
+      .then((archive) => {
+        if (cancelled) return;
+        const byCode = new Map(archive.posts.map((post) => [post.entry.code, post]));
+        setReferencedBy(referencedCodes.map((code) => ({ code, post: byCode.get(code) })));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [entry]);
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={onClose}>
       <article
@@ -52,6 +72,43 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Definition</h4>
                   <MarkdownText text={decorated} />
+                </div>
+              ) : null}
+              {referencedBy.length > 0 ? (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Referenced By</h4>
+                  <div className="space-y-2">
+                    {referencedBy.map(({ code, post }) => {
+                      if (!post) {
+                        return (
+                          <div key={code} className="flex items-center justify-between rounded-lg border px-3 py-2 dark:border-gray-800">
+                            <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">{code}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Not found in archive</span>
+                          </div>
+                        );
+                      }
+                      const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
+                      return (
+                        <a
+                          key={code}
+                          href={`/archives/${post.slug}`}
+                          className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                              <ChannelBadge ch={post.channel} />
+                              <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                {post.entry.code}
+                              </span>
+                              {updated !== undefined ? <span title={formatDate(updated)}>{timeAgo(updated)}</span> : null}
+                            </div>
+                          </div>
+                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
               <div className="flex flex-wrap gap-2">
