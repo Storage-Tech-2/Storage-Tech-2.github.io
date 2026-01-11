@@ -2,15 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { asyncPool, assetURL } from "../lib/github";
-import { buildEntrySlug, fetchArchiveConfig, fetchChannelData, fetchDictionaryIndex, fetchPostData } from "../lib/archive";
-import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type ChannelRef, type EntryRef } from "../lib/types";
+import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, type ArchiveListItem } from "../lib/archive";
+import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "../lib/types";
 import { disablePreviewOptimization } from "../lib/runtimeFlags";
-
-type PostRef = {
-  channel: ChannelRef;
-  entry: EntryRef;
-  slug: string;
-};
 
 const owner = process.env.NEXT_PUBLIC_ARCHIVE_OWNER || DEFAULT_OWNER;
 const repo = process.env.NEXT_PUBLIC_ARCHIVE_REPO || DEFAULT_REPO;
@@ -46,39 +40,10 @@ async function main() {
   await fs.mkdir(outputDir, { recursive: true });
   await fs.mkdir(path.dirname(indexPath), { recursive: true });
 
-  const config = await fetchArchiveConfig(owner, repo, branch, "no-store");
-  const channels = config.archiveChannels || [];
-
-  const channelDatas = await asyncPool(6, channels, async (channel) => {
-    try {
-      const data = await fetchChannelData(channel.path, owner, repo, branch, "no-store");
-      return { channel, data };
-    } catch {
-      return { channel, data: { ...channel, currentCodeId: 0, entries: [] } };
-    }
-  });
-
-  const posts: PostRef[] = [];
-  channelDatas.forEach(({ channel, data }) => {
-    (data.entries || []).forEach((entry) => {
-      posts.push({ channel, entry, slug: buildEntrySlug(entry) });
-    });
-  });
-  posts.sort((a, b) => (b.entry.updatedAt ?? 0) - (a.entry.updatedAt ?? 0));
-
+  const archive = await fetchArchiveIndex(owner, repo, branch, "no-store");
+  const posts: ArchiveListItem[] = archive.posts;
   const archiveIndexPath = path.join(root, "lib", "generated", "archive-index.json");
-  await fs.writeFile(
-    archiveIndexPath,
-    JSON.stringify(
-      {
-        config,
-        channels,
-        posts,
-      },
-      null,
-      2,
-    ),
-  );
+  await fs.writeFile(archiveIndexPath, JSON.stringify(archive, null, 2));
 
   const previews: Array<{
     id: string;

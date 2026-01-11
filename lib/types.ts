@@ -177,36 +177,34 @@ export type ArchiveEntryData = {
 };
 
 export interface ChannelRef {
-  id: Snowflake;
-  name: string;
   code: string;
+  name: string;
   category: string;
   path: string;
   description: string;
   availableTags: string[];
 }
 
-export interface ChannelData extends Omit<ChannelRef, "path"> {
-  currentCodeId: number;
-  entries: EntryRef[];
-}
-
 export interface EntryRef {
   id: Snowflake;
   name: string;
   code: string;
+  codes?: string[];
   timestamp?: number;
-  archivedAt: number;
-  updatedAt: number;
+  archivedAt?: number;
+  updatedAt?: number;
   path: string;
-  tags: string[];
+  tags?: string[];
+  authors?: string[];
+  mainImagePath?: string | null;
 }
 
 export interface ArchiveConfig {
-  archiveChannels: ChannelRef[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  postSchema: any;
   postStyle: Record<string, StyleInfo>;
+  updatedAt?: number;
+  allTags?: string[];
+  allAuthors?: string[];
+  allCategories?: string[];
 }
 
 export type ArchiveComment = {

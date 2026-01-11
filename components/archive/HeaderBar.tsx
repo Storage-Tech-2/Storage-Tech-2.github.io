@@ -102,7 +102,7 @@ export function HeaderBar({
                   onKeyDown={(e) => {
                     if (e.key === "Enter") onSearchCommit();
                   }}
-                  placeholder="Search posts, codes, tags"
+                  placeholder="Search posts, codes, tags, authors"
                   className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
                 />
                 <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>

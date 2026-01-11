@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/lib/siteConfig";
@@ -17,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: `${siteConfig.siteName} Archive`,
-  description: "",
+  description: siteConfig.siteDescription,
   metadataBase: new URL(siteConfig.siteUrl),
   openGraph: {
     title: `${siteConfig.siteName} Archive`,

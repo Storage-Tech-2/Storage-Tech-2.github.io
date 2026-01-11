@@ -30,6 +30,19 @@ export async function fetchJSONRaw<T>(
   return res.json();
 }
 
+export async function fetchArrayBufferRaw(
+  path: string,
+  owner = DEFAULT_OWNER,
+  repo = DEFAULT_REPO,
+  branch = DEFAULT_BRANCH,
+  cache: RequestCache = "force-cache",
+): Promise<ArrayBuffer> {
+  const url = getRawURL(owner, repo, branch, path);
+  const res = await fetch(url, { cache });
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.arrayBuffer();
+}
+
 export async function asyncPool<T, R>(limit: number, items: T[], fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let i = 0;

@@ -1,10 +1,9 @@
-import { asyncPool, fetchJSONRaw } from "./github";
+import { fetchArrayBufferRaw, fetchJSONRaw } from "./github";
 import {
   ArchiveComment,
   ArchiveConfig,
   ArchivedPostReference,
   ArchiveEntryData,
-  ChannelData,
   ChannelRef,
   DEFAULT_BRANCH,
   DEFAULT_OWNER,
@@ -14,7 +13,9 @@ import {
   EntryRef,
   IndexedDictionaryEntry,
   IndexedPost,
+  getEntryUpdatedAt,
 } from "./types";
+import { deserializePersistentIndex, type PersistentIndex } from "./utils/persistentIndex";
 
 export type ArchiveListItem = IndexedPost & { slug: string };
 
@@ -38,8 +39,9 @@ export function slugifyName(input: string) {
 }
 
 export function buildEntrySlug(entry: EntryRef | ArchivedPostReference) {
-  const base = entry.code;
+  const base = entry.code || (Array.isArray((entry as EntryRef).codes) ? (entry as EntryRef).codes?.[0] : "") || entry.id;
   const name = entry.name ? slugifyName(entry.name) : "";
+  if (!base) return name;
   if (!name) return base;
   return `${base}-${name}`;
 }
@@ -49,7 +51,61 @@ export function slugMatchesEntry(slug: string, entry: EntryRef) {
   const entrySlug = buildEntrySlug(entry).toLowerCase();
   if (lowerSlug === entrySlug) return true;
   const slugCode = lowerSlug.split("-")[0];
-  return !!slugCode && slugCode === (entry.code || entry.id).toLowerCase();
+  if (!slugCode) return false;
+  const codes = new Set(
+    [entry.code, ...(entry.codes || []), entry.id]
+      .filter(Boolean)
+      .map((c) => c!.toLowerCase()),
+  );
+  return codes.has(slugCode);
+}
+
+function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
+  const categories = idx.all_categories || [];
+  const tags = idx.all_tags || [];
+  const authors = idx.all_authors || [];
+
+  const channels: ChannelRef[] = idx.channels.map((channel) => ({
+    code: channel.code,
+    name: channel.name,
+    description: channel.description,
+    category: categories[channel.category] || "",
+    path: channel.path,
+    availableTags: Array.from(new Set(channel.tags.map((tagIdx) => tags[tagIdx]).filter(Boolean))),
+  }));
+
+  const posts: ArchiveListItem[] = [];
+  idx.channels.forEach((channel, i) => {
+    const channelRef = channels[i];
+    channel.entries.forEach((entry) => {
+      const codes = entry.codes?.length ? entry.codes : [entry.id];
+      const entryRef: EntryRef = {
+        id: entry.id,
+        name: entry.name,
+        code: codes[0],
+        codes,
+        tags: Array.from(new Set(entry.tags.map((tagIdx) => tags[tagIdx]).filter(Boolean))),
+        authors: Array.from(new Set(entry.authors.map((authorIdx) => authors[authorIdx]).filter(Boolean))),
+        updatedAt: entry.updated_at,
+        archivedAt: entry.archived_at,
+        path: entry.path,
+        mainImagePath: entry.main_image_path,
+      };
+      posts.push({ channel: channelRef, entry: entryRef, slug: buildEntrySlug(entryRef) });
+    });
+  });
+
+  posts.sort((a, b) => (getEntryUpdatedAt(b.entry) ?? 0) - (getEntryUpdatedAt(a.entry) ?? 0));
+
+  const config: ArchiveConfig = {
+    postStyle: idx.schemaStyles || {},
+    updatedAt: idx.updated_at,
+    allTags: tags,
+    allAuthors: authors,
+    allCategories: categories,
+  };
+
+  return { config, channels, posts };
 }
 
 export async function fetchArchiveIndex(
@@ -62,25 +118,9 @@ export async function fetchArchiveIndex(
     const cached = await readArchiveIndexCache();
     if (cached) return cached;
   }
-  const config = await fetchArchiveConfig(owner, repo, branch, cache);
-  const channels = config.archiveChannels || [];
-
-  const channelDatas = await asyncPool(6, channels, async (channel) => {
-    try {
-      const data = await fetchJSONRaw<ChannelData>(`${channel.path}/data.json`, owner, repo, branch, cache);
-      return { channel, data };
-    } catch {
-      return { channel, data: { ...channel, currentCodeId: 0, entries: [] } as ChannelData };
-    }
-  });
-
-  const posts: ArchiveListItem[] = [];
-  channelDatas.forEach(({ channel, data }) => {
-    data.entries.forEach((entry) => posts.push({ channel, entry, slug: buildEntrySlug(entry) }));
-  });
-  posts.sort((a, b) => (b.entry.updatedAt ?? 0) - (a.entry.updatedAt ?? 0));
-
-  return { config, channels, posts };
+  const buffer = await fetchArrayBufferRaw("persistent.idx", owner, repo, branch, cache);
+  const idx = deserializePersistentIndex(buffer);
+  return persistentIndexToArchive(idx);
 }
 
 export async function fetchArchiveConfig(
@@ -89,18 +129,8 @@ export async function fetchArchiveConfig(
   branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<ArchiveConfig> {
-  return fetchJSONRaw<ArchiveConfig>("config.json", owner, repo, branch, cache);
-}
-
-export async function fetchChannelData(
-  channelPath: string,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
-  cache: RequestCache = "force-cache",
-): Promise<ChannelData> {
-  const path = `${channelPath}/data.json`;
-  return fetchJSONRaw<ChannelData>(path, owner, repo, branch, cache);
+  const archive = await fetchArchiveIndex(owner, repo, branch, cache);
+  return archive.config;
 }
 
 export type PostWithArchive = {
@@ -194,6 +224,8 @@ async function readArchiveIndexCache(): Promise<ArchiveIndex | null> {
     const raw = await readFile(file, "utf-8");
     const parsed = JSON.parse(raw) as ArchiveIndex;
     if (!parsed || !Array.isArray(parsed.posts)) return null;
+    if (!parsed.config?.postStyle) return null;
+    if (!Array.isArray(parsed.config.allAuthors)) return null;
     return parsed;
   } catch {
     return null;

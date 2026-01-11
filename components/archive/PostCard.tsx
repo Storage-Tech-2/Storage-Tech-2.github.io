@@ -10,6 +10,7 @@ import { getEntryArchivedAt, getEntryUpdatedAt, type SortKey } from "@/lib/types
 import { getAuthorName } from "@/lib/utils/authors";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
 import { getPreviewByEntryId } from "@/lib/previews";
+import { assetURL } from "@/lib/github";
 
 type Props = {
   post: ArchiveListItem;
@@ -27,7 +28,10 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
 
   const preview = getPreviewByEntryId(post.entry.id);
   const hero = post.data?.images?.[0];
-  const heroSrc = hero ? buildImagePath(post.channel.path, post.entry.path, hero) : null;
+  const entryHero = post.entry.mainImagePath
+    ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
+    : null;
+  const heroSrc = hero ? buildImagePath(post.channel.path, post.entry.path, hero) : entryHero;
   const displaySrc =
     preview && (!heroSrc || heroSrc === preview.sourceUrl) ? preview.localPath : heroSrc;
 
@@ -36,10 +40,11 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
   const showArchivedTime = sortKey === "archived" || sortKey === "archivedOldest";
   const displayTs = showArchivedTime ? archivedAt ?? updatedAt : updatedAt ?? archivedAt;
 
-  const authors = post.data?.authors?.filter((a) => !a.dontDisplay) || [];
+  const authors = post.data?.authors?.filter((a) => !a.dontDisplay);
+  const authorNames = authors?.map((a) => getAuthorName(a)) || post.entry.authors || [];
   const authorsLine =
-    authors.length > 0
-      ? `${getAuthorName(authors[0])}${authors[1] ? ", " + getAuthorName(authors[1]) : ""}${authors.length > 2 ? ` +${authors.length - 2}` : ""}`
+    authorNames.length > 0
+      ? `${authorNames[0]}${authorNames[1] ? ", " + authorNames[1] : ""}${authorNames.length > 2 ? ` +${authorNames.length - 2}` : ""}`
       : undefined;
 
   return (

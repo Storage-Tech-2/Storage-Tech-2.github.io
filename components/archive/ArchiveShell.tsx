@@ -10,7 +10,7 @@ import { VirtualizedGrid } from "./VirtualizedGrid";
 import { useArchiveData } from "@/hooks/useArchiveData";
 import { useDictionaryData } from "@/hooks/useDictionaryData";
 import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
-import { filterPosts, computeChannelCounts, computeTagCounts } from "@/lib/filtering";
+import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
@@ -60,6 +60,8 @@ export function ArchiveShell({
   const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
   const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>({});
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
+  const [authorQuery, setAuthorQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
@@ -70,7 +72,8 @@ export function ArchiveShell({
       state.sortKey !== "newest" ||
       state.tagMode !== "AND" ||
       Object.keys(state.tagState).length > 0 ||
-      state.selectedChannels.length > 0;
+      state.selectedChannels.length > 0 ||
+      state.selectedAuthors.length > 0;
     const fromUrl = getArchiveFiltersFromUrl();
     const fromSession = hasUrlState(fromUrl) ? null : readArchiveSession();
     const next = fromSession
@@ -80,6 +83,7 @@ export function ArchiveShell({
           tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
           tagState: fromSession.tagState || {},
           selectedChannels: fromSession.selectedChannels || [],
+          selectedAuthors: fromSession.selectedAuthors || [],
           sortKey: fromSession.sortKey || "newest",
         }
       : fromUrl;
@@ -89,6 +93,7 @@ export function ArchiveShell({
       setTagMode(next.tagMode);
       setTagState(next.tagState || {});
       setSelectedChannels(next.selectedChannels || []);
+      setSelectedAuthors(next.selectedAuthors || []);
       setSortKey(next.sortKey || "newest");
     });
   }, []);
@@ -103,6 +108,7 @@ export function ArchiveShell({
         setTagMode(parsed.tagMode);
         setTagState(parsed.tagState || {});
         setSelectedChannels(parsed.selectedChannels || []);
+        setSelectedAuthors(parsed.selectedAuthors || []);
         setSortKey(parsed.sortKey || "newest");
       });
     };
@@ -188,9 +194,10 @@ export function ArchiveShell({
       tagMode,
       tagState,
       selectedChannels,
+      selectedAuthors,
       sortKey,
     });
-  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, q]);
+  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -200,31 +207,81 @@ export function ArchiveShell({
       tagMode,
       tagState,
       selectedChannels,
+      selectedAuthors,
       sortKey,
     });
-  }, [q, committedQ, tagMode, tagState, selectedChannels, sortKey]);
+  }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey]);
 
   const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
   const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);
+  const normalizedSelectedAuthors = useMemo(() => selectedAuthors.map(normalize), [selectedAuthors]);
 
   const allTags = useMemo(() => {
     const channelPool = selectedChannels.length ? channels.filter((ch) => selectedChannels.includes(ch.code) || selectedChannels.includes(ch.name)) : channels;
     const fromChannels = channelPool.flatMap((ch) => ch.availableTags || []);
-    const postsPool = posts.filter(
-      (p) => !selectedChannels.length || selectedChannels.includes(p.channel.code) || selectedChannels.includes(p.channel.name),
-    );
+    const authorSet = normalizedSelectedAuthors.length ? new Set(normalizedSelectedAuthors) : null;
+    const postsPool = posts.filter((p) => {
+      const matchesChannel =
+        !selectedChannels.length || selectedChannels.includes(p.channel.code) || selectedChannels.includes(p.channel.name);
+      if (!matchesChannel) return false;
+      if (!authorSet) return true;
+      const authors = getPostAuthorsNormalized(p);
+      return authors.some((a) => authorSet.has(a));
+    });
     const fromEntryRefs = postsPool.flatMap((p) => p.entry.tags || []);
     const names = Array.from(new Set([...fromChannels, ...fromEntryRefs]));
     let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })));
-    if (!selectedChannels.length) {
+    if (!selectedChannels.length && !selectedAuthors.length) {
       tags = tags.filter((tag) => !!getSpecialTagMeta(tag.name));
     }
     return tags;
-  }, [channels, posts, selectedChannels]);
+  }, [channels, posts, selectedAuthors.length, selectedChannels, normalizedSelectedAuthors]);
+
+  const availableAuthors = useMemo(() => {
+    const map = new Map<string, string>();
+    posts.forEach((p) => {
+      (p.entry.authors || []).forEach((name) => {
+        const norm = normalize(name);
+        if (!map.has(norm)) map.set(norm, name);
+      });
+    });
+    selectedAuthors.forEach((name) => {
+      const norm = normalize(name);
+      if (!map.has(norm)) map.set(norm, name);
+    });
+    return Array.from(map.values());
+  }, [posts, selectedAuthors]);
+
+  const authorCounts = useMemo(
+    () => computeAuthorCounts(posts, selectedChannels, includeTags, excludeTags, tagMode, q),
+    [posts, selectedChannels, includeTags, excludeTags, tagMode, q],
+  );
+
+  const authorSearchTerm = useMemo(() => authorQuery.trim().toLowerCase(), [authorQuery]);
+  const authorOptions = useMemo(() => {
+    const selectedSet = new Set(normalizedSelectedAuthors);
+    return availableAuthors
+      .map((name) => {
+        const norm = normalize(name);
+        return { name, norm, count: authorCounts[norm] || 0, selected: selectedSet.has(norm) };
+      })
+      .filter((opt) => {
+        if (opt.selected) return true;
+        const hasMatches = (opt.count || 0) > 0;
+        if (!hasMatches) return false;
+        if (!authorSearchTerm) return true;
+        return opt.norm.includes(authorSearchTerm);
+      })
+      .sort((a, b) => {
+        if (a.selected !== b.selected) return a.selected ? -1 : 1;
+        if ((b.count || 0) !== (a.count || 0)) return (b.count || 0) - (a.count || 0);
+        return a.name.localeCompare(b.name);
+      });
+  }, [availableAuthors, authorCounts, normalizedSelectedAuthors, authorSearchTerm]);
 
   const filteredPosts = useMemo(
-    () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, sortKey, tagMode }),
-    [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode],
+    () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode }),
+    [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode],
   );
   const pagedPosts = useMemo(() => {
     if (!pageSize) return filteredPosts;
@@ -291,18 +348,37 @@ export function ArchiveShell({
   ) : null;
 
   const channelCounts = useMemo(
-    () => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q),
-    [posts, includeTags, excludeTags, tagMode, q],
+    () => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q, selectedAuthors),
+    [posts, includeTags, excludeTags, selectedAuthors, tagMode, q],
   );
-  const tagCounts = useMemo(() => computeTagCounts(posts, selectedChannels, excludeTags, q), [posts, selectedChannels, excludeTags, q]);
+  const tagCounts = useMemo(
+    () => computeTagCounts(posts, selectedChannels, excludeTags, q, selectedAuthors),
+    [posts, selectedChannels, excludeTags, q, selectedAuthors],
+  );
 
   const handleOpenPost = (p: ArchiveListItem) => {
     sessionStorage.setItem("archive-scroll", `${window.scrollY}`);
     router.push(`/archives/${p.slug}`);
   };
 
+  const toggleAuthor = (name: string) => {
+    setSelectedAuthors((prev) => {
+      const norm = normalize(name);
+      const exists = prev.some((a) => normalize(a) === norm);
+      if (exists) return prev.filter((a) => normalize(a) !== norm);
+      return [...prev, name];
+    });
+  };
+
+  const clearAuthors = () => {
+    setSelectedAuthors([]);
+    setAuthorQuery("");
+  };
+
   const resetFilters = () => {
     setSelectedChannels([]);
+    setSelectedAuthors([]);
+    setAuthorQuery("");
     setTagState({});
     setTagMode("AND");
     setQ("");
@@ -313,7 +389,7 @@ export function ArchiveShell({
   useEffect(() => {
     const el = sidebarShellRef.current;
     if (el && el.scrollTop !== 0) el.scrollTop = 0;
-  }, [selectedChannels, tagState, tagMode, filteredPosts.length]);
+  }, [selectedAuthors, selectedChannels, tagState, tagMode, filteredPosts.length]);
 
   useEffect(() => {
     if (!clientReady) return;
@@ -370,6 +446,61 @@ export function ArchiveShell({
           {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
 
           <div>
+            <div className="mb-6">
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium">Authors</span>
+                <input
+                  value={authorQuery}
+                  onChange={(e) => setAuthorQuery(e.target.value)}
+                  placeholder="Search authors"
+                  className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
+                />
+                {selectedAuthors.length ? (
+                  <button
+                    type="button"
+                    onClick={clearAuthors}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                  >
+                    Clear authors
+                  </button>
+                ) : null}
+              </div>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {authorOptions.length ? (
+                  authorOptions.map((author) => {
+                    const selected = author.selected;
+                    const count = author.count ?? 0;
+                    const base = "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors";
+                    const selectedCls =
+                      "border-blue-600 bg-blue-50 text-blue-800 shadow-sm dark:border-blue-400 dark:bg-blue-900/40 dark:text-blue-100";
+                    const unselectedCls =
+                      "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800/70";
+                    return (
+                      <button
+                        key={author.norm}
+                        type="button"
+                        onClick={() => toggleAuthor(author.name)}
+                        className={`${base} ${selected ? selectedCls : unselectedCls}`}
+                        title={selected ? "Remove author filter" : "Filter by author"}
+                      >
+                        <span className="font-semibold">{author.name}</span>
+                        <span
+                          className={
+                            selected
+                              ? "rounded bg-blue-100 px-2 text-[10px] font-semibold text-blue-900 dark:bg-blue-800 dark:text-blue-50"
+                              : "rounded bg-black/10 px-2 text-[10px] font-semibold text-gray-700 dark:bg-white/10 dark:text-gray-100"
+                          }
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">No authors match the current filters.</span>
+                )}
+              </div>
+            </div>
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Tags</span>
               <div className="inline-flex items-center gap-2 text-xs">

@@ -7,8 +7,7 @@ import { PostContent } from "@/components/archive/PostContent";
 import { Footer } from "@/components/layout/Footer";
 import {
   buildEntrySlug,
-  fetchArchiveConfig,
-  fetchChannelData,
+  fetchArchiveIndex,
   fetchDictionaryIndex,
   fetchPostData,
   findPostBySlug,
@@ -49,25 +48,9 @@ export default function NotFound() {
       setLoading(true);
       setError(null);
       try {
-        const entryCode = slug.split("-")[0];
-        const config = await fetchArchiveConfig(undefined, undefined, undefined, "no-store");
+        const archive = await fetchArchiveIndex(undefined, undefined, undefined, "no-store");
         if (cancelled) return;
-        const channels = config.archiveChannels || [];
-        const channel = channels.find((ch) => entryCode.startsWith(ch.code));
-        if (!channel) {
-          setError("We could not match this entry to a channel.");
-          setPost(null);
-          setData(null);
-          return;
-        }
-        const channelData = await fetchChannelData(channel.path, undefined, undefined, undefined, "no-store");
-        if (cancelled) return;
-        const posts: ArchiveListItem[] = (channelData.entries || []).map((entry) => ({
-          channel,
-          entry,
-          slug: buildEntrySlug(entry),
-        }));
-        const found = findPostBySlug(posts, slug);
+        const found = findPostBySlug(archive.posts, slug);
         if (!found) {
           setError("We could not find this entry in the archive.");
           setPost(null);

@@ -7,6 +7,7 @@ type ArchiveFilters = {
   tagMode: "OR" | "AND";
   tagState: Record<string, -1 | 0 | 1>;
   selectedChannels: string[];
+  selectedAuthors: string[];
   sortKey: SortKey;
 };
 
@@ -27,6 +28,7 @@ export function getArchiveFiltersFromUrl(): ArchiveFilters {
       tagMode: "AND",
       tagState: {},
       selectedChannels: [],
+      selectedAuthors: [],
       sortKey: "newest",
     };
   }
@@ -39,6 +41,7 @@ export function getArchiveFiltersFromUrl(): ArchiveFilters {
     tagMode: parsed.tagMode,
     tagState: parsed.tagState || {},
     selectedChannels: parsed.selectedChannels || [],
+    selectedAuthors: parsed.selectedAuthors || [],
     sortKey: parsed.sortKey || "newest",
   };
 }
@@ -54,6 +57,7 @@ export function setArchiveFiltersToUrl(filters: ArchiveFilters) {
   if (include.length) sp.set("tags", serializeListParam(include));
   if (exclude.length) sp.set("xtags", serializeListParam(exclude));
   if (filters.selectedChannels.length) sp.set("channels", serializeListParam(filters.selectedChannels));
+  if (filters.selectedAuthors.length) sp.set("authors", serializeListParam(filters.selectedAuthors));
   const query = sp.toString();
   const next = query ? `/?${query}` : "/";
   window.history.replaceState(window.history.state, "", next);

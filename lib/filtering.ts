@@ -1,5 +1,8 @@
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry, type SortKey } from "./types";
 import { type ArchiveListItem } from "./archive";
+import { getAuthorName } from "./utils/authors";
+import { unique } from "./utils/arrays";
+import { normalize } from "./utils/strings";
 import { getPostTagsNormalized } from "./utils/tags";
 
 export type TagMode = "OR" | "AND";
@@ -27,12 +30,28 @@ export const extractFiltersFromSearch = (sp: URLSearchParams, sortKeys: SortKey[
   const excludeTagsRaw = parseListParam(sp.get("xtags"));
   const tagState = buildTagState(includeTagsRaw, excludeTagsRaw);
   const selectedChannels = parseListParam(sp.get("channels"));
-  return { q, sortKey, tagMode, tagState, selectedChannels };
+  const selectedAuthors = parseListParam(sp.get("authors"));
+  return { q, sortKey, tagMode, tagState, selectedChannels, selectedAuthors };
 };
 
-export const computeChannelCounts = (posts: ArchiveListItem[], includeTags: string[], excludeTags: string[], tagMode: TagMode, q: string) => {
+export function getPostAuthorsNormalized(p: ArchiveListItem): string[] {
+  const entryAuthors = p.entry?.authors || [];
+  const loadedAuthors = p.data?.authors?.map(getAuthorName) || [];
+  const normalized = unique([...entryAuthors, ...loadedAuthors]).map(normalize).filter(Boolean);
+  return Array.from(new Set(normalized));
+}
+
+export const computeChannelCounts = (
+  posts: ArchiveListItem[],
+  includeTags: string[],
+  excludeTags: string[],
+  tagMode: TagMode,
+  q: string,
+  selectedAuthors: string[],
+) => {
   const map: Record<string, number> = {};
   const trimmed = q.trim().toLowerCase();
+  const authorSet = selectedAuthors.length ? new Set(selectedAuthors.map(normalize)) : null;
   const list = posts.filter((p) => {
     const postTags = getPostTagsNormalized(p);
     if (excludeTags.some((t) => postTags.includes(t))) return false;
@@ -40,10 +59,15 @@ export const computeChannelCounts = (posts: ArchiveListItem[], includeTags: stri
       if (tagMode === "OR" && !includeTags.some((t) => postTags.includes(t))) return false;
       if (tagMode === "AND" && !includeTags.every((t) => postTags.includes(t))) return false;
     }
+    if (authorSet) {
+      const authors = getPostAuthorsNormalized(p);
+      if (!authors.some((a) => authorSet.has(a))) return false;
+    }
     if (!trimmed) return true;
     const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase();
     const extra = [
       p.entry.tags?.join(" ") || "",
+      getPostAuthorsNormalized(p).join(" "),
       ...(p.data
         ? [
             p.data.tags?.map((t) => t.name).join(" ") || "",
@@ -61,18 +85,30 @@ export const computeChannelCounts = (posts: ArchiveListItem[], includeTags: stri
   return map;
 };
 
-export const computeTagCounts = (posts: ArchiveListItem[], selectedChannels: string[], excludeTags: string[], q: string) => {
+export const computeTagCounts = (
+  posts: ArchiveListItem[],
+  selectedChannels: string[],
+  excludeTags: string[],
+  q: string,
+  selectedAuthors: string[],
+) => {
   const map: Record<string, number> = {};
   const trimmed = q.trim().toLowerCase();
   const channelSet = selectedChannels.length ? new Set(selectedChannels) : null;
+  const authorSet = selectedAuthors.length ? new Set(selectedAuthors.map(normalize)) : null;
   const list = posts.filter((p) => {
     if (channelSet && !(channelSet.has(p.channel.code) || channelSet.has(p.channel.name))) return false;
     const postTags = getPostTagsNormalized(p);
     if (excludeTags.some((t) => postTags.includes(t))) return false;
+    if (authorSet) {
+      const authors = getPostAuthorsNormalized(p);
+      if (!authors.some((a) => authorSet.has(a))) return false;
+    }
     if (!trimmed) return true;
     const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase();
     const extra = [
       p.entry.tags?.join(" ") || "",
+      getPostAuthorsNormalized(p).join(" "),
       ...(p.data
         ? [
             p.data.tags?.map((t) => t.name).join(" ") || "",
@@ -92,6 +128,32 @@ export const computeTagCounts = (posts: ArchiveListItem[], selectedChannels: str
   return map;
 };
 
+export function computeAuthorCounts(
+  posts: ArchiveListItem[],
+  selectedChannels: string[],
+  includeTags: string[],
+  excludeTags: string[],
+  tagMode: TagMode,
+  q: string,
+) {
+  const filtered = filterPosts(posts, {
+    q,
+    includeTags,
+    excludeTags,
+    selectedChannels,
+    sortKey: "newest",
+    tagMode,
+    selectedAuthors: [],
+  });
+  const counts: Record<string, number> = {};
+  filtered.forEach((p) => {
+    getPostAuthorsNormalized(p).forEach((author) => {
+      counts[author] = (counts[author] || 0) + 1;
+    });
+  });
+  return counts;
+}
+
 type FilterPostsParams = {
   q: string;
   includeTags: string[];
@@ -99,10 +161,11 @@ type FilterPostsParams = {
   selectedChannels: string[];
   sortKey: SortKey;
   tagMode: TagMode;
+  selectedAuthors: string[];
 };
 
 export const filterPosts = (posts: ArchiveListItem[], params: FilterPostsParams) => {
-  const { q, includeTags, excludeTags, selectedChannels, sortKey, tagMode } = params;
+  const { q, includeTags, excludeTags, selectedChannels, sortKey, tagMode, selectedAuthors } = params;
   const trimmed = q.trim();
   let list = posts;
 
@@ -121,12 +184,22 @@ export const filterPosts = (posts: ArchiveListItem[], params: FilterPostsParams)
     });
   }
 
+  if (selectedAuthors.length) {
+    const set = new Set(selectedAuthors.map(normalize));
+    list = list.filter((p) => {
+      const postAuthors = getPostAuthorsNormalized(p);
+      if (!postAuthors.length) return false;
+      return postAuthors.some((a) => set.has(a));
+    });
+  }
+
   if (trimmed) {
     const terms = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
     list = list.filter((p) => {
       const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase();
       const extra = [
         p.entry.tags?.join(" ") || "",
+        getPostAuthorsNormalized(p).join(" "),
         ...(p.data
           ? [
               p.data.tags?.map((t) => t.name).join(" ") || "",
