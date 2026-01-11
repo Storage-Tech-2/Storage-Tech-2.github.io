@@ -15,7 +15,8 @@ const root = process.cwd();
 const outputDir = path.join(root, "public", "previews");
 const indexPath = path.join(root, "lib", "generated", "previews.json");
 
-const MAX_WIDTH = Number.parseInt(process.env.PREVIEW_MAX_WIDTH || "1200", 10);
+const MAX_WIDTH = Number.parseInt(process.env.PREVIEW_MAX_WIDTH || "1024", 10);
+const MAX_HEIGHT = Number.parseInt(process.env.PREVIEW_MAX_HEIGHT || "800", 10);
 const QUALITY = Number.parseInt(process.env.PREVIEW_QUALITY || "80", 10);
 
 async function main() {
@@ -69,7 +70,12 @@ async function main() {
 
       const pipeline = sharp(buffer)
         .rotate()
-        .resize({ width: MAX_WIDTH, withoutEnlargement: true })
+        .resize({
+           fit: 'inside',
+           height: MAX_HEIGHT,
+           width: MAX_WIDTH,
+           withoutEnlargement: true
+        })
         .webp({ quality: QUALITY });
       const metadata = await pipeline.metadata();
       const outBuffer = await pipeline.toBuffer();

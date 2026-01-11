@@ -62,9 +62,9 @@ export function HeaderBar({
                 <Link href="/">{siteName}</Link>
               </div>
               <div className="text-xs text-gray-500">
-                <a href={archiveRepoUrl} target="_blank" rel="noreferrer">
+               
                   {owner}/{repo}@{branch}
-                </a>
+                
               </div>
             </div>
           </div>
@@ -111,6 +111,7 @@ export function HeaderBar({
                 value={sortKey}
                 onChange={(e) => onSortChange(e.target.value as SortKey)}
                 className="shrink-0 rounded-xl border border-gray-300 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
+                aria-label="Sort posts"
               >
                 <option value="newest">Updated (newest)</option>
                 <option value="oldest">Updated (oldest)</option>
@@ -138,6 +139,7 @@ export function HeaderBar({
                 value={dictionarySort}
                 onChange={(e) => onDictionarySortChange(e.target.value as "az" | "updated")}
                 className="shrink-0 rounded-xl border border-gray-300 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
+                aria-label="Sort dictionary terms"
               >
                 <option value="az">A to Z</option>
                 <option value="updated">Updated (newest)</option>

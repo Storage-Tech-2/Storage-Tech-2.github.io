@@ -442,7 +442,7 @@ export function ArchiveShell({
             {error ? <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
             {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
 
-            <div>
+            <div role="navigation">
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium">Tags</span>
                 <div className="inline-flex items-center gap-2 text-xs">
@@ -488,28 +488,29 @@ export function ArchiveShell({
               </div>
             </div>
 
-            {(clientReady && pageNumber === 0) ? (
-              <>
-                <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
-                {pagination}
-              </>
-            ) : (
-              <>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {pagedPosts.map((post) => (
-                    <PostCard
-                      key={`${post.channel.path}/${post.entry.path}`}
-                      post={post}
-                      sortKey={sortKey}
-                      ensurePostLoaded={ensurePostLoaded}
-                      onNavigate={handleOpenPost}
-                    />
-                  ))}
-                </div>
-                {pagination}
-              </>
-            )}
-
+            <div role="main">
+              {(clientReady && pageNumber === 0) ? (
+                <>
+                  <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
+                  {pagination}
+                </>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {pagedPosts.map((post) => (
+                      <PostCard
+                        key={`${post.channel.path}/${post.entry.path}`}
+                        post={post}
+                        sortKey={sortKey}
+                        ensurePostLoaded={ensurePostLoaded}
+                        onNavigate={handleOpenPost}
+                      />
+                    ))}
+                  </div>
+                  {pagination}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
