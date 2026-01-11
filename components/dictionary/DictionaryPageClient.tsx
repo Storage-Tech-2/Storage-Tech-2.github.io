@@ -130,6 +130,17 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   }, [query, committedQuery, sort, currentSlug]);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const baseTitle = `${siteConfig.siteName} Dictionary`;
+    if (active) {
+      const term = active.index.terms?.[0] || active.index.id;
+      document.title = `${term} | ${baseTitle}`;
+    } else {
+      document.title = baseTitle;
+    }
+  }, [active]);
+
+  useEffect(() => {
     if (!pathSlug) {
       return;
     }
