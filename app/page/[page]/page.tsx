@@ -14,12 +14,12 @@ export async function generateStaticParams() {
   if (disablePagination) return [];
   const archive = await fetchArchiveIndex();
   const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
-  return Array.from({ length: Math.max(0, pageCount - 1) }, (_, i) => ({ page: `${i + 2}` }));
+  return Array.from({ length: Math.max(0, pageCount) }, (_, i) => ({ page: `${i + 1}` }));
 }
 
 export default async function ArchivePage({ params }: Params) {
   const pageNumber = Number.parseInt((await params).page, 10);
-  if (!Number.isFinite(pageNumber) || pageNumber < 2) return notFound();
+  if (!Number.isFinite(pageNumber) || pageNumber < 1) return notFound();
   const [archive, dictionary] = await Promise.all([fetchArchiveIndex(), fetchDictionaryIndex()]);
   const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
   if (pageNumber > pageCount) return notFound();

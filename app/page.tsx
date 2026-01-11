@@ -12,7 +12,7 @@ export default async function Home() {
     <ArchiveShell
       initialArchive={archive}
       initialDictionary={dictionary}
-      pageNumber={1}
+      pageNumber={0}
       pageSize={disablePagination ? undefined : ARCHIVE_PAGE_SIZE}
       pageCount={pageCount}
     />

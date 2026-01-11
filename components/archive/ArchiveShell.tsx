@@ -42,7 +42,7 @@ export function ArchiveShell({
   owner = DEFAULT_OWNER,
   repo = DEFAULT_REPO,
   branch = DEFAULT_BRANCH,
-  pageNumber = 1,
+  pageNumber = 0,
   pageSize,
   pageCount,
 }: Props) {
@@ -285,27 +285,24 @@ export function ArchiveShell({
   );
   const pagedPosts = useMemo(() => {
     if (!pageSize) return filteredPosts;
-    const start = Math.max(0, (pageNumber - 1) * pageSize);
+    const start = Math.max(0, Math.max(pageNumber - 1, 0) * pageSize);
     return filteredPosts.slice(start, start + pageSize);
   }, [filteredPosts, pageNumber, pageSize]);
-  const clientPosts = useMemo(
-    () => (disableInfiniteScroll && pageSize ? pagedPosts : filteredPosts),
-    [pageSize, pagedPosts, filteredPosts],
-  );
+  const clientPosts = useMemo(() => (pageSize ? pagedPosts : filteredPosts), [pageSize, pagedPosts, filteredPosts]);
   const [clientHidePagination, setClientHidePagination] = useState(false);
   useEffect(() => {
-    if (pageNumber > 1) return;
+    if (pageNumber > 0) return;
     const frame = requestAnimationFrame(() => setClientHidePagination(true));
     return () => cancelAnimationFrame(frame);
   }, []);
-  const showPagination = !disablePagination && !!pageCount && pageCount > 1 && !clientHidePagination;
+  const showPagination = !disablePagination && !!pageCount && pageCount > 1 && (pageNumber > 0 || !clientHidePagination);
 
   const pagination = showPagination ? (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
       {pageNumber > 1 ? (
         <a
           className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-          href={pageNumber === 2 ? "/" : `/page/${pageNumber - 1}`}
+          href={`/page/${pageNumber - 1}`}
         >
           ← Previous
         </a>
@@ -315,7 +312,7 @@ export function ArchiveShell({
       <div className="flex flex-wrap items-center gap-2">
         {Array.from({ length: pageCount }, (_, i) => {
           const page = i + 1;
-          const href = page === 1 ? "/" : `/page/${page}`;
+          const href = `/page/${page}`;
           return page === pageNumber ? (
             <span
               key={page}
@@ -484,15 +481,22 @@ export function ArchiveShell({
               ))}
             </div>
             <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-              <span>
-                Showing {filteredPosts.length} of {posts.length} posts
-              </span>
+              {(pageSize && showPagination) ? (
+                <span>
+                  Showing {Math.min(filteredPosts.length, Math.max(0, (pageNumber - 1) * pageSize + 1))}-
+                  {Math.min(filteredPosts.length, pageNumber * pageSize)} of {filteredPosts.length}/{posts.length} posts
+                </span>
+              ) : (
+                <span>
+                  Showing 1-{filteredPosts.length} of {filteredPosts.length}/{posts.length} posts
+                </span>
+              )}
             </div>
           </div>
 
             {clientReady ? (
               <>
-                <VirtualizedGrid posts={clientPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} forcePagination={pageNumber > 1}/>
+                <VirtualizedGrid posts={clientPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} forcePagination={pageNumber > 0}/>
                 {pagination}
               </>
             ) : (
