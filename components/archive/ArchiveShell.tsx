@@ -433,10 +433,15 @@ export function ArchiveShell({
                 channels={channels}
                 selectedChannels={selectedChannels}
                 channelCounts={channelCounts}
+                authorOptions={authorOptions}
+                authorQuery={authorQuery}
                 onToggleChannel={(code) =>
                   setSelectedChannels((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
                 }
                 onResetFilters={resetFilters}
+                onToggleAuthor={toggleAuthor}
+                onAuthorQueryChange={setAuthorQuery}
+                onClearAuthors={clearAuthors}
               />
             </div>
           </aside>
@@ -446,61 +451,6 @@ export function ArchiveShell({
           {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
 
           <div>
-            <div className="mb-6">
-              <div className="mb-3 flex flex-wrap items-center gap-3">
-                <span className="text-sm font-medium">Authors</span>
-                <input
-                  value={authorQuery}
-                  onChange={(e) => setAuthorQuery(e.target.value)}
-                  placeholder="Search authors"
-                  className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
-                />
-                {selectedAuthors.length ? (
-                  <button
-                    type="button"
-                    onClick={clearAuthors}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
-                  >
-                    Clear authors
-                  </button>
-                ) : null}
-              </div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                {authorOptions.length ? (
-                  authorOptions.map((author) => {
-                    const selected = author.selected;
-                    const count = author.count ?? 0;
-                    const base = "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors";
-                    const selectedCls =
-                      "border-blue-600 bg-blue-50 text-blue-800 shadow-sm dark:border-blue-400 dark:bg-blue-900/40 dark:text-blue-100";
-                    const unselectedCls =
-                      "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800/70";
-                    return (
-                      <button
-                        key={author.norm}
-                        type="button"
-                        onClick={() => toggleAuthor(author.name)}
-                        className={`${base} ${selected ? selectedCls : unselectedCls}`}
-                        title={selected ? "Remove author filter" : "Filter by author"}
-                      >
-                        <span className="font-semibold">{author.name}</span>
-                        <span
-                          className={
-                            selected
-                              ? "rounded bg-blue-100 px-2 text-[10px] font-semibold text-blue-900 dark:bg-blue-800 dark:text-blue-50"
-                              : "rounded bg-black/10 px-2 text-[10px] font-semibold text-gray-700 dark:bg-white/10 dark:text-gray-100"
-                          }
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">No authors match the current filters.</span>
-                )}
-              </div>
-            </div>
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Tags</span>
               <div className="inline-flex items-center gap-2 text-xs">
