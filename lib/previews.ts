@@ -1,4 +1,13 @@
-import previewIndex from "./generated/previews.json";
+const fallbackIndex: PreviewIndex = { generatedAt: "", items: [] };
+let previewIndex: PreviewIndex = fallbackIndex;
+try {
+  // Avoid hard build-time dependency on the JSON file.
+  // eslint-disable-next-line no-eval
+  const req = eval("require") as (path: string) => unknown;
+  previewIndex = (req("./generated/previews.json") as PreviewIndex) ?? fallbackIndex;
+} catch {
+  previewIndex = fallbackIndex;
+}
 
 export type PreviewItem = {
   id: string;
@@ -15,9 +24,8 @@ export type PreviewIndex = {
   items: PreviewItem[];
 };
 
-const typedIndex = previewIndex as PreviewIndex;
-const byId = new Map(typedIndex.items.map((item) => [item.id, item]));
-const bySlug = new Map(typedIndex.items.map((item) => [item.slug, item]));
+const byId = new Map(previewIndex.items.map((item) => [item.id, item]));
+const bySlug = new Map(previewIndex.items.map((item) => [item.slug, item]));
 
 export function getPreviewByEntryId(id?: string | null) {
   if (!id) return undefined;
