@@ -240,7 +240,7 @@ export function ImageThumb({ img, onClick }: { img: ArchiveImage; onClick?: () =
         alt={img.description || img.name}
         width={width}
         height={height}
-        className="h-auto w-full object-contain"
+        className="h-auto w-full max-h-[60vh] object-contain"
         unoptimized
       />
     </button>

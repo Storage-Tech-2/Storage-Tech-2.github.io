@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostContent } from "@/components/archive/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
+import { Footer } from "@/components/layout/Footer";
 import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, findPostBySlug } from "@/lib/archive";
 import { getPreviewBySlug } from "@/lib/previews";
 import { siteConfig } from "@/lib/siteConfig";
@@ -70,9 +71,12 @@ export default async function PostPage({ params }: Params) {
   });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
-      <PostNav />
-      <PostContent post={{ ...match, data }} data={data} schemaStyles={archive.config.postStyle} dictionaryTooltips={dictionaryTooltips} />
-    </main>
+    <>
+      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
+        <PostNav />
+        <PostContent post={{ ...match, data }} data={data} schemaStyles={archive.config.postStyle} dictionaryTooltips={dictionaryTooltips} />
+      </main>
+      <Footer />
+    </>
   );
 }

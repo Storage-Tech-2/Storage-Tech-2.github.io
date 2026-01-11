@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PostContent } from "@/components/archive/PostContent";
+import { Footer } from "@/components/layout/Footer";
 import {
   buildEntrySlug,
   fetchArchiveConfig,
@@ -101,20 +102,23 @@ export default function NotFound() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">404 – Page Not Found</h1>
-      {archiveSlug ? (
-        <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
-          We looked for <code className="rounded bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">{archiveSlug}</code> in the archive but could not render it.
-          {error ? ` ${error}` : " Try again in a few moments."}
-        </p>
-      ) : (
-        <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">The page you are looking for does not exist.</p>
-      )}
-      <Link href="/" prefetch={false} className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900">
-        Back to archive
-      </Link>
-      {loading ? <p className="text-xs text-gray-500">Checking for a newer archive entry…</p> : null}
-    </main>
+    <>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 py-16 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">404 – Page Not Found</h1>
+        {archiveSlug ? (
+          <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
+            We looked for <code className="rounded bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">{archiveSlug}</code> in the archive but could not render it.
+            {error ? ` ${error}` : " Try again in a few moments."}
+          </p>
+        ) : (
+          <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">The page you are looking for does not exist.</p>
+        )}
+        <Link href="/" prefetch={false} className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900">
+          Back to archive
+        </Link>
+        {loading ? <p className="text-xs text-gray-500">Checking for a newer archive entry…</p> : null}
+      </main>
+      <Footer />
+    </>
   );
 }
