@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { asyncPool, assetURL } from "../lib/github";
-import { buildEntrySlug, fetchArchiveConfig, fetchChannelData, fetchPostData } from "../lib/archive";
+import { buildEntrySlug, fetchArchiveConfig, fetchChannelData, fetchDictionaryIndex, fetchPostData } from "../lib/archive";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type ChannelRef, type EntryRef } from "../lib/types";
 
 type PostRef = {
@@ -50,6 +50,21 @@ async function main() {
       posts.push({ channel, entry, slug: buildEntrySlug(entry) });
     });
   });
+  posts.sort((a, b) => (b.entry.updatedAt ?? 0) - (a.entry.updatedAt ?? 0));
+
+  const archiveIndexPath = path.join(root, "lib", "generated", "archive-index.json");
+  await fs.writeFile(
+    archiveIndexPath,
+    JSON.stringify(
+      {
+        config,
+        channels,
+        posts,
+      },
+      null,
+      2,
+    ),
+  );
 
   const previews: Array<{
     id: string;
@@ -101,6 +116,9 @@ async function main() {
   previews.sort((a, b) => a.slug.localeCompare(b.slug));
   const payload = { generatedAt: new Date().toISOString(), items: previews };
   await fs.writeFile(indexPath, JSON.stringify(payload, null, 2));
+  const dictionaryIndex = await fetchDictionaryIndex(owner, repo, branch, "no-store");
+  const dictionaryIndexPath = path.join(root, "lib", "generated", "dictionary-index.json");
+  await fs.writeFile(dictionaryIndexPath, JSON.stringify(dictionaryIndex, null, 2));
   console.log(`Wrote ${previews.length} previews to ${indexPath}`);
 }
 

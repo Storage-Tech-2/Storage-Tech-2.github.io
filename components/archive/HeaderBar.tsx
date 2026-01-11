@@ -20,6 +20,7 @@ type Props = {
   onSortChange: (val: SortKey) => void;
   dictionaryQuery: string;
   onDictionarySearchChange: (val: string) => void;
+  onDictionarySearchCommit?: () => void;
   dictionarySort: "az" | "updated";
   onDictionarySortChange: (val: "az" | "updated") => void;
   onArchiveClick?: () => void;
@@ -41,6 +42,7 @@ export function HeaderBar({
   onSortChange,
   dictionaryQuery,
   onDictionarySearchChange,
+  onDictionarySearchCommit,
   dictionarySort,
   onDictionarySortChange,
   onArchiveClick,
@@ -123,6 +125,10 @@ export function HeaderBar({
                 <input
                   value={dictionaryQuery}
                   onChange={(e) => onDictionarySearchChange(e.target.value)}
+                  onBlur={onDictionarySearchCommit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onDictionarySearchCommit?.();
+                  }}
                   placeholder="Search dictionary terms"
                   className="w-full rounded-xl border bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900"
                 />

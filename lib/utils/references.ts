@@ -247,6 +247,20 @@ export function transformOutputWithReferences(
         resultParts.push(linkedText);
         currentIndex = match.end;
       }
+    } else if (ref.type === ReferenceType.DISCORD_LINK) {
+      if (hyperlink) {
+        resultParts.push(text.slice(hyperlink.start, hyperlink.end))
+        currentIndex = hyperlink.end
+      } else {
+        const safeText = ref.serverName ? `in ${makeTextSafeForTooltip(ref.serverName)}` : "on Discord"
+        const linkedText = `[[Link to message]](${ref.url} "${safeText}")`
+        resultParts.push(linkedText)
+        currentIndex = match.end
+      }
+
+      if (ref.serverName && ref.serverJoinURL) {
+        resultParts.push(` ([Join ${ref.serverName}](${ref.serverJoinURL}))`)
+      }
     } else if (ref.type === ReferenceType.USER_MENTION) {
       const name = getAuthorName(ref.user);
       if (hyperlink) {

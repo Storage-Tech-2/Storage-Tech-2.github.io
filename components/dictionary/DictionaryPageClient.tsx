@@ -12,6 +12,12 @@ import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
+import {
+  getDictionaryStateFromUrl,
+  readDictionarySession,
+  setDictionaryStateToUrl,
+  writeDictionarySession,
+} from "@/lib/urlState";
 
 type Props = {
   entries: IndexedDictionaryEntry[];
@@ -24,22 +30,28 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const initialFilters = useMemo(() => {
-    if (typeof window === "undefined") {
-      return { query: "", sort: "az" as const };
+    const fromUrl = getDictionaryStateFromUrl(pathname);
+    const hasUrlState = fromUrl.committedQuery || fromUrl.sort !== "az" || !!fromUrl.slug;
+    if (hasUrlState) return fromUrl;
+    const fromSession = readDictionarySession();
+    if (fromSession) {
+      return {
+        query: fromSession.query || "",
+        committedQuery: fromSession.committedQuery ?? fromSession.query ?? "",
+        sort: fromSession.sort === "updated" ? "updated" : "az",
+        slug: fromSession.slug ?? null,
+      };
     }
-    const sp = new URLSearchParams(window.location.search);
-    const q = sp.get("q") || "";
-    const sortParam = sp.get("sort");
-    const sortValue = sortParam === "updated" ? "updated" : "az";
-    return { query: q, sort: sortValue };
-  }, []);
+    return fromUrl;
+  }, [pathname]);
 
   const [query, setQuery] = useState(initialFilters.query);
-  const [sort, setSort] = useState<"az" | "updated">(initialFilters.sort);
+  const [committedQuery, setCommittedQuery] = useState(initialFilters.committedQuery);
+  const [sort, setSort] = useState<"az" | "updated">(initialFilters.sort as "az" | "updated");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
   const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
   const [liveEntries, setLiveEntries] = useState(entries);
-  const [currentSlug, setCurrentSlug] = useState<string | null>(null);
+  const [currentSlug, setCurrentSlug] = useState<string | null>(initialFilters.slug ?? null);
   const pathSlug = useMemo(() => {
     if (!pathname) return null;
     const match = pathname.match(/^\/dictionary\/(.+)$/);
@@ -49,19 +61,16 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
 
   useEffect(() => {
     const handlePopState = () => {
-      if (typeof window === "undefined") return;
-      const sp = new URLSearchParams(window.location.search);
-      const q = sp.get("q") || "";
-      const sortParam = sp.get("sort");
-      const sortValue = sortParam === "updated" ? "updated" : "az";
-      setQuery(q);
-      setSort(sortValue);
+      const parsed = getDictionaryStateFromUrl(pathname);
+      setQuery(parsed.query);
+      setCommittedQuery(parsed.committedQuery);
+      setSort(parsed.sort);
     };
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     setLiveEntries(entries);
@@ -96,18 +105,22 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   }, [liveEntries]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const sp = new URLSearchParams();
-    if (query.trim()) sp.set("q", query.trim());
-    if (sort !== "az") sp.set("sort", sort);
-    const queryString = sp.toString();
-    const path = currentSlug ? `/dictionary/${encodeURIComponent(currentSlug)}` : "/dictionary";
-    const next = queryString ? `${path}?${queryString}` : path;
-    const current = `${window.location.pathname}${window.location.search}`;
-    if (current !== next) {
-      window.history.replaceState(null, "", next);
-    }
-  }, [query, sort, currentSlug]);
+    setDictionaryStateToUrl({
+      query,
+      committedQuery,
+      sort,
+      slug: currentSlug,
+    });
+  }, [committedQuery, sort, currentSlug]);
+
+  useEffect(() => {
+    writeDictionarySession({
+      query,
+      committedQuery,
+      sort,
+      slug: currentSlug,
+    });
+  }, [query, committedQuery, sort, currentSlug]);
 
   useEffect(() => {
     if (!pathSlug) {
@@ -177,6 +190,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
         onSortChange={() => {}}
         dictionaryQuery={query}
         onDictionarySearchChange={setQuery}
+        onDictionarySearchCommit={() => setCommittedQuery(query)}
         dictionarySort={sort}
         onDictionarySortChange={setSort}
         onArchiveClick={() => router.push("/")}

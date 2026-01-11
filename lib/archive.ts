@@ -57,6 +57,10 @@ export async function fetchArchiveIndex(
   branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<ArchiveIndex> {
+  if (cache !== "no-store") {
+    const cached = await readArchiveIndexCache();
+    if (cached) return cached;
+  }
   const config = await fetchArchiveConfig(owner, repo, branch, cache);
   const channels = config.archiveChannels || [];
 
@@ -132,6 +136,10 @@ export async function fetchDictionaryIndex(
   branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<DictionaryIndex> {
+  if (cache !== "no-store") {
+    const cached = await readDictionaryIndexCache();
+    if (cached) return cached;
+  }
   const config = await fetchJSONRaw<DictionaryConfig>("dictionary/config.json", owner, repo, branch, cache);
   const entries: IndexedDictionaryEntry[] = config.entries
     .map((index) => ({ index }))
@@ -142,6 +150,36 @@ export async function fetchDictionaryIndex(
       return aTerm ? -1 : bTerm ? 1 : 0;
     });
   return { config, entries };
+}
+
+async function readArchiveIndexCache(): Promise<ArchiveIndex | null> {
+  if (typeof window !== "undefined") return null;
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const file = path.join(process.cwd(), "lib", "generated", "archive-index.json");
+    const raw = await readFile(file, "utf-8");
+    const parsed = JSON.parse(raw) as ArchiveIndex;
+    if (!parsed || !Array.isArray(parsed.posts)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function readDictionaryIndexCache(): Promise<DictionaryIndex | null> {
+  if (typeof window !== "undefined") return null;
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const file = path.join(process.cwd(), "lib", "generated", "dictionary-index.json");
+    const raw = await readFile(file, "utf-8");
+    const parsed = JSON.parse(raw) as DictionaryIndex;
+    if (!parsed || !Array.isArray(parsed.entries)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchDictionaryEntry(

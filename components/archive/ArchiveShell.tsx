@@ -10,12 +10,18 @@ import { VirtualizedGrid } from "./VirtualizedGrid";
 import { useArchiveData } from "@/hooks/useArchiveData";
 import { useDictionaryData } from "@/hooks/useDictionaryData";
 import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
-import { filterPosts, computeChannelCounts, computeTagCounts, extractFiltersFromSearch, serializeListParam } from "@/lib/filtering";
+import { filterPosts, computeChannelCounts, computeTagCounts } from "@/lib/filtering";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
+import {
+  getArchiveFiltersFromUrl,
+  readArchiveSession,
+  setArchiveFiltersToUrl,
+  writeArchiveSession,
+} from "@/lib/urlState";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -23,6 +29,9 @@ type Props = {
   owner?: string;
   repo?: string;
   branch?: string;
+  pageNumber?: number;
+  pageSize?: number;
+  pageCount?: number;
 };
 
 export function ArchiveShell({
@@ -31,6 +40,9 @@ export function ArchiveShell({
   owner = DEFAULT_OWNER,
   repo = DEFAULT_REPO,
   branch = DEFAULT_BRANCH,
+  pageNumber = 1,
+  pageSize,
+  pageCount,
 }: Props) {
   const router = useRouter();
   const { posts, channels, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive, owner, repo, branch });
@@ -42,27 +54,30 @@ export function ArchiveShell({
   });
 
   const initialFilters = useMemo(() => {
-    if (typeof window === "undefined") {
+    const fromUrl = getArchiveFiltersFromUrl();
+    const hasUrlState =
+      fromUrl.committedQ ||
+      fromUrl.sortKey !== "newest" ||
+      fromUrl.tagMode !== "AND" ||
+      Object.keys(fromUrl.tagState).length > 0 ||
+      fromUrl.selectedChannels.length > 0;
+    if (hasUrlState) return fromUrl;
+    const fromSession = readArchiveSession();
+    if (fromSession) {
       return {
-        q: "",
-        tagMode: "AND" as const,
-        tagState: {} as Record<string, -1 | 0 | 1>,
-        selectedChannels: [] as string[],
-        sortKey: "newest" as SortKey,
+        q: fromSession.q || "",
+        committedQ: fromSession.committedQ ?? fromSession.q ?? "",
+        tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
+        tagState: fromSession.tagState || {},
+        selectedChannels: fromSession.selectedChannels || [],
+        sortKey: fromSession.sortKey || "newest",
       };
     }
-    const sp = new URLSearchParams(window.location.search);
-    const parsed = extractFiltersFromSearch(sp, ["newest", "oldest", "archived", "archivedOldest", "az"]);
-    return {
-      q: parsed.q || "",
-      tagMode: parsed.tagMode,
-      tagState: parsed.tagState || {},
-      selectedChannels: parsed.selectedChannels || [],
-      sortKey: parsed.sortKey || "newest",
-    };
+    return fromUrl;
   }, []);
 
   const [q, setQ] = useState(initialFilters.q);
+  const [committedQ, setCommittedQ] = useState(initialFilters.committedQ);
   const [tagMode, setTagMode] = useState<"OR" | "AND">(initialFilters.tagMode);
   const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>(initialFilters.tagState);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(initialFilters.selectedChannels);
@@ -73,9 +88,9 @@ export function ArchiveShell({
   useEffect(() => {
     const handlePopState = () => {
       if (typeof window === "undefined") return;
-      const sp = new URLSearchParams(window.location.search);
-      const parsed = extractFiltersFromSearch(sp, ["newest", "oldest", "archived", "archivedOldest", "az"]);
+      const parsed = getArchiveFiltersFromUrl();
       setQ(parsed.q || "");
+      setCommittedQ(parsed.committedQ || "");
       setTagMode(parsed.tagMode);
       setTagState(parsed.tagState || {});
       setSelectedChannels(parsed.selectedChannels || []);
@@ -94,7 +109,7 @@ export function ArchiveShell({
     const id = requestAnimationFrame(() => setClientReady(true));
     return () => cancelAnimationFrame(id);
   }, []);
-  const commitSearch = () => setQ((val) => val);
+  const commitSearch = () => setCommittedQ(q);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
@@ -129,20 +144,27 @@ export function ArchiveShell({
   }, [clientReady]);
 
   useEffect(() => {
+    setArchiveFiltersToUrl({
+      q,
+      committedQ,
+      tagMode,
+      tagState,
+      selectedChannels,
+      sortKey,
+    });
+  }, [committedQ, sortKey, tagMode, tagState, selectedChannels]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
-    const include = Object.keys(tagState).filter((k) => tagState[k] === 1);
-    const exclude = Object.keys(tagState).filter((k) => tagState[k] === -1);
-    const sp = new URLSearchParams();
-    if (q.trim()) sp.set("q", q.trim());
-    if (sortKey !== "newest") sp.set("sort", sortKey);
-    if (tagMode === "OR") sp.set("tagMode", "OR");
-    if (include.length) sp.set("tags", serializeListParam(include));
-    if (exclude.length) sp.set("xtags", serializeListParam(exclude));
-    if (selectedChannels.length) sp.set("channels", serializeListParam(selectedChannels));
-    const query = sp.toString();
-    const next = query ? `/?${query}` : "/";
-    window.history.replaceState(null, "", next);
-  }, [q, sortKey, tagMode, tagState, selectedChannels]);
+    writeArchiveSession({
+      q,
+      committedQ,
+      tagMode,
+      tagState,
+      selectedChannels,
+      sortKey,
+    });
+  }, [q, committedQ, tagMode, tagState, selectedChannels, sortKey]);
 
   const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
   const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);
@@ -166,6 +188,11 @@ export function ArchiveShell({
     () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, sortKey, tagMode }),
     [posts, q, includeTags, excludeTags, selectedChannels, sortKey, tagMode],
   );
+  const pagedPosts = useMemo(() => {
+    if (!pageSize) return filteredPosts;
+    const start = Math.max(0, (pageNumber - 1) * pageSize);
+    return filteredPosts.slice(start, start + pageSize);
+  }, [filteredPosts, pageNumber, pageSize]);
 
   const channelCounts = useMemo(
     () => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q),
@@ -183,6 +210,7 @@ export function ArchiveShell({
     setTagState({});
     setTagMode("AND");
     setQ("");
+    setCommittedQ("");
     setSortKey("newest");
   };
 
@@ -290,17 +318,40 @@ export function ArchiveShell({
             {clientReady ? (
               <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredPosts.map((post) => (
-                  <PostCard
-                    key={`${post.channel.path}/${post.entry.path}`}
-                    post={post}
-                    sortKey={sortKey}
-                    ensurePostLoaded={ensurePostLoaded}
-                    onNavigate={handleOpenPost}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {pagedPosts.map((post) => (
+                    <PostCard
+                      key={`${post.channel.path}/${post.entry.path}`}
+                      post={post}
+                      sortKey={sortKey}
+                      ensurePostLoaded={ensurePostLoaded}
+                      onNavigate={handleOpenPost}
+                    />
+                  ))}
+                </div>
+                {pageCount && pageCount > 1 ? (
+                  <div className="mt-6 flex items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                    {pageNumber > 1 ? (
+                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={pageNumber === 2 ? "/" : `/page-${pageNumber - 1}`}>
+                        ← Previous
+                      </a>
+                    ) : (
+                      <span className="opacity-50">← Previous</span>
+                    )}
+                    <span>
+                      Page {pageNumber} of {pageCount}
+                    </span>
+                    {pageNumber < pageCount ? (
+                      <a className="underline hover:text-gray-900 dark:hover:text-white" href={`/page-${pageNumber + 1}`}>
+                        Next →
+                      </a>
+                    ) : (
+                      <span className="opacity-50">Next →</span>
+                    )}
+                  </div>
+                ) : null}
+              </>
             )}
 
           </div>
