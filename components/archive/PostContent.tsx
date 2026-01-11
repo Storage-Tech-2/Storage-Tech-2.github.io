@@ -199,14 +199,22 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                 <button
                   type="button"
                   className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border bg-white/80 px-3 py-1 text-sm shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
-                  onClick={() => setActiveImageIndex((idx) => Math.max(0, idx - 1))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveImageIndex((idx) => Math.max(0, idx - 1));
+                  }}
                 >
                   ←
                 </button>
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border bg-white/80 px-3 py-1 text-sm shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
-                  onClick={() => setActiveImageIndex((idx) => Math.min(images.length - 1, idx + 1))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveImageIndex((idx) => Math.min(images.length - 1, idx + 1));
+                  }}
                 >
                   →
                 </button>
