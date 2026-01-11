@@ -154,7 +154,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       const sp = new URLSearchParams(window.location.search);
       const queryString = sp.toString();
       const next = queryString ? `/dictionary/${encodeURIComponent(slug)}?${queryString}` : `/dictionary/${encodeURIComponent(slug)}`;
-      window.history.replaceState(null, "", next);
+      window.history.replaceState(window.history.state, "", next);
     }
     if (ent.data || disableLiveFetch) {
       setActive(ent);
@@ -230,7 +230,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
               if (pathSlug) {
                 router.replace(next);
               } else {
-                window.history.replaceState(null, "", next);
+                window.history.replaceState(window.history.state, "", next);
               }
             }
           }}

@@ -56,7 +56,7 @@ export function setArchiveFiltersToUrl(filters: ArchiveFilters) {
   if (filters.selectedChannels.length) sp.set("channels", serializeListParam(filters.selectedChannels));
   const query = sp.toString();
   const next = query ? `/?${query}` : "/";
-  window.history.replaceState(null, "", next);
+  window.history.replaceState(window.history.state, "", next);
 }
 
 export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryState {
@@ -80,7 +80,7 @@ export function setDictionaryStateToUrl(state: DictionaryState) {
   const queryString = sp.toString();
   const path = state.slug ? `/dictionary/${encodeURIComponent(state.slug)}` : "/dictionary";
   const next = queryString ? `${path}?${queryString}` : path;
-  window.history.replaceState(null, "", next);
+  window.history.replaceState(window.history.state, "", next);
 }
 
 export function readArchiveSession(): ArchiveFilters | null {
