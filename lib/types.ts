@@ -189,7 +189,7 @@ export interface EntryRef {
   id: Snowflake;
   name: string;
   code: string;
-  codes?: string[];
+  codes: string[];
   timestamp?: number;
   archivedAt?: number;
   updatedAt?: number;

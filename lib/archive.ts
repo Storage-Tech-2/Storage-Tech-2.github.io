@@ -39,7 +39,7 @@ export function slugifyName(input: string) {
 }
 
 export function buildEntrySlug(entry: EntryRef | ArchivedPostReference) {
-  const base = entry.code || (Array.isArray((entry as EntryRef).codes) ? (entry as EntryRef).codes?.[0] : "") || entry.id;
+  const base = entry.code;
   const name = entry.name ? slugifyName(entry.name) : "";
   if (!base) return name;
   if (!name) return base;
@@ -52,12 +52,7 @@ export function slugMatchesEntry(slug: string, entry: EntryRef) {
   if (lowerSlug === entrySlug) return true;
   const slugCode = lowerSlug.split("-")[0];
   if (!slugCode) return false;
-  const codes = new Set(
-    [entry.code, ...(entry.codes || []), entry.id]
-      .filter(Boolean)
-      .map((c) => c!.toLowerCase()),
-  );
-  return codes.has(slugCode);
+  return entry.codes.some((code) => code.toLowerCase() === slugCode);
 }
 
 function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
@@ -78,7 +73,7 @@ function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
   idx.channels.forEach((channel, i) => {
     const channelRef = channels[i];
     channel.entries.forEach((entry) => {
-      const codes = entry.codes?.length ? entry.codes : [entry.id];
+      const codes = entry.codes;
       const entryRef: EntryRef = {
         id: entry.id,
         name: entry.name,
