@@ -23,13 +23,9 @@ type Props = {
 };
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
-  const [liveState, setLiveState] = useState<{ entryId: string; data?: ArchiveEntryData }>({
-    entryId: post.entry.id,
-    data: data ?? post.data,
-  });
+  const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
   const baseData = data ?? post.data;
-  const liveData = liveState.entryId === post.entry.id ? liveState.data : undefined;
-  const currentData = liveData ? liveData : baseData;
+  const currentData = liveState ? liveState : baseData;
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -43,7 +39,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     let cancelled = false;
     fetchPostData(post.channel.path, post.entry)
       .then((fresh) => {
-        if (!cancelled) setLiveState({ entryId: post.entry.id, data: fresh });
+        if (!cancelled) setLiveState(fresh);
       })
       .catch(() => {});
     return () => {
