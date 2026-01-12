@@ -256,6 +256,6 @@ export const getEntryArchivedAt = (entry: Pick<EntryRef, "updatedAt" | "archived
   entry.archivedAt ?? entry.timestamp ?? entry.updatedAt;
 
 export const USE_RAW = true;
-export const DEFAULT_OWNER = process.env.NEXT_PUBLIC_ARCHIVE_OWNER || siteConfig.archiveRepo.owner;
-export const DEFAULT_REPO = process.env.NEXT_PUBLIC_ARCHIVE_REPO || siteConfig.archiveRepo.repo;
-export const DEFAULT_BRANCH = process.env.NEXT_PUBLIC_ARCHIVE_BRANCH || siteConfig.archiveRepo.branch;
+export const DEFAULT_OWNER = siteConfig.archiveRepo.owner;
+export const DEFAULT_REPO = siteConfig.archiveRepo.repo;
+export const DEFAULT_BRANCH = siteConfig.archiveRepo.branch;

@@ -1,6 +1,25 @@
 import type { NextConfig } from "next";
+import { siteConfig } from "./lib/siteConfig";
+
+const normalizeBasePath = (value?: string | null) => {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "/") return undefined;
+  const withLeading = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const withoutTrailing = withLeading.endsWith("/") ? withLeading.slice(0, -1) : withLeading;
+  return withoutTrailing || undefined;
+};
+
+const basePath = normalizeBasePath(siteConfig.basePath);
+const assetPrefix = siteConfig.assetPrefix ? siteConfig.assetPrefix.replace(/\/+$/, "") : basePath;
 
 const nextConfig: NextConfig = {
+  /**
+   * Allow deploying under a custom sub-path (e.g. /viewer).
+   */
+  basePath,
+  assetPrefix,
+
   /**
    * Enable static exports.
    *

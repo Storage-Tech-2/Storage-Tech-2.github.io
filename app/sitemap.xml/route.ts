@@ -13,7 +13,8 @@ type UrlEntry = {
 };
 
 export async function GET() {
-  const base = siteConfig.siteUrl.replace(/\/+$/, "");
+  const origin = siteConfig.siteOrigin.replace(/\/+$/, "");
+  const withBasePath = (path: string) => `${siteConfig.basePath || ""}${path}`;
   const urls: UrlEntry[] = [
     { loc: "/" },
     { loc: "/dictionary" },
@@ -43,7 +44,7 @@ export async function GET() {
       ({ loc, lastmod }) =>
         [
           "<url>",
-          `<loc>${new URL(loc, base).toString()}</loc>`,
+          `<loc>${new URL(withBasePath(loc), `${origin}/`).toString()}</loc>`,
           lastmod ? `<lastmod>${lastmod}</lastmod>` : null,
           "</url>",
         ]

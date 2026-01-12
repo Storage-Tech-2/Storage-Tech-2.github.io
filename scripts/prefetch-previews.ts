@@ -6,9 +6,9 @@ import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, type ArchiveLis
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "../lib/types";
 import { disablePreviewOptimization } from "../lib/runtimeFlags";
 
-const owner = process.env.NEXT_PUBLIC_ARCHIVE_OWNER || DEFAULT_OWNER;
-const repo = process.env.NEXT_PUBLIC_ARCHIVE_REPO || DEFAULT_REPO;
-const branch = process.env.NEXT_PUBLIC_ARCHIVE_BRANCH || DEFAULT_BRANCH;
+const owner = DEFAULT_OWNER;
+const repo = DEFAULT_REPO;
+const branch = DEFAULT_BRANCH;
 const skip = process.env.SKIP_PREVIEW_DOWNLOAD === "1";
 
 const root = process.cwd();
