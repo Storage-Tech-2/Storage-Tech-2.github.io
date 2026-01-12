@@ -135,7 +135,7 @@ export type PostWithArchive = {
 };
 
 const archiveIndexCache = new Map<string, Promise<ArchiveIndex>>();
-const postPayloadCache = new Map<string, Promise<PostWithArchive | null>>();
+const postPayloadCache = new Map<string, Promise<ArchiveEntryData>>();
 
 export async function fetchPostData(
   channelPath: string,
@@ -149,38 +149,49 @@ export async function fetchPostData(
   return fetchJSONRaw<ArchiveEntryData>(path, owner, repo, branch, cache);
 }
 
-export function buildPostPayloadKey(slug: string, cache: RequestCache) {
-  return `${cache}:${slug.toLowerCase()}`;
-}
-
 export async function fetchPostWithArchive(
-  slug: string,
-  cache: RequestCache = "force-cache",
+  slug: string
 ): Promise<PostWithArchive | null> {
-  const key = buildPostPayloadKey(slug, cache);
-  const existing = postPayloadCache.get(key);
-  if (existing) return existing;
+  // first, fetch archive index
+  const indexKey = "archive-index";
+  const archivePromise =
+    archiveIndexCache.get(indexKey) ??
+    (async () => {
+      const idx = await fetchArchiveIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, "no-cache");
+      archiveIndexCache.set(indexKey, Promise.resolve(idx));
+      return idx;
+    })();
+  archiveIndexCache.set(indexKey, archivePromise);
+  const archiveIndex = await archivePromise;
+
+
+  // then, find post by slug
+  const key = slug.toLowerCase();
+  const match = findPostBySlug(archiveIndex.posts, slug);
+  if (!match) return null;
+
+  // check cache for post payload
+  const cachedPayload = postPayloadCache.get(key);
+  if (cachedPayload) {
+    return {
+      archive: archiveIndex,
+      post: match,
+      data: await cachedPayload,
+    }
+  }
 
   const promise = (async () => {
-    // Share a single archive index fetch regardless of cache mode.
-    const archiveKey = "archive-index";
-    const archivePromise =
-      archiveIndexCache.get(archiveKey) ??
-      (async () => {
-        const idx = await fetchArchiveIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
-        archiveIndexCache.set(archiveKey, Promise.resolve(idx));
-        return idx;
-      })();
-    archiveIndexCache.set(archiveKey, archivePromise);
-    const archive = await archivePromise;
-    const match = findPostBySlug(archive.posts, slug);
-    if (!match) return null;
-    const data = await fetchPostData(match.channel.path, match.entry, DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
-    return { archive, post: match, data };
+    const data = await fetchPostData(match.channel.path, match.entry, DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, "no-cache");
+    return data;
   })();
 
   postPayloadCache.set(key, promise);
-  return promise;
+
+  return {
+    archive: archiveIndex,
+    post: match,
+    data: await promise,
+  };
 }
 
 export async function fetchCommentsData(
