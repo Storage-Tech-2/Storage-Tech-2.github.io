@@ -80,7 +80,13 @@ export default async function PostPage({ params }: Params) {
     <>
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
         <PostNav />
-        <PostContent post={{ ...match, data }} data={data} schemaStyles={archive.config.postStyle} dictionaryTooltips={dictionaryTooltips} />
+        <PostContent
+          key={match.entry.id}
+          post={{ ...match, data }}
+          data={data}
+          schemaStyles={archive.config.postStyle}
+          dictionaryTooltips={dictionaryTooltips}
+        />
       </main>
       <Footer />
     </>

@@ -27,7 +27,7 @@ const normalizeBasePath = (value: string) => {
 // Deployment configuration lives here rather than env variables.
 const siteOrigin = "https://storagetech2.org";
 // Set to "/viewer" (or "" for root) depending on where the site is hosted.
-const basePath = normalizeBasePath("/viewer");
+const basePath = normalizeBasePath("");
 const assetPrefix = basePath || undefined;
 const siteUrl = `${siteOrigin.replace(/\/+$/, "")}${basePath || ""}`;
 

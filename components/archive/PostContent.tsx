@@ -23,8 +23,20 @@ type Props = {
 };
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
-  const [liveData, setLiveData] = useState<ArchiveEntryData | undefined>(data ?? post.data);
-  const payload = liveData ?? post.data;
+  const [liveState, setLiveState] = useState<{ entryId: string; data?: ArchiveEntryData }>({
+    entryId: post.entry.id,
+    data: data ?? post.data,
+  });
+  const baseData = data ?? post.data;
+  const currentLiveData = liveState.entryId === post.entry.id ? liveState.data : undefined;
+  const payload =
+    (() => {
+      if (!baseData) return currentLiveData;
+      if (!currentLiveData) return baseData;
+      const baseVersion = baseData.updatedAt ?? baseData.archivedAt ?? 0;
+      const liveVersion = currentLiveData.updatedAt ?? currentLiveData.archivedAt ?? 0;
+      return liveVersion >= baseVersion ? currentLiveData : baseData;
+    })();
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -33,23 +45,42 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   const [comments, setComments] = useState<ArchiveComment[] | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setLiveData(data ?? post.data));
-    return () => cancelAnimationFrame(id);
-  }, [data, post.data]);
+  const selectLatestData = useCallback(
+    (incoming?: ArchiveEntryData) => {
+      if (!incoming) return;
+      setLiveState((prev) => {
+        if (prev.entryId !== post.entry.id) {
+          return { entryId: post.entry.id, data: incoming };
+        }
+        if (!prev.data) {
+          return { entryId: post.entry.id, data: incoming };
+        }
+        if (incoming.id !== prev.data.id) {
+          return { entryId: post.entry.id, data: incoming };
+        }
+        const prevVersion = prev.data.updatedAt ?? prev.data.archivedAt ?? 0;
+        const nextVersion = incoming.updatedAt ?? incoming.archivedAt ?? 0;
+        if (nextVersion >= prevVersion) {
+          return { entryId: post.entry.id, data: incoming };
+        }
+        return prev;
+      });
+    },
+    [post.entry.id],
+  );
 
   useEffect(() => {
     if (disableLiveFetch) return;
     let cancelled = false;
     fetchPostData(post.channel.path, post.entry, undefined, undefined, undefined, "no-store")
       .then((fresh) => {
-        if (!cancelled) setLiveData(fresh);
+        if (!cancelled) selectLatestData(fresh);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [post.channel.path, post.entry]);
+  }, [post.channel.path, post.entry, selectLatestData]);
 
   useEffect(() => {
     if (disableLiveFetch) {
