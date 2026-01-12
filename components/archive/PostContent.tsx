@@ -72,7 +72,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   useEffect(() => {
     if (disableLiveFetch) return;
     let cancelled = false;
-    fetchPostData(post.channel.path, post.entry, undefined, undefined, undefined, "no-store")
+    fetchPostData(post.channel.path, post.entry)
       .then((fresh) => {
         if (!cancelled) selectLatestData(fresh);
       })
@@ -92,7 +92,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     let cancelled = false;
     setComments(null);
     setCommentsLoading(true);
-    fetchCommentsData(post.channel.path, post.entry, undefined, undefined, undefined, "no-store")
+    fetchCommentsData(post.channel.path, post.entry, "no-store")
       .then((items) => {
         if (!cancelled) setComments(items);
       })

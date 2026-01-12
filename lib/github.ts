@@ -9,22 +9,16 @@ export function assetURL(
   channelPath: string,
   entryPath: string,
   rel: string,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
 ) {
   const joined = [channelPath, entryPath, rel].join("/").replace(/\/{2,}/g, "/").replace(/^\/+/, "");
-  return getRawURL(owner, repo, branch, joined);
+  return getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined);
 }
 
 export async function fetchJSONRaw<T>(
   path: string,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<T> {
-  const url = getRawURL(owner, repo, branch, path);
+  const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
   const res = await fetch(url, { cache });
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
   return res.json();
@@ -32,12 +26,9 @@ export async function fetchJSONRaw<T>(
 
 export async function fetchArrayBufferRaw(
   path: string,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<ArrayBuffer> {
-  const url = getRawURL(owner, repo, branch, path);
+  const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
   const res = await fetch(url, { cache });
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
   return res.arrayBuffer();

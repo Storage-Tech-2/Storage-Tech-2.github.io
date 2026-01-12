@@ -21,12 +21,9 @@ import {
 
 type Props = {
   entries: IndexedDictionaryEntry[];
-  owner: string;
-  repo: string;
-  branch: string;
 };
 
-export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
+export function DictionaryPageClient({ entries }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
@@ -90,7 +87,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   useEffect(() => {
     if (disableLiveFetch) return;
     let cancelled = false;
-    fetchDictionaryIndex(owner, repo, branch, "no-store")
+    fetchDictionaryIndex()
       .then((fresh) => {
         if (!cancelled) setLiveEntries(fresh.entries);
       })
@@ -98,7 +95,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [owner, repo, branch]);
+  }, []);
 
   const filtered = useMemo(() => filterDictionaryEntries(liveEntries, query, sort), [liveEntries, query, sort]);
 
@@ -153,7 +150,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       return;
     }
     setLoadingEntryId(entryIndex.id);
-    fetchDictionaryEntry(entryIndex.id, owner, repo, branch, "no-store")
+    fetchDictionaryEntry(entryIndex.id)
       .then((data) => {
         setActive({ ...full, data });
       })
@@ -163,7 +160,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       .finally(() => {
         setLoadingEntryId(null);
       });
-  }, [pathSlug, liveEntries, owner, repo, branch, active]);
+  }, [pathSlug, liveEntries, active]);
 
   const openEntry = (ent: IndexedDictionaryEntry) => {
     const slug = buildDictionarySlug(ent.index);
@@ -179,7 +176,7 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
       return;
     }
     setLoadingEntryId(ent.index.id);
-    fetchDictionaryEntry(ent.index.id, owner, repo, branch, "no-store")
+    fetchDictionaryEntry(ent.index.id)
       .then((data) => {
         setActive({ ...ent, data });
       })
@@ -194,9 +191,6 @@ export function DictionaryPageClient({ entries, owner, repo, branch }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <HeaderBar
-        owner={owner}
-        repo={repo}
-        branch={branch}
         siteName={siteConfig.siteName}
         view="dictionary"
         logoSrc={siteConfig.logoSrc}

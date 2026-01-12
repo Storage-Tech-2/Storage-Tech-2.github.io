@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
-import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type DictionaryEntry, type IndexedDictionaryEntry } from "@/lib/types";
+import { type DictionaryEntry, type IndexedDictionaryEntry } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
-  owner?: string;
-  repo?: string;
-  branch?: string;
   initial?: { entries: IndexedDictionaryEntry[] };
 };
 
-export function useDictionaryData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH }: Options = {}) {
+export function useDictionaryData({ initial }: Options = {}) {
   const [entries, setEntries] = useState<IndexedDictionaryEntry[]>(initial?.entries ?? []);
   const [loading, setLoading] = useState(!initial);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +22,7 @@ export function useDictionaryData({ initial, owner = DEFAULT_OWNER, repo = DEFAU
     async function run() {
       if (initial) setLoading(true);
       try {
-        const idx = await fetchDictionaryIndex(owner, repo, branch, "no-store");
+        const idx = await fetchDictionaryIndex();
         if (cancelled) return;
         setEntries((prev) => {
           const loaded = new Map(prev.map((e) => [e.index.id, e]));
@@ -53,14 +50,14 @@ export function useDictionaryData({ initial, owner = DEFAULT_OWNER, repo = DEFAU
     return () => {
       cancelled = true;
     };
-  }, [owner, repo, branch, initial]);
+  }, [initial]);
 
   const ensureEntryLoaded = async (entry: IndexedDictionaryEntry) => {
     if (disableLiveFetch) return entry.data;
     if (entry.data) return entry.data;
     const existing = inflight.current.get(entry.index.id);
     if (existing) return existing;
-    const request = fetchDictionaryEntry(entry.index.id, owner, repo, branch, "no-store");
+    const request = fetchDictionaryEntry(entry.index.id);
     inflight.current.set(entry.index.id, request);
     try {
       const data = await request;

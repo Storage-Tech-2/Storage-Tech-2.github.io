@@ -76,7 +76,7 @@ export default function NotFound() {
     const ensureDictionaryIndex = async () => {
       if (dictionaryIndexRef.current) return dictionaryIndexRef.current;
       if (inflightDictionaryRef.current) return inflightDictionaryRef.current;
-      const promise = fetchDictionaryIndex(undefined, undefined, undefined, "no-store").then((dictionary) => {
+      const promise = fetchDictionaryIndex().then((dictionary) => {
         dictionaryIndexRef.current = dictionary.entries;
         return dictionary.entries;
       });
@@ -91,7 +91,7 @@ export default function NotFound() {
     async function run() {
       try {
         if (kind === "archive") {
-          const archive = await fetchArchiveIndex(undefined, undefined, undefined, "no-store");
+          const archive = await fetchArchiveIndex();
           if (cancelled || !slug) return;
           const found = findPostBySlug(archive.posts, slug);
           if (!found) {
@@ -99,7 +99,7 @@ export default function NotFound() {
             return;
           }
           const [postData, dictionaryEntries] = await Promise.all([
-            fetchPostData(found.channel.path, found.entry, undefined, undefined, undefined, "no-store"),
+            fetchPostData(found.channel.path, found.entry),
             ensureDictionaryIndex(),
           ]);
           if (cancelled) return;

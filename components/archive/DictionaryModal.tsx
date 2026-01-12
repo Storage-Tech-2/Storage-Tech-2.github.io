@@ -25,7 +25,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
     const referencedCodes = (entry.data as { referencedBy?: string[] } | undefined)?.referencedBy;
     if (!referencedCodes?.length) return;
     let cancelled = false;
-    fetchArchiveIndex(undefined, undefined, undefined, "no-store")
+    fetchArchiveIndex()
       .then((archive) => {
         if (cancelled) return;
         const byCode = new Map(archive.posts.map((post) => [post.entry.code, post]));

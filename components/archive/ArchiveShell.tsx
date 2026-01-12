@@ -11,7 +11,7 @@ import { useArchiveData } from "@/hooks/useArchiveData";
 import { useDictionaryData } from "@/hooks/useDictionaryData";
 import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
-import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
+import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
 import { siteConfig } from "@/lib/siteConfig";
@@ -23,14 +23,11 @@ import {
   writeArchiveSession,
 } from "@/lib/urlState";
 import { buildDictionarySlug } from "@/lib/dictionary";
-import { disableInfiniteScroll, disablePagination } from "@/lib/runtimeFlags";
+import { disablePagination } from "@/lib/runtimeFlags";
 
 type Props = {
   initialArchive: ArchiveIndex;
   initialDictionary: { entries: IndexedDictionaryEntry[] };
-  owner?: string;
-  repo?: string;
-  branch?: string;
   pageNumber: number;
   pageSize: number;
   pageCount?: number;
@@ -39,20 +36,14 @@ type Props = {
 export function ArchiveShell({
   initialArchive,
   initialDictionary,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
   pageNumber = 0,
   pageSize,
   pageCount,
 }: Props) {
   const router = useRouter();
-  const { posts, channels, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive, owner, repo, branch });
+  const { posts, channels, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive });
   const { entries: dictionaryEntries } = useDictionaryData({
-    initial: initialDictionary,
-    owner,
-    repo,
-    branch,
+    initial: initialDictionary
   });
 
   const [q, setQ] = useState("");
@@ -397,9 +388,6 @@ export function ArchiveShell({
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <HeaderBar
-        owner={owner}
-        repo={repo}
-        branch={branch}
         siteName={siteConfig.siteName}
         view="archive"
         logoSrc={siteConfig.logoSrc}

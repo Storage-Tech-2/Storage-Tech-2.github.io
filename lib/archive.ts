@@ -5,9 +5,6 @@ import {
   ArchivedPostReference,
   ArchiveEntryData,
   ChannelRef,
-  DEFAULT_BRANCH,
-  DEFAULT_OWNER,
-  DEFAULT_REPO,
   DictionaryConfig,
   DictionaryEntry,
   EntryRef,
@@ -104,28 +101,15 @@ function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
 }
 
 export async function fetchArchiveIndex(
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<ArchiveIndex> {
   if (cache !== "no-store") {
     const cached = await readArchiveIndexCache();
     if (cached) return cached;
   }
-  const buffer = await fetchArrayBufferRaw("persistent.idx", owner, repo, branch, cache);
+  const buffer = await fetchArrayBufferRaw("persistent.idx", cache);
   const idx = deserializePersistentIndex(buffer);
   return persistentIndexToArchive(idx);
-}
-
-export async function fetchArchiveConfig(
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
-  cache: RequestCache = "force-cache",
-): Promise<ArchiveConfig> {
-  const archive = await fetchArchiveIndex(owner, repo, branch, cache);
-  return archive.config;
 }
 
 export type PostWithArchive = {
@@ -140,13 +124,10 @@ const postPayloadCache = new Map<string, Promise<ArchiveEntryData>>();
 export async function fetchPostData(
   channelPath: string,
   entry: EntryRef,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
-  cache: RequestCache = "force-cache",
+  cache: RequestCache = "no-cache",
 ): Promise<ArchiveEntryData> {
   const path = `${channelPath}/${entry.path}/data.json`;
-  return fetchJSONRaw<ArchiveEntryData>(path, owner, repo, branch, cache);
+  return fetchJSONRaw<ArchiveEntryData>(path, cache);
 }
 
 export async function fetchPostWithArchive(
@@ -157,7 +138,7 @@ export async function fetchPostWithArchive(
   const archivePromise =
     archiveIndexCache.get(indexKey) ??
     (async () => {
-      const idx = await fetchArchiveIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, "no-cache");
+      const idx = await fetchArchiveIndex();
       archiveIndexCache.set(indexKey, Promise.resolve(idx));
       return idx;
     })();
@@ -181,7 +162,7 @@ export async function fetchPostWithArchive(
   }
 
   const promise = (async () => {
-    const data = await fetchPostData(match.channel.path, match.entry, DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, "no-cache");
+    const data = await fetchPostData(match.channel.path, match.entry);
     return data;
   })();
 
@@ -197,30 +178,24 @@ export async function fetchPostWithArchive(
 export async function fetchCommentsData(
   channelPath: string,
   entry: EntryRef,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
-  cache: RequestCache = "force-cache",
+  cache: RequestCache = "no-cache",
 ): Promise<ArchiveComment[]> {
   const path = `${channelPath}/${entry.path}/comments.json`;
   try {
-    return await fetchJSONRaw<ArchiveComment[]>(path, owner, repo, branch, cache);
+    return await fetchJSONRaw<ArchiveComment[]>(path, cache);
   } catch {
     return [];
   }
 }
 
 export async function fetchDictionaryIndex(
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
-  cache: RequestCache = "force-cache",
+  cache: RequestCache = "no-cache",
 ): Promise<DictionaryIndex> {
   if (cache !== "no-store") {
     const cached = await readDictionaryIndexCache();
     if (cached) return cached;
   }
-  const config = await fetchJSONRaw<DictionaryConfig>("dictionary/config.json", owner, repo, branch, cache);
+  const config = await fetchJSONRaw<DictionaryConfig>("dictionary/config.json", cache);
   const entries: IndexedDictionaryEntry[] = config.entries
     .map((index) => ({ index }))
     .sort((a, b) => {
@@ -266,13 +241,10 @@ async function readDictionaryIndexCache(): Promise<DictionaryIndex | null> {
 
 export async function fetchDictionaryEntry(
   id: string,
-  owner = DEFAULT_OWNER,
-  repo = DEFAULT_REPO,
-  branch = DEFAULT_BRANCH,
   cache: RequestCache = "force-cache",
 ): Promise<DictionaryEntry> {
   const path = `dictionary/entries/${id}.json`;
-  return fetchJSONRaw<DictionaryEntry>(path, owner, repo, branch, cache);
+  return fetchJSONRaw<DictionaryEntry>(path, cache);
 }
 
 export function findPostBySlug(posts: ArchiveListItem[], slug: string): ArchiveListItem | undefined {

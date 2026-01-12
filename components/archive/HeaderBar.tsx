@@ -2,13 +2,10 @@
 
 import Image from "next/image";
 import { clsx } from "@/lib/utils/classNames";
-import { type SortKey } from "@/lib/types";
+import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib/types";
 import Link from "next/link";
 
 type Props = {
-  owner: string;
-  repo: string;
-  branch: string;
   siteName: string;
   view: "archive" | "dictionary";
   logoSrc: string;
@@ -28,9 +25,6 @@ type Props = {
 };
 
 export function HeaderBar({
-  owner,
-  repo,
-  branch,
   siteName,
   view,
   logoSrc,
@@ -48,7 +42,6 @@ export function HeaderBar({
   onArchiveClick,
   onDictionaryClick,
 }: Props) {
-  const archiveRepoUrl = `https://github.com/${owner}/${repo}`;
   return (
     <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
@@ -64,7 +57,7 @@ export function HeaderBar({
               </div>
               <div className="text-xs text-gray-500">
                
-                  {owner}/{repo}@{branch}
+                  {DEFAULT_OWNER}/{DEFAULT_REPO}@{DEFAULT_BRANCH}
                 
               </div>
             </div>

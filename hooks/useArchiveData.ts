@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArchiveIndex, ArchiveListItem, buildEntrySlug, fetchArchiveIndex, fetchPostData } from "@/lib/archive";
-import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type EntryRef } from "@/lib/types";
+import { type EntryRef } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
-  owner?: string;
-  repo?: string;
-  branch?: string;
   initial?: ArchiveIndex;
 };
 
@@ -14,7 +11,7 @@ function keyForEntry(channelPath: string, entry: EntryRef) {
   return `${channelPath}/${entry.path}`;
 }
 
-export function useArchiveData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_REPO, branch = DEFAULT_BRANCH }: Options = {}) {
+export function useArchiveData({ initial }: Options = {}) {
   const [config, setConfig] = useState(initial?.config ?? null);
   const [channels, setChannels] = useState(initial?.channels ?? []);
   const [posts, setPosts] = useState<ArchiveListItem[]>(initial?.posts ?? []);
@@ -34,7 +31,7 @@ export function useArchiveData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_
         setLoading(true);
       }
       try {
-        const idx = await fetchArchiveIndex(owner, repo, branch, "no-store");
+        const idx = await fetchArchiveIndex();
         if (cancelled) return;
         setConfig(idx.config);
         setChannels(idx.channels);
@@ -66,7 +63,7 @@ export function useArchiveData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_
     return () => {
       cancelled = true;
     };
-  }, [owner, repo, branch, initial]);
+  }, [initial]);
 
   const ensurePostLoaded = async (post: ArchiveListItem) => {
     if (disableLiveFetch) return post;
@@ -75,7 +72,7 @@ export function useArchiveData({ initial, owner = DEFAULT_OWNER, repo = DEFAULT_
     const existing = inflight.current.get(cacheKey);
     if (existing) return existing;
     const request = (async () => {
-      const data = await fetchPostData(post.channel.path, post.entry, owner, repo, branch, "no-store");
+      const data = await fetchPostData(post.channel.path, post.entry);
       return { ...post, slug: buildEntrySlug(post.entry), data };
     })();
     inflight.current.set(cacheKey, request);
