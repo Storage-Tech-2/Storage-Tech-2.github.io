@@ -46,7 +46,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
           <div className="space-y-2">
             <h3 className="text-lg font-bold">{entry.index.terms[0] || entry.index.id}</h3>
             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-              <span title={formatDate(entry.index.updatedAt)}>Updated {timeAgo(entry.index.updatedAt)}</span>
+              <span suppressHydrationWarning={true} title={formatDate(entry.index.updatedAt)}>Updated {timeAgo(entry.index.updatedAt)}</span>
             </div>
             {entry.index.terms.length > 1 ? (
               <div className="flex flex-wrap gap-1">
@@ -101,7 +101,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips }: Props) {
                               <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                                 {post.entry.code}
                               </span>
-                              {updated !== undefined ? <span title={formatDate(updated)}>{timeAgo(updated)}</span> : null}
+                              {updated !== undefined ? <span suppressHydrationWarning={true} title={formatDate(updated)}>{timeAgo(updated)}</span> : null}
                             </div>
                           </div>
                           <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>

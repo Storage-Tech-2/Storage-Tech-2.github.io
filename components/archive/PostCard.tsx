@@ -80,7 +80,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
             <ChannelBadge ch={post.channel} />
             <div className="flex flex-col items-end text-right">
-              {displayTs !== undefined && <span title={displayTs ? formatDate(displayTs) : undefined}>{displayTs ? timeAgo(displayTs) : ""}</span>}
+              {displayTs !== undefined && <span suppressHydrationWarning={true} title={displayTs ? formatDate(displayTs) : undefined}>{displayTs ? timeAgo(displayTs) : ""}</span>}
             </div>
           </div>
           <div className="min-h-13.5">

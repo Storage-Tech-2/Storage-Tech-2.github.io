@@ -164,12 +164,12 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
               <ChannelBadge ch={post.channel} />
               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{post.entry.code}</span>
               {updatedAt !== undefined ? (
-                <span className="text-gray-700 dark:text-gray-200" title={formatDate(updatedAt)}>
+                <span className="text-gray-700 dark:text-gray-200" suppressHydrationWarning={true} title={formatDate(updatedAt)}>
                   Updated {timeAgo(updatedAt)}
                 </span>
               ) : null}
               {archivedAt !== undefined ? (
-                <span className="text-gray-700 dark:text-gray-200" title={formatDate(archivedAt)}>
+                <span className="text-gray-700 dark:text-gray-200" suppressHydrationWarning={true} title={formatDate(archivedAt)}>
                   Archived {timeAgo(archivedAt)}
                 </span>
               ) : null}
@@ -515,7 +515,7 @@ function CommentsList({
             <li key={c.id} className="rounded-xl border p-3 dark:border-gray-800">
               <div className="flex items-center justify-between gap-2">
                 <AuthorInline a={c.sender} />
-                <span className="text-xs text-gray-500" title={formatDate(c.timestamp)}>
+                <span className="text-xs text-gray-500" suppressHydrationWarning={true} title={formatDate(c.timestamp)}>
                   {timeAgo(c.timestamp)}
                 </span>
               </div>
