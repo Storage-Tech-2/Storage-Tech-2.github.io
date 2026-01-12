@@ -134,6 +134,7 @@ export type PostWithArchive = {
   data: ArchiveEntryData;
 };
 
+const archiveIndexCache = new Map<string, Promise<ArchiveIndex>>();
 const postPayloadCache = new Map<string, Promise<PostWithArchive | null>>();
 
 export async function fetchPostData(
@@ -161,7 +162,17 @@ export async function fetchPostWithArchive(
   if (existing) return existing;
 
   const promise = (async () => {
-    const archive = await fetchArchiveIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
+    // Share a single archive index fetch regardless of cache mode.
+    const archiveKey = "archive-index";
+    const archivePromise =
+      archiveIndexCache.get(archiveKey) ??
+      (async () => {
+        const idx = await fetchArchiveIndex(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
+        archiveIndexCache.set(archiveKey, Promise.resolve(idx));
+        return idx;
+      })();
+    archiveIndexCache.set(archiveKey, archivePromise);
+    const archive = await archivePromise;
     const match = findPostBySlug(archive.posts, slug);
     if (!match) return null;
     const data = await fetchPostData(match.channel.path, match.entry, DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, cache);
