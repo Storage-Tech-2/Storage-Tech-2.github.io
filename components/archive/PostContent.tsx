@@ -28,15 +28,8 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     data: data ?? post.data,
   });
   const baseData = data ?? post.data;
-  const currentLiveData = liveState.entryId === post.entry.id ? liveState.data : undefined;
-  const payload =
-    (() => {
-      if (!baseData) return currentLiveData;
-      if (!currentLiveData) return baseData;
-      const baseVersion = baseData.updatedAt ?? baseData.archivedAt ?? 0;
-      const liveVersion = currentLiveData.updatedAt ?? currentLiveData.archivedAt ?? 0;
-      return liveVersion >= baseVersion ? currentLiveData : baseData;
-    })();
+  const liveData = liveState.entryId === post.entry.id ? liveState.data : undefined;
+  const currentData = liveData ? liveData : baseData;
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -45,42 +38,18 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   const [comments, setComments] = useState<ArchiveComment[] | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  const selectLatestData = useCallback(
-    (incoming?: ArchiveEntryData) => {
-      if (!incoming) return;
-      setLiveState((prev) => {
-        if (prev.entryId !== post.entry.id) {
-          return { entryId: post.entry.id, data: incoming };
-        }
-        if (!prev.data) {
-          return { entryId: post.entry.id, data: incoming };
-        }
-        if (incoming.id !== prev.data.id) {
-          return { entryId: post.entry.id, data: incoming };
-        }
-        const prevVersion = prev.data.updatedAt ?? prev.data.archivedAt ?? 0;
-        const nextVersion = incoming.updatedAt ?? incoming.archivedAt ?? 0;
-        if (nextVersion >= prevVersion) {
-          return { entryId: post.entry.id, data: incoming };
-        }
-        return prev;
-      });
-    },
-    [post.entry.id],
-  );
-
   useEffect(() => {
     if (disableLiveFetch) return;
     let cancelled = false;
     fetchPostData(post.channel.path, post.entry)
       .then((fresh) => {
-        if (!cancelled) selectLatestData(fresh);
+        if (!cancelled) setLiveState({ entryId: post.entry.id, data: fresh });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [post.channel.path, post.entry, selectLatestData]);
+  }, [post.channel.path, post.entry, setLiveState]);
 
   useEffect(() => {
     if (disableLiveFetch) {
@@ -137,7 +106,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     return true;
   }, []);
 
-  const images = payload?.images?.map((img) => ({
+  const images = currentData?.images?.map((img) => ({
     ...img,
     path: img.path ? assetURL(post.channel.path, post.entry.path, img.path) : img.url,
   })) ?? [];
@@ -145,13 +114,13 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
 
   const imageAspect = "16/9";
 
-  const attachments = payload?.attachments?.map((att) => ({
+  const attachments = currentData?.attachments?.map((att) => ({
     ...att,
     path: att.path ? assetURL(post.channel.path, post.entry.path, att.path) : att.path,
   })) ?? [];
 
-  const updatedAt = payload?.updatedAt ?? post.entry.updatedAt;
-  const archivedAt = payload?.archivedAt ?? post.entry.archivedAt;
+  const updatedAt = currentData?.updatedAt ?? post.entry.updatedAt;
+  const archivedAt = currentData?.archivedAt ?? post.entry.archivedAt;
 
   return (
     <article className="mx-auto flex w-full max-w-4xl flex-col gap-6">
@@ -177,10 +146,10 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
           </div>
         </div>
         <TagList tags={post.entry.tags || []} />
-        {payload ? (
+        {currentData ? (
           <div className="flex flex-col gap-2">
-            <AuthorsLine authors={payload.authors || []} />
-            <EndorsersLine endorsers={payload.endorsers || []} />
+            <AuthorsLine authors={currentData.authors || []} />
+            <EndorsersLine endorsers={currentData.endorsers || []} />
           </div>
         ) : null}
       </header>
@@ -289,12 +258,12 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         </div>
       ) : null}
 
-      {payload?.records ? (
+      {currentData?.records ? (
         <RecordRenderer
-          records={payload.records}
-          recordStyles={payload.styles}
+          records={currentData.records}
+          recordStyles={currentData.styles}
           schemaStyles={schemaStyles}
-          references={payload.references}
+          references={currentData.references}
           dictionaryTooltips={dictionaryTooltips}
           onInternalLink={handleInternalLink}
         />
@@ -302,10 +271,10 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         <div className="text-sm text-gray-500">Loading post body...</div>
       )}
 
-      {payload ? (
+      {currentData ? (
         (() => {
-          const acknowledgements = (payload as { acknowledgements?: Array<Partial<Author> & { reason?: string }> }).acknowledgements || [];
-          const authorReferences = (payload as { author_references?: Reference[] }).author_references;
+          const acknowledgements = (currentData as { acknowledgements?: Array<Partial<Author> & { reason?: string }> }).acknowledgements || [];
+          const authorReferences = (currentData as { author_references?: Reference[] }).author_references;
           if (!acknowledgements.length) return null;
           return (
             <div>
@@ -388,9 +357,9 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         </section>
       ) : null}
 
-      {payload?.post?.threadURL ? (
+      {currentData?.post?.threadURL ? (
         <a
-          href={payload.post.threadURL}
+          href={currentData.post.threadURL}
           target="_blank"
           rel="noreferrer"
           className="inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
