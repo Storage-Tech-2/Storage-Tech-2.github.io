@@ -209,8 +209,8 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
           {att.litematic ? (
-            <a href={`https://schemat.io/view?url=${att.path}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-              View on Schemat.io
+            <a href={`https://storagetech2.org/renderer?url=${att.path}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+              View Schematic
             </a>
           ) : null}
           {att.canDownload ? (
