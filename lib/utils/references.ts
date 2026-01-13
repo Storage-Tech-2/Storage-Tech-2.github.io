@@ -245,6 +245,7 @@ export function transformOutputWithReferencesForWebsite(
     return transformOutputWithReferencesWrapper(
         text,
         references,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         (reference, matchedText, isHeader, isWithinHyperlink, hyperlinkText, _hyperlinkURL, hyperlinkTitle) => {
             if (isHeader) {
                 return; // skip replacements in headers
@@ -272,7 +273,7 @@ export function transformOutputWithReferencesForWebsite(
                     const linkText = hyperlinkText || "";
                     if (linkText.toUpperCase() === reference.code) {
                         if (safeTitle) {
-                            return `[${linkText}](${newURL} "${safeTitle}")`;
+                            return `[${linkText} ${safeTitle}](${newURL})`;
                         } else {
                             return `[${linkText}](${newURL})`;
                         }
@@ -283,7 +284,7 @@ export function transformOutputWithReferencesForWebsite(
 
                     // check if matchedText is a discord url, if so replace
                     if (DiscordLinkPattern.test(matchedText.trim())) {
-                      matchedText = reference.code + (safeTitle ? ` (${safeTitle})` : "");
+                      matchedText = reference.code + (safeTitle ? ` ${safeTitle}` : "");
                     } else if (safeTitle) {
                       return `[${matchedText}](${newURL} "${safeTitle}")`;
                     }
@@ -309,6 +310,41 @@ export function transformOutputWithReferencesForWebsite(
                     return `[#${reference.channelName}](${reference.channelURL})`;
                 } else {
                     return `[Unknown Channel](# "ID: ${reference.channelID}")`;
+                }
+            }
+            return;
+        }
+    );
+}
+
+export function transformOutputWithReferencesForSocials(
+    text: string,
+    references: Reference[],
+): string {
+    return transformOutputWithReferencesWrapper(
+        text,
+        references,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (reference, matchedText, isHeader, isWithinHyperlink, hyperlinkText, _hyperlinkURL, _hyperlinkTitle) => {
+            if (isHeader) {
+                return; // skip replacements in headers
+            }
+
+            if (reference.type === ReferenceType.DICTIONARY_TERM) {
+                return hyperlinkText || matchedText;
+            } else if (reference.type === ReferenceType.ARCHIVED_POST) {
+                const tooltip = reference.name;
+                const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
+                return reference.code + (safeTitle ? ` ${safeTitle}` : "");
+            } else if (reference.type === ReferenceType.DISCORD_LINK) {
+                return "[Discord Link]";
+            } else if (reference.type === ReferenceType.USER_MENTION) {
+                return getAuthorName(reference.user) || "Unknown User";
+            } else if (reference.type === ReferenceType.CHANNEL_MENTION) {
+                if (reference.channelName && reference.channelURL) {
+                    return `#${reference.channelName}`;
+                } else {
+                    return `#unknown`;
                 }
             }
             return;
