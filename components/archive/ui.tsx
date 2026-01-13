@@ -115,11 +115,23 @@ export function AuthorInline({ a }: { a: Author }) {
 
 export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img: ArchiveImage) => void }) {
   const href = att.path && att.canDownload ? att.path : att.url;
-  const kind = att.youtube ? "YouTube" : att.litematic ? "Litematic" : att.wdl ? "WDL" : att.contentType?.toUpperCase() || "FILE";
+  const sourceURL = att.path || att.url;
+  const videoFilePattern = /\.(mp4|webm|m3u8|mpd)$/i;
+  const isVideo = !att.youtube && (att.contentType?.startsWith("video/") || videoFilePattern.test(att.name));
+  const kind = att.youtube
+    ? "YouTube"
+    : att.litematic
+      ? "Litematic"
+      : att.wdl
+        ? "WDL"
+        : isVideo
+          ? "Video"
+          : att.contentType?.toUpperCase() || "FILE";
   const ext = (att.name?.split(".")?.pop() || "").toUpperCase();
   const title = att.youtube?.title || att.name;
   const embedSrc = att.youtube ? getYouTubeEmbedURL(att.url) : null;
-  const isImage = att.contentType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.name || "");
+  const videoEmbedSrc = isVideo && sourceURL ? `https://faststream.online/player/#${sourceURL}` : null;
+  const isImage = !isVideo && (att.contentType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.name || ""));
   const imageForView: ArchiveImage = {
     id: att.id,
     name: att.name,
@@ -147,6 +159,11 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
               <Image src={att.youtube!.thumbnail_url} alt={title} className="aspect-video w-full object-contain" width={att.youtube!.thumbnail_width} height={att.youtube!.thumbnail_height} unoptimized />
             </a>
           )}
+        </div>
+      ) : null}
+      {videoEmbedSrc ? (
+        <div className="bg-black">
+          <iframe src={videoEmbedSrc} title={title} className="aspect-video w-full" frameBorder={0} allowFullScreen />
         </div>
       ) : null}
       {isImage && onView && att.canDownload ? <ImageThumb img={imageForView} onClick={() => onView(imageForView)} /> : null}
