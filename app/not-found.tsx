@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { PostContent } from "@/components/archive/PostContent";
+import { PostNav } from "@/components/archive/PostNav";
+import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { Footer } from "@/components/layout/Footer";
 import {
   buildEntrySlug,
   fetchArchiveIndex,
   fetchDictionaryIndex,
+  fetchDictionaryEntry,
   fetchPostData,
   findPostBySlug,
   type ArchiveListItem,
@@ -20,7 +23,6 @@ import { type ArchiveEntryData, type IndexedDictionaryEntry } from "@/lib/types"
 export default function NotFound() {
   const router = useRouter();
   const pathname = usePathname();
-  const [loading, setLoading] = useState(false);
   const [hasResolved, setHasResolved] = useState(false);
   const [post, setPost] = useState<ArchiveListItem | null>(null);
   const [data, setData] = useState<ArchiveEntryData | null>(null);
@@ -48,13 +50,11 @@ export default function NotFound() {
     const kind = archiveSlug ? "archive" : dictionarySlug ? "dictionary" : null;
     if (!slug || !kind) {
       setHasResolved(true);
-      setLoading(false);
       return;
     }
     if (disableLiveFetch) {
       setError("Live fetching is disabled.");
       setHasResolved(true);
-      setLoading(false);
       return;
     }
 
@@ -64,7 +64,6 @@ export default function NotFound() {
 
     let cancelled = false;
     setHasResolved(false);
-    setLoading(true);
     setError(null);
     setDictionaryEntry(null);
     setDictionaryTooltips({});
@@ -128,7 +127,20 @@ export default function NotFound() {
             setError("We could not find this dictionary entry.");
             return;
           }
-          setDictionaryEntry({ index: entryIndex });
+          const tooltipMap: Record<string, string> = {};
+          dictionaryEntries.forEach((entry) => {
+            const summary = entry.index.summary?.trim();
+            if (summary) tooltipMap[entry.index.id] = summary;
+          });
+          setDictionaryTooltips(tooltipMap);
+          let entryData: Awaited<ReturnType<typeof fetchDictionaryEntry>> | null = null;
+          try {
+            entryData = await fetchDictionaryEntry(entryIndex.id);
+          } catch {
+            // ignore and fallback to index-only entry
+          }
+          if (cancelled) return;
+          setDictionaryEntry(entryData ? { index: entryIndex, data: entryData } : { index: entryIndex });
           const canonicalSlug = buildDictionarySlug(entryIndex);
           if (canonicalSlug && canonicalSlug !== slug) {
             const canonicalKey = `dictionary:${canonicalSlug.toLowerCase()}`;
@@ -140,7 +152,6 @@ export default function NotFound() {
         if (!cancelled) setError((err as Error).message || "Unable to load content.");
       } finally {
         if (!cancelled) {
-          setLoading(false);
           setHasResolved(true);
         }
       }
@@ -153,10 +164,32 @@ export default function NotFound() {
 
   if (archiveSlug && post && data) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-10 lg:px-6">
-     
-        <PostContent post={{ ...post, data }} data={data} dictionaryTooltips={dictionaryTooltips} />
-      </main>
+      <>
+        <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
+          <PostNav />
+          <PostContent post={{ ...post, data }} data={data} dictionaryTooltips={dictionaryTooltips} />
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (dictionarySlug && dictionaryEntry) {
+    return (
+      <>
+        <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
+          <DictionaryModal
+            entry={dictionaryEntry}
+            dictionaryTooltips={dictionaryTooltips}
+            onClose={() => {
+              setDictionaryEntry(null);
+              router.push("/dictionary");
+            }}
+            variant="inline"
+          />
+        </main>
+        <Footer />
+      </>
     );
   }
 
@@ -164,9 +197,8 @@ export default function NotFound() {
   const isDictionaryPath = Boolean(dictionarySlug);
   const lookupSlug = archiveSlug ?? dictionarySlug ?? "";
   const fallbackHref = dictionarySlug ? "/dictionary" : "/";
-  const isChecking = (isArchivePath || isDictionaryPath) && !disableLiveFetch && (!hasResolved || loading);
   const showNotFound =
-    !isChecking &&
+    hasResolved &&
     ((isArchivePath && (!post || !data)) || (isDictionaryPath && !dictionaryEntry) || (!isArchivePath && !isDictionaryPath) || Boolean(error));
 
   const handleBack = () => {
@@ -180,7 +212,7 @@ export default function NotFound() {
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-        {isChecking ? (
+        {!hasResolved ? (
           <>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Looking for this page…</h1>
             <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
@@ -225,7 +257,7 @@ export default function NotFound() {
             {dictionarySlug ? "Back to dictionary" : "Back to archive"}
           </Link>
         </div>
-        {isChecking ? (
+        {!hasResolved ? (
           <p className="text-xs text-gray-500">
             {isArchivePath ? "Checking for a newer archive entry…" : "Checking for a matching dictionary entry…"}
           </p>

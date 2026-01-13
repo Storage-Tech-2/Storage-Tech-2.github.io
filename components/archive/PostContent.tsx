@@ -28,6 +28,8 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   const currentData = liveState ? liveState : baseData;
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
+  const activeDictionaryRef = useRef<IndexedDictionaryEntry | null>(null);
+  const dictionaryRequestRef = useRef<symbol | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const dragStartRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
@@ -72,17 +74,45 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     };
   }, [post.channel.path, post.entry]);
 
-  const handleInternalLink = useCallback((url: URL) => {
-    if (disableLiveFetch) return false;
-    if (url.origin !== (typeof window !== "undefined" ? window.location.origin : url.origin)) return false;
-    let did = url.searchParams.get("did");
-    if (!did && url.pathname.startsWith("/dictionary/")) {
-      const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
-      did = getDictionaryIdFromSlug(decodeURIComponent(slug));
+  useEffect(() => {
+    activeDictionaryRef.current = activeDictionary;
+  }, [activeDictionary]);
+
+  const setDidQueryParam = useCallback((did: string | null) => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (did) {
+      url.searchParams.set("did", did);
+    } else {
+      url.searchParams.delete("did");
     }
-    if (!did) return false;
-    fetchDictionaryEntry(did)
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(window.history.state, "", next);
+  }, []);
+
+  const openDictionaryEntry = useCallback((did: string) => {
+    const trimmed = did.trim();
+    if (!trimmed) return false;
+    if (activeDictionaryRef.current?.index.id === trimmed && activeDictionaryRef.current.data) {
+      setDidQueryParam(trimmed);
+      return true;
+    }
+
+    const requestToken = Symbol("dictionary-request");
+    dictionaryRequestRef.current = requestToken;
+    setDidQueryParam(trimmed);
+
+    if (disableLiveFetch) {
+      setActiveDictionary({
+        index: { id: trimmed, terms: [trimmed], summary: "", updatedAt: Date.now() },
+        data: undefined as never,
+      });
+      return true;
+    }
+
+    fetchDictionaryEntry(trimmed)
       .then((entryData) => {
+        if (dictionaryRequestRef.current !== requestToken) return;
         setActiveDictionary({
           index: {
             id: entryData.id,
@@ -94,13 +124,48 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         });
       })
       .catch(() => {
+        if (dictionaryRequestRef.current !== requestToken) return;
         setActiveDictionary({
-          index: { id: did, terms: [did], summary: "", updatedAt: Date.now() },
+          index: { id: trimmed, terms: [trimmed], summary: "", updatedAt: Date.now() },
           data: undefined as never,
         });
       });
     return true;
-  }, []);
+  }, [setDidQueryParam]);
+
+  const handleInternalLink = useCallback((url: URL) => {
+    if (url.origin !== (typeof window !== "undefined" ? window.location.origin : url.origin)) return false;
+    let did = url.searchParams.get("did");
+    if (!did && url.pathname.startsWith("/dictionary/")) {
+      const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
+      did = getDictionaryIdFromSlug(decodeURIComponent(slug));
+    }
+    if (!did) return false;
+    return openDictionaryEntry(did);
+  }, [openDictionaryEntry]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const did = sp.get("did");
+    if (did) {
+      queueMicrotask(() => openDictionaryEntry(did));
+    }
+    const handlePopState = () => {
+      const nextParams = new URLSearchParams(window.location.search);
+      const nextDid = nextParams.get("did");
+      if (nextDid) {
+        openDictionaryEntry(nextDid);
+      } else {
+        dictionaryRequestRef.current = null;
+        setActiveDictionary(null);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [openDictionaryEntry]);
 
   const images = currentData?.images?.map((img) => ({
     ...img,
@@ -448,7 +513,16 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
       ) : null}
 
       {activeDictionary ? (
-        <DictionaryModal entry={activeDictionary} onClose={() => setActiveDictionary(null)} dictionaryTooltips={dictionaryTooltips} />
+        <DictionaryModal
+          entry={activeDictionary}
+          onClose={() => {
+            dictionaryRequestRef.current = null;
+            setActiveDictionary(null);
+            setDidQueryParam(null);
+          }}
+          dictionaryTooltips={dictionaryTooltips}
+          onInternalLink={handleInternalLink}
+        />
       ) : null}
     </article>
   );
