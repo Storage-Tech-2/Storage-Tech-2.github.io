@@ -1,41 +1,14 @@
 'use client';
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export function PostNav() {
-  const router = useRouter();
   const handleBack = () => {
-    if (typeof window === "undefined") return;
-    const historyState = (window.history.state as { idx?: number } | null) ?? {};
-    const ref = document.referrer;
-
-    // Next tracks in-app navigation with an idx; when absent we likely landed directly.
-    if ((historyState.idx ?? 0) > 0) {
-      router.back();
-      return;
+     if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.replace('/');
     }
-
-    if (ref) {
-      try {
-        const refUrl = new URL(ref);
-        if (refUrl.origin === window.location.origin) {
-          router.push(refUrl.pathname + refUrl.search + refUrl.hash);
-          return;
-        }
-        if (window.history.length > 1) {
-          router.back();
-          return;
-        }
-      } catch {
-        if (window.history.length > 1) {
-          router.back();
-          return;
-        }
-      }
-    }
-
-    router.push("/");
   };
 
   return (

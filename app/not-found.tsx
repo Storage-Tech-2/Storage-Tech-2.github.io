@@ -203,9 +203,9 @@ export default function NotFound() {
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
+      window.history.back();
     } else {
-      router.push(fallbackHref);
+      window.location.replace(fallbackHref);
     }
   };
 
