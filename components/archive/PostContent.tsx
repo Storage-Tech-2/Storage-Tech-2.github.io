@@ -142,7 +142,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     }
     if (!did) return false;
     return openDictionaryEntry(did);
-  }, [openDictionaryEntry]);
+  }, [openDictionaryEntry, setDidQueryParam]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -164,6 +164,10 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
+      // Make sure we don't leave a lingering did= in history for this page.
+      if (typeof window !== "undefined" && window.location.search.includes("did=")) {
+        setDidQueryParam(null);
+      }
     };
   }, [openDictionaryEntry]);
 

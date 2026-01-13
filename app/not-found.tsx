@@ -257,7 +257,7 @@ export default function NotFound() {
             {dictionarySlug ? "Back to dictionary" : "Back to archive"}
           </Link>
         </div>
-        {!hasResolved ? (
+        {(!hasResolved && (isDictionaryPath || isArchivePath)) ? (
           <p className="text-xs text-gray-500">
             {isArchivePath ? "Checking for a newer archive entry…" : "Checking for a matching dictionary entry…"}
           </p>
