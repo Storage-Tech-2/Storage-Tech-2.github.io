@@ -142,7 +142,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     }
     if (!did) return false;
     return openDictionaryEntry(did);
-  }, [openDictionaryEntry, setDidQueryParam]);
+  }, [openDictionaryEntry]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -169,7 +169,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         setDidQueryParam(null);
       }
     };
-  }, [openDictionaryEntry]);
+  }, [openDictionaryEntry, setDidQueryParam]);
 
   const images = currentData?.images?.map((img) => ({
     ...img,
