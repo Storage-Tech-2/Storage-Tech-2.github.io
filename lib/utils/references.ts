@@ -150,204 +150,211 @@ export function findMatchesWithinText(
 
 
 export function transformOutputWithReferencesWrapper(
-    text: string,
-    references: Reference[],
-    replaceFunction: (reference: Reference, matchedText: string, isHeader: boolean, isWithinHyperlink: boolean, hyperlinkText?: string, hyperlinkURL?: string, hyeperlinkTitle?: string) => string | undefined,
+  text: string,
+  references: Reference[],
+  replaceFunction: (reference: Reference, matchedText: string, isHeader: boolean, isWithinHyperlink: boolean, hyperlinkText?: string, hyperlinkURL?: string, hyeperlinkTitle?: string) => string | undefined,
 ): string {
-    const matches = findMatchesWithinText(text, references);
-    if (matches.length === 0) {
-        return text;
+  const matches = findMatchesWithinText(text, references);
+  if (matches.length === 0) {
+    return text;
+  }
+
+  const filteredMatches = matches.filter(({ start, end }) => {
+    return shouldIncludeMatch(text, text.slice(start, end), start, end);
+  });
+
+  filteredMatches.sort((a, b) => a.start - b.start);
+
+  // remove overlapping matches, prefer earlier matches
+  const dedupedMatches: typeof matches = [];
+  let lastEnd = -1;
+  for (const match of filteredMatches) {
+    if (match.start >= lastEnd) {
+      dedupedMatches.push(match);
+      lastEnd = match.end;
+    }
+  }
+
+  const hyperlinkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/g;
+  const hyperlinks = findRegexMatches(text, [hyperlinkRegex]);
+
+  const resultParts: string[] = [];
+  let currentIndex = 0;
+
+  for (const match of dedupedMatches) {
+    // check if in header (#'s in front)
+    let inHeader = false;
+    const lastNewline = text.lastIndexOf('\n', match.start);
+    if (lastNewline !== -1) {
+      const lineStart = lastNewline + 1;
+      let i = lineStart;
+      while (i < match.start && text[i] === ' ') {
+        i++;
+      }
+      let hashCount = 0;
+      while (i < match.start && text[i] === '#') {
+        hashCount++;
+        i++;
+      }
+      if (hashCount > 0) {
+        inHeader = true;
+      }
     }
 
-    const filteredMatches = matches.filter(({ start, end }) => {
-        return shouldIncludeMatch(text, text.slice(start, end), start, end);
-    });
+    // check if match is within a hyperlink
+    const hyperlink = hyperlinks.find(h => match.start >= h.start && match.end <= h.end);
+    const ref = match.reference;
+    const fullMatch = hyperlink ? hyperlink : match;
+    const fullMatchedText = text.slice(fullMatch.start, fullMatch.end);
 
-    filteredMatches.sort((a, b) => a.start - b.start);
+    const replacement = replaceFunction(
+      ref,
+      fullMatchedText,
+      inHeader,
+      !!hyperlink,
+      hyperlink ? hyperlink.groups[0] : undefined,
+      hyperlink ? hyperlink.groups[1] : undefined,
+      hyperlink ? hyperlink.groups[2] : undefined
+    );
 
-    // remove overlapping matches, prefer earlier matches
-    const dedupedMatches: typeof matches = [];
-    let lastEnd = -1;
-    for (const match of filteredMatches) {
-        if (match.start >= lastEnd) {
-            dedupedMatches.push(match);
-            lastEnd = match.end;
-        }
+    if (replacement !== undefined) {
+      // add text before match
+      if (currentIndex < fullMatch.start) {
+        resultParts.push(text.slice(currentIndex, fullMatch.start));
+      }
+      resultParts.push(replacement);
+      currentIndex = fullMatch.end;
     }
+  }
 
-    const hyperlinkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/g;
-    const hyperlinks = findRegexMatches(text, [hyperlinkRegex]);
+  // add remaining text
+  if (currentIndex < text.length) {
+    resultParts.push(text.slice(currentIndex));
+  }
 
-    const resultParts: string[] = [];
-    let currentIndex = 0;
-
-    for (const match of dedupedMatches) {
-        // check if in header (#'s in front)
-        let inHeader = false;
-        const lastNewline = text.lastIndexOf('\n', match.start);
-        if (lastNewline !== -1) {
-            const lineStart = lastNewline + 1;
-            let i = lineStart;
-            while (i < match.start && text[i] === ' ') {
-                i++;
-            }
-            let hashCount = 0;
-            while (i < match.start && text[i] === '#') {
-                hashCount++;
-                i++;
-            }
-            if (hashCount > 0) {
-                inHeader = true;
-            }
-        }
-
-        // check if match is within a hyperlink
-        const hyperlink = hyperlinks.find(h => match.start >= h.start && match.end <= h.end);
-        const ref = match.reference;
-        const fullMatch = hyperlink ? hyperlink : match;
-        const fullMatchedText = text.slice(fullMatch.start, fullMatch.end);
-
-        const replacement = replaceFunction(
-            ref,
-            fullMatchedText,
-            inHeader,
-            !!hyperlink,
-            hyperlink ? hyperlink.groups[0] : undefined,
-            hyperlink ? hyperlink.groups[1] : undefined,
-            hyperlink ? hyperlink.groups[2] : undefined
-        );
-
-        if (replacement !== undefined) {
-            // add text before match
-            if (currentIndex < fullMatch.start) {
-                resultParts.push(text.slice(currentIndex, fullMatch.start));
-            }
-            resultParts.push(replacement);
-            currentIndex = fullMatch.end;
-        }
-    }
-
-    // add remaining text
-    if (currentIndex < text.length) {
-        resultParts.push(text.slice(currentIndex));
-    }
-
-    return resultParts.join('');
+  return resultParts.join('');
 }
 
 const DiscordLinkPattern = /https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/channels\/(\d+)\/(\d+)(?:\/(\d+))?/;
 
 export function transformOutputWithReferencesForWebsite(
-    text: string,
-    references: Reference[],
-    dictionaryTooltipLookup?: (id: string) => string | undefined
+  text: string,
+  references: Reference[],
+  dictionaryTooltipLookup?: (id: string) => string | undefined
 ): string {
-    return transformOutputWithReferencesWrapper(
-        text,
-        references,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        (reference, matchedText, isHeader, isWithinHyperlink, hyperlinkText, _hyperlinkURL, hyperlinkTitle) => {
-            if (isHeader) {
-                return; // skip replacements in headers
-            }
+  const excludeSet = new Set<Snowflake>();
+  return transformOutputWithReferencesWrapper(
+    text,
+    references,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (reference, matchedText, isHeader, isWithinHyperlink, hyperlinkText, _hyperlinkURL, hyperlinkTitle) => {
+      if (isHeader) {
+        return; // skip replacements in headers
+      }
 
-            if (reference.type === ReferenceType.DICTIONARY_TERM) {
-                const tooltip = dictionaryTooltipLookup?.(reference.id);
-                const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
-                if (isWithinHyperlink) {
-                    return; // skip, already linked
-                } else {
-                    const slug = buildDictionarySlug({ id: reference.id, terms: [reference.term] });
-                    const newURL = `/dictionary/${encodeURIComponent(slug)}`;
-                    if (safeTitle) {
-                        return `[${matchedText}](${newURL} "Definition: ${safeTitle}")`;
-                    } else {
-                        return `[${matchedText}](${newURL})`;
-                    }
-                }
-            } else if (reference.type === ReferenceType.ARCHIVED_POST) {
-                const newURL = `/archives/${buildEntrySlug(reference)}`
-                const tooltip = reference.name;
-                const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
-                if (isWithinHyperlink) {
-                    const linkText = hyperlinkText || "";
-                    if (linkText.toUpperCase() === reference.code) {
-                        if (safeTitle) {
-                            return `[${linkText} ${safeTitle}](${newURL})`;
-                        } else {
-                            return `[${linkText}](${newURL})`;
-                        }
-                    } else {
-                        return `[${linkText}](${newURL} "${safeTitle || linkText}")`;
-                    }
-                } else {
-
-                    // check if matchedText is a discord url, if so replace
-                    if (DiscordLinkPattern.test(matchedText.trim())) {
-                      matchedText = reference.code + (safeTitle ? ` ${safeTitle}` : "");
-                    } else if (safeTitle) {
-                      return `[${matchedText}](${newURL} "${safeTitle}")`;
-                    }
-
-                    return `[${matchedText}](${newURL})`;
-                }
-            } else if (reference.type === ReferenceType.DISCORD_LINK) {
-                if (!isWithinHyperlink) {
-                    matchedText = `[[Link to message]](${reference.url} "${reference.serverName ? `on ${reference.serverName}` : "on Discord"}")`;
-                }
-                // add suffix
-                return matchedText + (reference.serverName && reference.serverJoinURL
-                    ? ` ([Join ${reference.serverName}](${reference.serverJoinURL}))`
-                    : "");
-            } else if (reference.type === ReferenceType.USER_MENTION) {
-                return getAuthorName(reference.user) || "Unknown User";
-            } else if (reference.type === ReferenceType.CHANNEL_MENTION) {
-                if (isWithinHyperlink) {
-                    return; // skip, already linked
-                }
-
-                if (reference.channelName && reference.channelURL) {
-                    return `[#${reference.channelName}](${reference.channelURL})`;
-                } else {
-                    return `[Unknown Channel](# "ID: ${reference.channelID}")`;
-                }
-            }
-            return;
+      if (reference.type === ReferenceType.DICTIONARY_TERM) {
+        // check for repeats
+        if (excludeSet.has(reference.id)) {
+          return;
         }
-    );
+
+        const tooltip = dictionaryTooltipLookup?.(reference.id);
+        const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
+        if (isWithinHyperlink) {
+          return; // skip, already linked
+        } else {
+          const slug = buildDictionarySlug({ id: reference.id, terms: [reference.term] });
+          const newURL = `/dictionary/${encodeURIComponent(slug)}`;
+          excludeSet.add(reference.id);
+          if (safeTitle) {
+            return `[${matchedText}](${newURL} "Definition: ${safeTitle}")`;
+          } else {
+            return `[${matchedText}](${newURL})`;
+          }
+        }
+      } else if (reference.type === ReferenceType.ARCHIVED_POST) {
+        const newURL = `/archives/${buildEntrySlug(reference)}`
+        const tooltip = reference.name;
+        const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
+        if (isWithinHyperlink) {
+          const linkText = hyperlinkText || "";
+          if (linkText.toUpperCase() === reference.code) {
+            if (safeTitle) {
+              return `[${linkText} ${safeTitle}](${newURL})`;
+            } else {
+              return `[${linkText}](${newURL})`;
+            }
+          } else {
+            return `[${linkText}](${newURL} "${safeTitle || linkText}")`;
+          }
+        } else {
+
+          // check if matchedText is a discord url, if so replace
+          if (DiscordLinkPattern.test(matchedText.trim())) {
+            matchedText = reference.code + (safeTitle ? ` ${safeTitle}` : "");
+          } else if (safeTitle) {
+            return `[${matchedText}](${newURL} "${safeTitle}")`;
+          }
+
+          return `[${matchedText}](${newURL})`;
+        }
+      } else if (reference.type === ReferenceType.DISCORD_LINK) {
+        if (!isWithinHyperlink) {
+          matchedText = `[[Link to message]](${reference.url} "${reference.serverName ? `on ${reference.serverName}` : "on Discord"}")`;
+        }
+        // add suffix
+        return matchedText + (reference.serverName && reference.serverJoinURL
+          ? ` ([Join ${reference.serverName}](${reference.serverJoinURL}))`
+          : "");
+      } else if (reference.type === ReferenceType.USER_MENTION) {
+        return getAuthorName(reference.user) || "Unknown User";
+      } else if (reference.type === ReferenceType.CHANNEL_MENTION) {
+        if (isWithinHyperlink) {
+          return; // skip, already linked
+        }
+
+        if (reference.channelName && reference.channelURL) {
+          return `[#${reference.channelName}](${reference.channelURL})`;
+        } else {
+          return `[Unknown Channel](# "ID: ${reference.channelID}")`;
+        }
+      }
+      return;
+    }
+  );
 }
 
 export function transformOutputWithReferencesForSocials(
-    text: string,
-    references: Reference[],
+  text: string,
+  references: Reference[],
 ): string {
-    return transformOutputWithReferencesWrapper(
-        text,
-        references,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        (reference, matchedText, isHeader, isWithinHyperlink, hyperlinkText, _hyperlinkURL, _hyperlinkTitle) => {
-            if (isHeader) {
-                return; // skip replacements in headers
-            }
+  return transformOutputWithReferencesWrapper(
+    text,
+    references,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (reference, matchedText, isHeader, isWithinHyperlink, hyperlinkText, _hyperlinkURL, _hyperlinkTitle) => {
+      if (isHeader) {
+        return; // skip replacements in headers
+      }
 
-            if (reference.type === ReferenceType.DICTIONARY_TERM) {
-                return hyperlinkText || matchedText;
-            } else if (reference.type === ReferenceType.ARCHIVED_POST) {
-                const tooltip = reference.name;
-                const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
-                return reference.code + (safeTitle ? ` ${safeTitle}` : "");
-            } else if (reference.type === ReferenceType.DISCORD_LINK) {
-                return "[Discord Link]";
-            } else if (reference.type === ReferenceType.USER_MENTION) {
-                return getAuthorName(reference.user) || "Unknown User";
-            } else if (reference.type === ReferenceType.CHANNEL_MENTION) {
-                if (reference.channelName && reference.channelURL) {
-                    return `#${reference.channelName}`;
-                } else {
-                    return `#unknown`;
-                }
-            }
-            return;
+      if (reference.type === ReferenceType.DICTIONARY_TERM) {
+        return hyperlinkText || matchedText;
+      } else if (reference.type === ReferenceType.ARCHIVED_POST) {
+        const tooltip = reference.name;
+        const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
+        return reference.code + (safeTitle ? ` ${safeTitle}` : "");
+      } else if (reference.type === ReferenceType.DISCORD_LINK) {
+        return "[Discord Link]";
+      } else if (reference.type === ReferenceType.USER_MENTION) {
+        return getAuthorName(reference.user) || "Unknown User";
+      } else if (reference.type === ReferenceType.CHANNEL_MENTION) {
+        if (reference.channelName && reference.channelURL) {
+          return `#${reference.channelName}`;
+        } else {
+          return `#unknown`;
         }
-    );
+      }
+      return;
+    }
+  );
 }
