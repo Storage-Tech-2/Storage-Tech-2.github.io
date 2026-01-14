@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
@@ -43,15 +44,25 @@ export default function Home() {
       />
 
       <main className="mx-auto max-w-5xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-        <section className="rounded-xl border border-gray-200 bg-white px-6 py-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-            Welcome to Storage Tech 2
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The community for storage innovators</h1>
-          <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-700 dark:text-gray-200">
-            Storage tech is our passion, and it can be yours too! Whether you're just starting out or a seasoned designer, we're here to help you learn more about the latest storage technologies!
-          </p>
-
+        <section className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="overflow-hidden rounded-t-xl border-b border-gray-200 dark:border-gray-800">
+            <Image
+              src="/banner.png"
+              alt="Storage Tech 2 banner"
+              width={1600}
+              height={480}
+              className="h-auto w-full object-cover"
+            />
+          </div>
+          <div className="px-6 py-8">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+              Welcome to Storage Tech 2
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The community for storage innovators</h1>
+            <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-700 dark:text-gray-200">
+              Storage tech is our passion, and it can be yours too! Whether you&apos;re just starting out or a seasoned designer, we&apos;re here to help you learn more about the latest storage technologies!
+            </p>
+          </div>
         </section>
 
         <section className="mt-12 space-y-6">
@@ -102,17 +113,12 @@ export default function Home() {
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
          
             <p className="text-base leading-relaxed text-gray-700 dark:text-gray-200">
-              We collect reliable storage builds, the vocabulary behind them, and the context that makes them work.
-              Everything is organized so you can skim, copy, and improve without digging through scattered links.
+              We organize Storage Tech 2 to be a community-first platform where we care about your learning and growth.
+              
+              We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels. 
+              
+              You can read our founding principles and governance model on our <Link href="/about" className="text-sky-600 underline-offset-2 hover:underline dark:text-sky-400">About page</Link>.
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                Quiet, readable pages with the sources and tags you need.
-              </div>
-              <div className="rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                Community-reviewed entries that stay up to date as the game evolves.
-              </div>
-            </div>
           </div>
         </section>
       </main>
