@@ -14,8 +14,25 @@ type Person = {
 };
 
 export const metadata: Metadata = {
-  title: "About · Storage Tech 2",
+  title: `About · ${siteConfig.siteName}`,
   description: "Meet the Storage Tech 2 team, previous leaders, and read the community constitution.",
+  metadataBase: new URL(siteConfig.siteUrl),
+  openGraph: {
+    title: `About · ${siteConfig.siteName}`,
+    description: "Meet the Storage Tech 2 team, previous leaders, and read the community constitution.",
+    url: `/about`,
+    images: [
+      {
+        url: `/banner.webp`
+      },
+    ]
+  },
+  twitter: {
+    card: "summary",
+    title: `About · ${siteConfig.siteName}`,
+    description: "Meet the Storage Tech 2 team, previous leaders, and read the community constitution.",
+    images: ["/banner.webp"]
+  },
 };
 
 const ceo: Person = {
@@ -53,7 +70,7 @@ const staff: Person[] = [
     iconSrc: "/staff/Rechen.png",
     iconAlt: "Rechenmaschine profile picture",
   },
-    {
+  {
     name: "Pocket",
     role: "Moderator",
     iconSrc: "/staff/Pocket.png",

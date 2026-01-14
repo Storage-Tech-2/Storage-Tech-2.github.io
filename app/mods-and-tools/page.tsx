@@ -6,8 +6,25 @@ import { siteConfig } from "@/lib/siteConfig";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Mods and tools · Storage Tech 2",
+  title: `Mods and tools · ${siteConfig.siteName}`,
   description: "Recommendations for storage tech mods, tools, and resource packs that make building easier.",
+  metadataBase: new URL(siteConfig.siteUrl),
+  openGraph: {
+    title: `Mods and tools · ${siteConfig.siteName}`,
+    description: "Recommendations for storage tech mods, tools, and resource packs that make building easier.",
+    url: `/mods-and-tools`,
+    images: [
+      {
+        url: `/mods/st2downloader.png`
+      },
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Mods and tools · ${siteConfig.siteName}`,
+    description: "Recommendations for storage tech mods, tools, and resource packs that make building easier.",
+    images: ["/mods/st2downloader.png"]
+  },
 };
 
 const resources = [

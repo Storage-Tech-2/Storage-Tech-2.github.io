@@ -128,7 +128,7 @@ export function DictionaryPageClient({ entries }: Props) {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const baseTitle = `${siteConfig.siteName} Dictionary`;
+    const baseTitle = `Dictionary · ${siteConfig.siteName}`;
     if (active) {
       const term = active.index.terms?.[0] || active.index.id;
       document.title = `${term} | ${baseTitle}`;

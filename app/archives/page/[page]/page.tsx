@@ -3,12 +3,46 @@ import { ArchiveShell } from "@/components/archive/ArchiveShell";
 import { fetchArchiveIndex, fetchDictionaryIndex } from "@/lib/archive";
 import { ARCHIVE_PAGE_SIZE, getArchivePageCount } from "@/lib/pagination";
 import { disablePagination } from "@/lib/runtimeFlags";
+import { Metadata } from "next";
+import { siteConfig } from "@/lib/siteConfig";
 
 export const dynamic = "force-static";
 
 type Params = {
   params: { page: string };
 };
+
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const page = Number.parseInt((await params).page, 10);
+
+  const description = "Explore the archives for storage designs, guides, and resources submitted by the community.";
+  return {
+    title: `Archives Page ${page} · ${siteConfig.siteName}`,
+    description,
+    metadataBase: new URL(siteConfig.siteUrl),
+    alternates: {
+      canonical: `/archives`,
+    },
+    openGraph: {
+      title: `Archives Page ${page} · ${siteConfig.siteName}`,
+      description,
+      url: `/archives/page/${page}`,
+      images: [
+        {
+          url: `/archive.webp`
+        },
+      ]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Archives Page ${page} · ${siteConfig.siteName}`,
+      description,
+      images: ["/archive.webp"],
+    },
+  };
+}
+
 
 export async function generateStaticParams() {
   if (disablePagination) return [];
