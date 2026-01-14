@@ -17,7 +17,7 @@ export async function generateStaticParams() {
   return Array.from({ length: Math.max(0, pageCount) }, (_, i) => ({ page: `${i + 1}` }));
 }
 
-export default async function ArchivePage({ params }: Params) {
+export default async function ArchivePagedPage({ params }: Params) {
   const pageNumber = Number.parseInt((await params).page, 10);
   if (!Number.isFinite(pageNumber) || pageNumber < 1) return notFound();
   const [archive, dictionary] = await Promise.all([fetchArchiveIndex(), fetchDictionaryIndex()]);

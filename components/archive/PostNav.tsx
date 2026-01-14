@@ -7,7 +7,7 @@ export function PostNav() {
      if (typeof window !== "undefined" && window.history.length > 1) {
       window.history.back();
     } else {
-      window.location.replace('/');
+      window.location.replace('/archives');
     }
   };
 
@@ -20,7 +20,7 @@ export function PostNav() {
         ← Back
       </button>
       <Link
-        href="/"
+        href="/archives"
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
         prefetch={false}
       >

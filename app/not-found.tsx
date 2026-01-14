@@ -217,7 +217,7 @@ export default function NotFound() {
   const isArchivePath = Boolean(archiveSlug);
   const isDictionaryPath = Boolean(dictionarySlug);
   const lookupSlug = archiveSlug ?? dictionarySlug ?? "";
-  const fallbackHref = dictionarySlug ? "/dictionary" : "/";
+  const fallbackHref = dictionarySlug ? "/dictionary" : (archiveSlug ? "/archives" : "/");
   const showNotFound =
     hasResolved &&
     ((isArchivePath && (!post || !data)) || (isDictionaryPath && !dictionaryEntry) || (!isArchivePath && !isDictionaryPath) || Boolean(error));
@@ -275,7 +275,7 @@ export default function NotFound() {
             prefetch={false}
             className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
           >
-            {dictionarySlug ? "Back to dictionary" : "Back to archive"}
+            {dictionarySlug ? "Back to dictionary" : (archiveSlug ? "Back to archive" : "Back to home")}
           </Link>
         </div>
         {(!hasResolved && (isDictionaryPath || isArchivePath)) ? (

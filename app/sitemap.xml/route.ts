@@ -17,6 +17,7 @@ export async function GET() {
   const withBasePath = (path: string) => `${siteConfig.basePath || ""}${path}`;
   const urls: UrlEntry[] = [
     { loc: "/" },
+    { loc: "/archives" },
     { loc: "/dictionary" },
   ];
 
@@ -24,7 +25,7 @@ export async function GET() {
     const archive = await fetchArchiveIndex();
     const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
     for (let i = 2; i <= pageCount; i++) {
-      urls.push({ loc: `/page/${i}` });
+      urls.push({ loc: `/archives/page/${i}` });
     }
     archive.posts.forEach((post) => {
       const ts = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry) ?? archive.config.updatedAt;
