@@ -47,11 +47,12 @@ export default function Home() {
         <section className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="overflow-hidden rounded-t-xl border-b border-gray-200 dark:border-gray-800">
             <Image
-              src="/banner.png"
+              src="/banner.webp"
               alt="Storage Tech 2 banner"
               width={1600}
               height={480}
               className="h-auto w-full object-cover"
+              fetchPriority="high"
             />
           </div>
           <div className="px-6 py-8">
@@ -59,7 +60,7 @@ export default function Home() {
               Welcome to Storage Tech 2
             </p>
             <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The community for storage innovators</h1>
-            <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-700 dark:text-gray-200">
+            <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-900 dark:text-gray-200">
               Storage tech is our passion, and it can be yours too! Whether you&apos;re just starting out or a seasoned designer, we&apos;re here to help you learn more about the latest storage technologies!
             </p>
           </div>
@@ -81,7 +82,7 @@ export default function Home() {
                     <div className="text-sm font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
                       {pillar.title}
                     </div>
-                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200">{pillar.body}</p>
+                    <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-200">{pillar.body}</p>
                   </div>
                   <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-sky-700 transition dark:text-sky-300">
                     {pillar.cta}
@@ -112,12 +113,12 @@ export default function Home() {
 
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
          
-            <p className="text-base leading-relaxed text-gray-700 dark:text-gray-200">
+            <p className="text-base leading-relaxed text-gray-900 dark:text-gray-200">
               We organize Storage Tech 2 to be a community-first platform where we care about your learning and growth.
               
               We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels. 
               
-              You can read our founding principles and governance model on our <Link href="/about" className="text-sky-600 underline-offset-2 hover:underline dark:text-sky-400">About page</Link>.
+              You can read our founding principles and governance model on our <Link href="/about" className="font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">About page</Link>.
             </p>
           </div>
         </section>
