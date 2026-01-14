@@ -287,7 +287,7 @@ export function ArchiveShell({
       {pageNumber > 1 ? (
         <a
           className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-          href={`/page/${pageNumber - 1}`}
+          href={`/archives/page/${pageNumber - 1}`}
         >
           ← Previous
         </a>
@@ -297,7 +297,7 @@ export function ArchiveShell({
       <div className="flex flex-wrap items-center gap-2">
         {Array.from({ length: pageCount }, (_, i) => {
           const page = i + 1;
-          const href = `/page/${page}`;
+          const href = `/archives/page/${page}`;
           return page === pageNumber ? (
             <span
               key={page}
@@ -320,7 +320,7 @@ export function ArchiveShell({
       {pageNumber < pageCount ? (
         <a
           className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-          href={`/page/${pageNumber + 1}`}
+          href={`/archives/page/${pageNumber + 1}`}
         >
           Next →
         </a>

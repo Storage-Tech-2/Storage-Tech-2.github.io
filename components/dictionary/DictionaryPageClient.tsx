@@ -205,7 +205,7 @@ export function DictionaryPageClient({ entries }: Props) {
         onDictionarySearchCommit={() => setCommittedQuery(query)}
         dictionarySort={sort}
         onDictionarySortChange={setSort}
-        onArchiveClick={() => router.push("/")}
+        onArchiveClick={() => router.push("/archives")}
         onDictionaryClick={() => { }}
       />
 
