@@ -17,6 +17,7 @@ import {
   type ArchiveListItem,
 } from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
+import { siteConfig } from "@/lib/siteConfig";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type ArchiveEntryData, type IndexedDictionaryEntry } from "@/lib/types";
 
@@ -32,6 +33,26 @@ export default function NotFound() {
   const requestKeyRef = useRef<string | null>(null);
   const dictionaryIndexRef = useRef<IndexedDictionaryEntry[] | null>(null);
   const inflightDictionaryRef = useRef<Promise<IndexedDictionaryEntry[]> | null>(null);
+
+  const canonicalTitle = useMemo(() => {
+    if (post && data) {
+      return `${post.entry.name} | ${siteConfig.siteName}`;
+    }
+    if (dictionaryEntry) {
+      const primaryTerm = dictionaryEntry.index.terms?.[0] ?? dictionaryEntry.index.id;
+      return `${primaryTerm} | ${siteConfig.siteName} Dictionary`;
+    }
+    return null;
+  }, [dictionaryEntry, data, post]);
+
+  useEffect(() => {
+    if (!canonicalTitle || typeof document === "undefined") return;
+    const previousTitle = document.title;
+    document.title = canonicalTitle;
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [canonicalTitle]);
 
   const archiveSlug = useMemo(() => {
     if (!pathname) return null;
