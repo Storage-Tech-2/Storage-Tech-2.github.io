@@ -185,18 +185,16 @@ export interface ChannelRef {
   availableTags: string[];
 }
 
-export interface EntryRef {
+export interface IndexEntry {
   id: Snowflake;
   name: string;
-  code: string;
   codes: string[];
-  timestamp?: number;
-  archivedAt?: number;
-  updatedAt?: number;
+  authors: string[];
+  tags: string[];
+  updatedAt: number;
+  archivedAt: number;
   path: string;
-  tags?: string[];
-  authors?: string[];
-  mainImagePath?: string | null;
+  mainImagePath: string | null;
 }
 
 export interface ArchiveConfig {
@@ -239,8 +237,7 @@ export type DictionaryEntry = {
 
 export type IndexedPost = {
   channel: ChannelRef;
-  entry: EntryRef;
-  data?: ArchiveEntryData;
+  entry: IndexEntry;
 };
 
 export type IndexedDictionaryEntry = {
@@ -250,10 +247,10 @@ export type IndexedDictionaryEntry = {
 
 export type SortKey = "newest" | "oldest" | "archived" | "archivedOldest" | "az";
 
-export const getEntryUpdatedAt = (entry: Pick<EntryRef, "updatedAt" | "archivedAt" | "timestamp">) =>
-  entry.updatedAt ?? entry.archivedAt ?? entry.timestamp;
-export const getEntryArchivedAt = (entry: Pick<EntryRef, "updatedAt" | "archivedAt" | "timestamp">) =>
-  entry.archivedAt ?? entry.timestamp ?? entry.updatedAt;
+export const getEntryUpdatedAt = (entry: Pick<IndexEntry, "updatedAt" | "archivedAt">) =>
+  entry.updatedAt ?? entry.archivedAt;
+export const getEntryArchivedAt = (entry: Pick<IndexEntry, "updatedAt" | "archivedAt">) =>
+  entry.archivedAt ?? entry.updatedAt;
 
 export const USE_RAW = true;
 export const DEFAULT_OWNER = siteConfig.archiveRepo.owner;

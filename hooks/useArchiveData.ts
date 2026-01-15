@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ArchiveIndex, ArchiveListItem, buildEntrySlug, fetchArchiveIndex, fetchPostData } from "@/lib/archive";
-import { type EntryRef } from "@/lib/types";
+import { type IndexEntry } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
   initial?: ArchiveIndex;
 };
 
-function keyForEntry(channelPath: string, entry: EntryRef) {
+function keyForEntry(channelPath: string, entry: IndexEntry) {
   return `${channelPath}/${entry.path}`;
 }
 

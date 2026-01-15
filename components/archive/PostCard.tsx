@@ -2,36 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect } from "react";
-import { useInView } from "@/hooks/useInView";
-import { buildImagePath, ChannelBadge, TagList } from "./ui";
+import { ChannelBadge, TagList } from "./ui";
 import { type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type SortKey } from "@/lib/types";
-import { getAuthorName } from "@/lib/utils/authors";
 import { formatDate, timeAgo } from "@/lib/utils/dates";
-import { getPreviewByEntryId } from "@/lib/previews";
 import { assetURL } from "@/lib/github";
+import { getPreviewByCode } from "@/lib/previews";
 
 type Props = {
   post: ArchiveListItem;
   sortKey: SortKey;
   onNavigate: (post: ArchiveListItem) => void;
-  ensurePostLoaded: (p: ArchiveListItem) => Promise<ArchiveListItem>;
 };
 
-export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props) {
-  const [ref, inView] = useInView<HTMLDivElement>({ rootMargin: "500px 0px" });
-
-  useEffect(() => {
-    if (inView) ensurePostLoaded(post).catch(() => {});
-  }, [inView, ensurePostLoaded, post]);
-
-  const preview = getPreviewByEntryId(post.entry.id);
-  const hero = post.data?.images?.[0];
-  const entryHero = post.entry.mainImagePath
+export function PostCard({ post, sortKey, onNavigate }: Props) {
+  const preview = getPreviewByCode(post.entry.codes[0]);
+  const heroSrc = post.entry.mainImagePath
     ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
     : null;
-  const heroSrc = hero ? buildImagePath(post.channel.path, post.entry.path, hero) : entryHero;
   const displaySrc =
     preview && (!heroSrc || heroSrc === preview.sourceUrl) ? preview.localPath : heroSrc;
 
@@ -40,15 +28,14 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
   const showArchivedTime = sortKey === "archived" || sortKey === "archivedOldest";
   const displayTs = showArchivedTime ? archivedAt ?? updatedAt : updatedAt ?? archivedAt;
 
-  const authors = post.data?.authors?.filter((a) => !a.dontDisplay);
-  const authorNames = authors?.map((a) => getAuthorName(a)) || post.entry.authors || [];
+  const authorNames = post.entry.authors;
   const authorsLine =
     authorNames.length > 0
       ? `${authorNames[0]}${authorNames[1] ? ", " + authorNames[1] : ""}${authorNames.length > 2 ? ` +${authorNames.length - 2}` : ""}`
       : undefined;
 
   return (
-    <article ref={ref} className="group flex h-full min-h-95 flex-col rounded-2xl bg-white transition hover:shadow-md dark:bg-gray-900">
+    <article className="group flex h-full min-h-95 flex-col rounded-2xl bg-white transition hover:shadow-md dark:bg-gray-900">
       <Link
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
@@ -60,7 +47,7 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
           {displaySrc ? (
             <Image
               src={displaySrc}
-              alt={hero?.description || hero?.name || post.entry.name || "thumbnail"}
+              alt={post.entry.name || "thumbnail"}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain"
@@ -68,13 +55,13 @@ export function PostCard({ post, sortKey, ensurePostLoaded, onNavigate }: Props)
               priority={false}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">{post.data ? "No image" : "Loading..."}</div>
+            <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">{post.entry ? "No image" : "Loading..."}</div>
           )}
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3">
           <div className="flex items-start justify-between gap-2">
             <h3 className="line-clamp-2 text-sm font-semibold">{post.entry.name}</h3>
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.code}</span>
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.codes[0]}</span>
           </div>
           {authorsLine ? <div className="min-h-4 text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div> : <div className="min-h-4" />}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">

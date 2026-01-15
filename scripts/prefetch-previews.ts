@@ -2,8 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { asyncPool, assetURL } from "../lib/github";
-import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostData, type ArchiveListItem } from "../lib/archive";
+import { fetchArchiveIndex, fetchDictionaryIndex, type ArchiveListItem } from "../lib/archive";
 import { disablePreviewOptimization } from "../lib/runtimeFlags";
+import { PreviewItem } from "@/lib/previews";
 
 const skip = process.env.SKIP_PREVIEW_DOWNLOAD === "1";
 
@@ -42,24 +43,13 @@ async function main() {
   const archiveIndexPath = path.join(root, "lib", "generated", "archive-index.json");
   await fs.writeFile(archiveIndexPath, JSON.stringify(archive, null, 2));
 
-  const previews: Array<{
-    id: string;
-    slug: string;
-    code: string;
-    sourceUrl: string;
-    localPath: string;
-    width?: number;
-    height?: number;
-  }> = [];
+  const previews: Array<PreviewItem> = [];
 
   await asyncPool(6, posts, async (post) => {
     try {
-      const data = await fetchPostData(post.channel.path, post.entry);
-      const image = data.images?.[0];
+      const image = post.entry.mainImagePath;
       if (!image) return;
-      const sourceUrl = image.path ? assetURL(post.channel.path, post.entry.path, image.path) : image.url;
-      if (!sourceUrl) return;
-
+      const sourceUrl = assetURL(post.channel.path, post.entry.path, image);
       const res = await fetch(sourceUrl);
       if (!res.ok) return;
       const buffer = Buffer.from(await res.arrayBuffer());
@@ -81,9 +71,7 @@ async function main() {
       await fs.writeFile(outPath, outBuffer);
 
       previews.push({
-        id: post.entry.id,
-        slug: post.slug,
-        code: post.entry.code,
+        code: post.entry.codes[0],
         sourceUrl,
         localPath: `/previews/${filename}`,
         width: metadata.width,
@@ -94,7 +82,7 @@ async function main() {
     }
   });
 
-  previews.sort((a, b) => a.slug.localeCompare(b.slug));
+  previews.sort((a, b) => a.code.localeCompare(b.code));
   const payload = { generatedAt: new Date().toISOString(), items: previews };
   await fs.writeFile(indexPath, JSON.stringify(payload, null, 2));
   const dictionaryIndex = await fetchDictionaryIndex();

@@ -1,6 +1,5 @@
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry, type SortKey } from "./types";
 import { type ArchiveListItem } from "./archive";
-import { getAuthorName } from "./utils/authors";
 import { unique } from "./utils/arrays";
 import { normalize } from "./utils/strings";
 import { getPostTagsNormalized } from "./utils/tags";
@@ -35,9 +34,8 @@ export const extractFiltersFromSearch = (sp: URLSearchParams, sortKeys: SortKey[
 };
 
 export function getPostAuthorsNormalized(p: ArchiveListItem): string[] {
-  const entryAuthors = p.entry?.authors || [];
-  const loadedAuthors = p.data?.authors?.map(getAuthorName) || [];
-  const normalized = unique([...entryAuthors, ...loadedAuthors]).map(normalize).filter(Boolean);
+  const entryAuthors = p.entry.authors;
+  const normalized = unique([...entryAuthors]).map(normalize).filter(Boolean);
   return Array.from(new Set(normalized));
 }
 
@@ -64,16 +62,10 @@ export const computeChannelCounts = (
       if (!authors.some((a) => authorSet.has(a))) return false;
     }
     if (!trimmed) return true;
-    const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase();
+    const base = [p.entry.name, p.entry.codes[0], p.channel.code, p.channel.name].join(" ").toLowerCase();
     const extra = [
       p.entry.tags?.join(" ") || "",
       getPostAuthorsNormalized(p).join(" "),
-      ...(p.data
-        ? [
-            p.data.tags?.map((t) => t.name).join(" ") || "",
-            typeof p.data.records?.description === "string" ? p.data.records.description : "",
-          ]
-        : []),
     ]
       .join(" ")
       .toLowerCase();
@@ -105,16 +97,10 @@ export const computeTagCounts = (
       if (!authors.some((a) => authorSet.has(a))) return false;
     }
     if (!trimmed) return true;
-    const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase();
+    const base = [p.entry.name, p.entry.codes[0], p.channel.code, p.channel.name].join(" ").toLowerCase();
     const extra = [
       p.entry.tags?.join(" ") || "",
       getPostAuthorsNormalized(p).join(" "),
-      ...(p.data
-        ? [
-            p.data.tags?.map((t) => t.name).join(" ") || "",
-            typeof p.data.records?.description === "string" ? p.data.records.description : "",
-          ]
-        : []),
     ]
       .join(" ")
       .toLowerCase();
@@ -196,16 +182,10 @@ export const filterPosts = (posts: ArchiveListItem[], params: FilterPostsParams)
   if (trimmed) {
     const terms = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
     list = list.filter((p) => {
-      const base = [p.entry.name, p.entry.code, p.channel.code, p.channel.name].join(" ").toLowerCase();
+      const base = [p.entry.name, p.entry.codes[0], p.channel.code, p.channel.name].join(" ").toLowerCase();
       const extra = [
         p.entry.tags?.join(" ") || "",
         getPostAuthorsNormalized(p).join(" "),
-        ...(p.data
-          ? [
-              p.data.tags?.map((t) => t.name).join(" ") || "",
-              typeof p.data.records?.description === "string" ? p.data.records.description : "",
-            ]
-          : []),
       ]
         .join(" ")
         .toLowerCase();

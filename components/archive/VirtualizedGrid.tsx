@@ -15,7 +15,6 @@ type Props = {
   posts: ArchiveListItem[];
   sortKey: SortKey;
   onNavigate: (post: ArchiveListItem) => void;
-  ensurePostLoaded: (p: ArchiveListItem) => Promise<ArchiveListItem>;
 };
 
 function getColumnCount(width: number) {
@@ -26,7 +25,7 @@ function getColumnCount(width: number) {
   return 1;
 }
 
-export function VirtualizedGrid({ posts, sortKey, onNavigate, ensurePostLoaded }: Props) {
+export function VirtualizedGrid({ posts, sortKey, onNavigate }: Props) {
  
   if (!posts.length) return null;
 
@@ -38,7 +37,6 @@ export function VirtualizedGrid({ posts, sortKey, onNavigate, ensurePostLoaded }
             <VirtualizedGridContent
               posts={posts}
               onNavigate={onNavigate}
-              ensurePostLoaded={ensurePostLoaded}
               sortKey={sortKey}
               width={width}
               height={height}
@@ -66,7 +64,6 @@ type GridContentProps = Props & {
 function VirtualizedGridContent({
   posts,
   onNavigate,
-  ensurePostLoaded,
   sortKey,
   width,
   height,
@@ -97,14 +94,14 @@ function VirtualizedGridContent({
           >
             {rowItems.map((p) => (
               <div key={`${p.channel.path}/${p.entry.path}`} style={{ height: CARD_HEIGHT }}>
-                <PostCard post={p} onNavigate={onNavigate} ensurePostLoaded={ensurePostLoaded} sortKey={sortKey} />
+                <PostCard post={p} onNavigate={onNavigate} sortKey={sortKey} />
               </div>
             ))}
           </div>
         </div>
       );
     },
-    [posts, columnCount, onNavigate, ensurePostLoaded, sortKey],
+    [posts, columnCount, onNavigate, sortKey],
   );
 
   return (

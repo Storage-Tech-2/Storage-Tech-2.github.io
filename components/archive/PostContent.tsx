@@ -24,7 +24,7 @@ type Props = {
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
   const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
-  const baseData = data ?? post.data;
+  const baseData = data;
   const currentData = liveState ? liveState : baseData;
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
@@ -196,7 +196,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
             <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white">{post.entry.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <ChannelBadge ch={post.channel} />
-              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{post.entry.code}</span>
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{post.entry.codes[0]}</span>
               {updatedAt !== undefined ? (
                 <span className="text-gray-700 dark:text-gray-200" suppressHydrationWarning={true} title={formatDate(updatedAt)}>
                   Updated {timeAgo(updatedAt)}

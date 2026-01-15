@@ -41,7 +41,7 @@ export function ArchiveShell({
   pageCount,
 }: Props) {
   const router = useRouter();
-  const { posts, channels, error, ensurePostLoaded } = useArchiveData({ initial: initialArchive });
+  const { posts, channels, error } = useArchiveData({ initial: initialArchive });
   const { entries: dictionaryEntries } = useDictionaryData({
     initial: initialDictionary
   });
@@ -128,7 +128,7 @@ export function ArchiveShell({
     if (!legacyId && !legacyDid) return;
     if (legacyId) {
       const found = posts.find(
-        (p) => p.entry.id === legacyId || p.entry.code === legacyId || p.slug.toLowerCase() === legacyId.toLowerCase(),
+        (p) => p.entry.id === legacyId || p.entry.codes[0] === legacyId || p.slug.toLowerCase() === legacyId.toLowerCase(),
       );
       if (found) {
         legacyRedirectHandledRef.current = true;
@@ -479,7 +479,7 @@ export function ArchiveShell({
             <div role="main">
               {(clientReady && pageNumber === 0) ? (
                 <>
-                  <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} ensurePostLoaded={ensurePostLoaded} onNavigate={handleOpenPost} />
+                  <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} onNavigate={handleOpenPost} />
                   {pagination}
                 </>
               ) : (
@@ -490,7 +490,6 @@ export function ArchiveShell({
                         key={`${post.channel.path}/${post.entry.path}`}
                         post={post}
                         sortKey={sortKey}
-                        ensurePostLoaded={ensurePostLoaded}
                         onNavigate={handleOpenPost}
                       />
                     ))}

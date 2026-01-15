@@ -4,13 +4,13 @@ import { PostContent } from "@/components/archive/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
 import { Footer } from "@/components/layout/Footer";
 import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostWithArchive } from "@/lib/archive";
-import { getPreviewBySlug } from "@/lib/previews";
 import { siteConfig } from "@/lib/siteConfig";
 import { disableArchivePrerender } from "@/lib/runtimeFlags";
 import { submissionRecordToMarkdown } from "@/lib/utils/markdown";
 import { getEffectiveStyle } from "@/lib/utils/styles";
 import { truncateStringWithEllipsis } from "@/lib/utils/strings";
 import { transformOutputWithReferencesForSocials } from "@/lib/utils/references";
+import { getPreviewByCode } from "@/lib/previews";
 
 export const dynamic = "force-static";
 
@@ -32,9 +32,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!payload) return { title: "Entry not found" };
   const { archive, data, post: match } = payload;
   if (!data) return { title: "Entry not found" };
-  const preview = getPreviewBySlug(match.slug);
+  const preview = getPreviewByCode(match.entry.codes[0]);
   const ogImage = preview ? new URL(preview.localPath, siteConfig.siteUrl).toString() : undefined;
-  const description = truncateStringWithEllipsis((data.records["description"] ? transformOutputWithReferencesForSocials(submissionRecordToMarkdown(data.records["description"], getEffectiveStyle("description", archive.config.postStyle, data.styles)), data.references) : '') || `Archive entry ${match.entry.code} from ${match.channel.name}`, 200);
+  const description = truncateStringWithEllipsis((data.records["description"] ? transformOutputWithReferencesForSocials(submissionRecordToMarkdown(data.records["description"], getEffectiveStyle("description", archive.config.postStyle, data.styles)), data.references) : '') || `Archive entry ${match.entry.codes[0]} from ${match.channel.name}`, 200);
   return {
     title: `${match.entry.name} | ${siteConfig.siteName}`,
     description,
@@ -83,7 +83,7 @@ export default async function PostPage({ params }: Params) {
         <PostNav />
         <PostContent
           key={match.entry.id}
-          post={{ ...match, data }}
+          post={match}
           data={data}
           schemaStyles={archive.config.postStyle}
           dictionaryTooltips={dictionaryTooltips}

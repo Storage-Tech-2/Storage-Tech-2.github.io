@@ -119,7 +119,7 @@ export function HeaderBar({
           <div className="flex flex-1 flex-wrap items-center gap-2">
             {view === "archive" ? (
               <>
-                <div className="relative min-w-[220px] flex-1 sm:w-auto">
+                <div className="relative min-w-55 flex-1 sm:w-auto">
                   <input
                     value={searchValue}
                     onChange={(e) => handleSearchChange(e.target.value)}
@@ -147,7 +147,7 @@ export function HeaderBar({
               </>
             ) : view === "dictionary" ? (
               <>
-                <div className="relative min-w-[220px] flex-1 sm:w-auto">
+                <div className="relative min-w-55 flex-1 sm:w-auto">
                   <input
                     value={dictionarySearchValue}
                     onChange={(e) => handleDictionarySearchChange(e.target.value)}

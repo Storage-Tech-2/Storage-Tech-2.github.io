@@ -24,7 +24,7 @@ export function LegacyRedirect() {
           const match = archive.posts.find(
             (p) =>
               p.entry.id === id ||
-              p.entry.code === id ||
+              p.entry.codes[0] === id ||
               p.entry.codes.some((code) => code.toLowerCase() === lower) ||
               p.slug.toLowerCase() === lower,
           );

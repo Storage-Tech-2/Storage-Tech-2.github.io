@@ -1,7 +1,7 @@
 import { ReferenceType, type Reference } from "../types";
 import { buildDictionarySlug } from "../dictionary";
 import { getAuthorName } from "./authors";
-import { buildEntrySlug } from "../archive";
+import { buildEntrySlugFromReference } from "../archive";
 
 export type RegexMatch = {
   pattern: string;
@@ -273,7 +273,7 @@ export function transformOutputWithReferencesForWebsite(
           }
         }
       } else if (reference.type === ReferenceType.ARCHIVED_POST) {
-        const newURL = `/archives/${buildEntrySlug(reference)}`
+        const newURL = `/archives/${buildEntrySlugFromReference(reference)}`
         const tooltip = reference.name;
         const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
         if (isWithinHyperlink) {

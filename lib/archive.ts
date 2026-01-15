@@ -7,7 +7,7 @@ import {
   ChannelRef,
   DictionaryConfig,
   DictionaryEntry,
-  EntryRef,
+  IndexEntry,
   IndexedDictionaryEntry,
   IndexedPost,
   getEntryUpdatedAt,
@@ -35,7 +35,15 @@ export function slugifyName(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function buildEntrySlug(entry: EntryRef | ArchivedPostReference) {
+export function buildEntrySlug(entry: IndexEntry) {
+  const base = entry.codes[0];
+  const name = entry.name ? slugifyName(entry.name) : "";
+  if (!base) return name;
+  if (!name) return base;
+  return `${base}-${name}`;
+}
+
+export function buildEntrySlugFromReference(entry: ArchivedPostReference) {
   const base = entry.code;
   const name = entry.name ? slugifyName(entry.name) : "";
   if (!base) return name;
@@ -43,7 +51,7 @@ export function buildEntrySlug(entry: EntryRef | ArchivedPostReference) {
   return `${base}-${name}`;
 }
 
-export function slugMatchesEntry(slug: string, entry: EntryRef) {
+export function slugMatchesEntry(slug: string, entry: IndexEntry) {
   const lowerSlug = slug.toLowerCase();
   const entrySlug = buildEntrySlug(entry).toLowerCase();
   if (lowerSlug === entrySlug) return true;
@@ -71,17 +79,16 @@ function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
     const channelRef = channels[i];
     channel.entries.forEach((entry) => {
       const codes = entry.codes;
-      const entryRef: EntryRef = {
+      const entryRef: IndexEntry = {
         id: entry.id,
         name: entry.name,
-        code: codes[0],
         codes,
         tags: Array.from(new Set(entry.tags.map((tagIdx) => tags[tagIdx]).filter(Boolean))),
         authors: Array.from(new Set(entry.authors.map((authorIdx) => authors[authorIdx]).filter(Boolean))),
         updatedAt: entry.updated_at,
         archivedAt: entry.archived_at,
         path: entry.path,
-        mainImagePath: entry.main_image_path,
+        mainImagePath: entry.main_image_path
       };
       posts.push({ channel: channelRef, entry: entryRef, slug: buildEntrySlug(entryRef) });
     });
@@ -123,7 +130,7 @@ const postPayloadCache = new Map<string, Promise<ArchiveEntryData>>();
 
 export async function fetchPostData(
   channelPath: string,
-  entry: EntryRef,
+  entry: IndexEntry,
   cache: RequestCache = "no-cache",
 ): Promise<ArchiveEntryData> {
   const path = `${channelPath}/${entry.path}/data.json`;
@@ -177,7 +184,7 @@ export async function fetchPostWithArchive(
 
 export async function fetchCommentsData(
   channelPath: string,
-  entry: EntryRef,
+  entry: IndexEntry,
   cache: RequestCache = "no-cache",
 ): Promise<ArchiveComment[]> {
   const path = `${channelPath}/${entry.path}/comments.json`;

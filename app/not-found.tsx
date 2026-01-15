@@ -188,7 +188,7 @@ export default function NotFound() {
       <>
         <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
           <PostNav />
-          <PostContent post={{ ...post, data }} data={data} dictionaryTooltips={dictionaryTooltips} />
+          <PostContent post={post} data={data} dictionaryTooltips={dictionaryTooltips} />
         </main>
         <Footer />
       </>

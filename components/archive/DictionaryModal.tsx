@@ -31,7 +31,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
     fetchArchiveIndex()
       .then((archive) => {
         if (cancelled) return;
-        const byCode = new Map(archive.posts.map((post) => [post.entry.code, post]));
+        const byCode = new Map(archive.posts.map((post) => [post.entry.codes[0], post]));
         setReferencedBy(referencedCodes.map((code) => ({ code, post: byCode.get(code) })));
       })
       .catch(() => {});
@@ -102,7 +102,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
                           <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                             <ChannelBadge ch={post.channel} />
                             <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                              {post.entry.code}
+                              {post.entry.codes[0]}
                             </span>
                             {updated !== undefined ? <span suppressHydrationWarning={true} title={formatDate(updated)}>{timeAgo(updated)}</span> : null}
                           </div>
