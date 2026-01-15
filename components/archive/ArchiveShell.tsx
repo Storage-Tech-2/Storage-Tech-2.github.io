@@ -8,8 +8,7 @@ import { HeaderBar } from "./HeaderBar";
 import { PostCard } from "./PostCard";
 import { VirtualizedGrid } from "./VirtualizedGrid";
 import { useArchiveData } from "@/hooks/useArchiveData";
-import { useDictionaryData } from "@/hooks/useDictionaryData";
-import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
+import { fetchDictionaryIndex, type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
 import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
@@ -27,7 +26,6 @@ import { disablePagination } from "@/lib/runtimeFlags";
 
 type Props = {
   initialArchive: ArchiveIndex;
-  initialDictionary: { entries: IndexedDictionaryEntry[] };
   pageNumber: number;
   pageSize: number;
   pageCount?: number;
@@ -35,16 +33,13 @@ type Props = {
 
 export function ArchiveShell({
   initialArchive,
-  initialDictionary,
   pageNumber = 0,
   pageSize,
   pageCount,
 }: Props) {
   const router = useRouter();
   const { posts, channels, error } = useArchiveData({ initial: initialArchive });
-  const { entries: dictionaryEntries } = useDictionaryData({
-    initial: initialDictionary
-  });
+
 
   const [q, setQ] = useState("");
   const [committedQ, setCommittedQ] = useState("");
@@ -137,14 +132,18 @@ export function ArchiveShell({
       }
     }
     if (legacyDid) {
-      const entry = dictionaryEntries.find((e) => e.index.id === legacyDid);
-      if (entry) {
-        legacyRedirectHandledRef.current = true;
-        const slug = buildDictionarySlug(entry.index);
-        router.replace(`/dictionary/${encodeURIComponent(slug)}`);
+      const asyncLookup = async () => {
+        const dictionaryIndex = await fetchDictionaryIndex();
+        const entry = dictionaryIndex.entries.find((e) => e.index.id === legacyDid);
+        if (entry) {
+          legacyRedirectHandledRef.current = true;
+          const slug = buildDictionarySlug(entry.index);
+          router.replace(`/dictionary/${encodeURIComponent(slug)}`);
+        }
       }
+      asyncLookup();
     }
-  }, [posts, dictionaryEntries, router]);
+  }, [posts, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "scrollRestoration" in window.history) {

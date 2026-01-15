@@ -1,5 +1,5 @@
 import { ArchiveShell } from "@/components/archive/ArchiveShell";
-import { fetchArchiveIndex, fetchDictionaryIndex } from "@/lib/archive";
+import { fetchArchiveIndex } from "@/lib/archive";
 import { ARCHIVE_PAGE_SIZE, getArchivePageCount } from "@/lib/pagination";
 import { disablePagination } from "@/lib/runtimeFlags";
 import { siteConfig } from "@/lib/siteConfig";
@@ -32,12 +32,11 @@ export const metadata = {
 };
 
 export default async function ArchivePage() {
-  const [archive, dictionary] = await Promise.all([fetchArchiveIndex(), fetchDictionaryIndex()]);
+  const archive = await fetchArchiveIndex();
   const pageCount = disablePagination ? 1 : getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
   return (
     <ArchiveShell
       initialArchive={archive}
-      initialDictionary={dictionary}
       pageNumber={0}
       pageSize={ARCHIVE_PAGE_SIZE}
       pageCount={pageCount}

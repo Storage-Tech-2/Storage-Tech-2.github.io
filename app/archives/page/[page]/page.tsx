@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ArchiveShell } from "@/components/archive/ArchiveShell";
-import { fetchArchiveIndex, fetchDictionaryIndex } from "@/lib/archive";
+import { fetchArchiveIndex } from "@/lib/archive";
 import { ARCHIVE_PAGE_SIZE, getArchivePageCount } from "@/lib/pagination";
 import { disablePagination } from "@/lib/runtimeFlags";
 import { Metadata } from "next";
@@ -54,13 +54,12 @@ export async function generateStaticParams() {
 export default async function ArchivePagedPage({ params }: Params) {
   const pageNumber = Number.parseInt((await params).page, 10);
   if (!Number.isFinite(pageNumber) || pageNumber < 1) return notFound();
-  const [archive, dictionary] = await Promise.all([fetchArchiveIndex(), fetchDictionaryIndex()]);
+  const archive = await fetchArchiveIndex();
   const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
   if (pageNumber > pageCount) return notFound();
   return (
     <ArchiveShell
       initialArchive={archive}
-      initialDictionary={dictionary}
       pageNumber={pageNumber}
       pageSize={ARCHIVE_PAGE_SIZE}
       pageCount={pageCount}
