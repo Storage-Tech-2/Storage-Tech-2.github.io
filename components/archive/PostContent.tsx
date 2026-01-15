@@ -59,7 +59,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     let cancelled = false;
     setComments(null);
     setCommentsLoading(true);
-    fetchCommentsData(post.channel.path, post.entry, "no-store")
+    fetchCommentsData(post.channel.path, post.entry)
       .then((items) => {
         if (!cancelled) setComments(items);
       })

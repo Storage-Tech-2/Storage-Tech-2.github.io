@@ -8,9 +8,9 @@ import { HeaderBar } from "./HeaderBar";
 import { PostCard } from "./PostCard";
 import { VirtualizedGrid } from "./VirtualizedGrid";
 import { useArchiveData } from "@/hooks/useArchiveData";
-import { fetchDictionaryIndex, type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
+import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
-import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
+import { type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
 import { siteConfig } from "@/lib/siteConfig";
@@ -21,7 +21,6 @@ import {
   setArchiveFiltersToUrl,
   writeArchiveSession,
 } from "@/lib/urlState";
-import { buildDictionarySlug } from "@/lib/dictionary";
 import { disablePagination } from "@/lib/runtimeFlags";
 
 type Props = {
@@ -39,8 +38,6 @@ export function ArchiveShell({
 }: Props) {
   const router = useRouter();
   const { posts, channels, error } = useArchiveData({ initial: initialArchive });
-
-
   const [q, setQ] = useState("");
   const [committedQ, setCommittedQ] = useState("");
   const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
@@ -105,7 +102,6 @@ export function ArchiveShell({
   }, []);
 
   const pendingScrollRef = useRef<number | null>(null);
-  const legacyRedirectHandledRef = useRef(false);
 
   const [clientReady, setClientReady] = useState(false);
   useEffect(() => {
@@ -113,38 +109,7 @@ export function ArchiveShell({
     return () => cancelAnimationFrame(id);
   }, []);
   const commitSearch = () => setCommittedQ(q);
-
-  useEffect(() => {
-    if (legacyRedirectHandledRef.current) return;
-    if (typeof window === "undefined") return;
-    const sp = new URLSearchParams(window.location.search);
-    const legacyId = sp.get("id");
-    const legacyDid = sp.get("did");
-    if (!legacyId && !legacyDid) return;
-    if (legacyId) {
-      const found = posts.find(
-        (p) => p.entry.id === legacyId || p.entry.codes[0] === legacyId || p.slug.toLowerCase() === legacyId.toLowerCase(),
-      );
-      if (found) {
-        legacyRedirectHandledRef.current = true;
-        router.replace(`/archives/${found.slug}`);
-        return;
-      }
-    }
-    if (legacyDid) {
-      const asyncLookup = async () => {
-        const dictionaryIndex = await fetchDictionaryIndex();
-        const entry = dictionaryIndex.entries.find((e) => e.index.id === legacyDid);
-        if (entry) {
-          legacyRedirectHandledRef.current = true;
-          const slug = buildDictionarySlug(entry.index);
-          router.replace(`/dictionary/${encodeURIComponent(slug)}`);
-        }
-      }
-      asyncLookup();
-    }
-  }, [posts, router]);
-
+ 
   useEffect(() => {
     if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";

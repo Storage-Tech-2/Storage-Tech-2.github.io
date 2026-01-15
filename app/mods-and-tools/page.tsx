@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
-import { LegacyRedirect } from "@/components/home/LegacyRedirect";
 import { siteConfig } from "@/lib/siteConfig";
 import type { Metadata } from "next";
 
@@ -49,7 +48,6 @@ const resources = [
 export default function ModsAndToolsPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
-      <LegacyRedirect />
       <HeaderBar
         siteName={siteConfig.siteName}
         view="home"

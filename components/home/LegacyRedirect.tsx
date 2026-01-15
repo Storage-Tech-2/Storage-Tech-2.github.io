@@ -19,7 +19,7 @@ export function LegacyRedirect() {
     const run = async () => {
       if (id) {
         try {
-          const archive = await fetchArchiveIndex("force-cache");
+          const archive = await fetchArchiveIndex();
           const lower = id.toLowerCase();
           const match = archive.posts.find(
             (p) =>
@@ -39,7 +39,7 @@ export function LegacyRedirect() {
 
       if (did) {
         try {
-          const dictionary = await fetchDictionaryIndex("force-cache");
+          const dictionary = await fetchDictionaryIndex();
           const entry = dictionary.entries.find((e) => e.index.id === did);
           if (entry && !cancelled) {
             router.replace(`/dictionary/${encodeURIComponent(buildDictionarySlug(entry.index))}`);

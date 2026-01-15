@@ -107,14 +107,10 @@ function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
   return { config, channels, posts };
 }
 
-export async function fetchArchiveIndex(
-  cache: RequestCache = "force-cache",
-): Promise<ArchiveIndex> {
-  if (cache !== "no-store") {
-    const cached = await readArchiveIndexCache();
-    if (cached) return cached;
-  }
-  const buffer = await fetchArrayBufferRaw("persistent.idx", cache);
+export async function fetchArchiveIndex(): Promise<ArchiveIndex> {
+  const cached = await readArchiveIndexCache();
+  if (cached) return cached;
+  const buffer = await fetchArrayBufferRaw("persistent.idx");
   const idx = deserializePersistentIndex(buffer);
   return persistentIndexToArchive(idx);
 }
@@ -130,11 +126,10 @@ const postPayloadCache = new Map<string, Promise<ArchiveEntryData>>();
 
 export async function fetchPostData(
   channelPath: string,
-  entry: IndexEntry,
-  cache: RequestCache = "no-cache",
+  entry: IndexEntry
 ): Promise<ArchiveEntryData> {
   const path = `${channelPath}/${entry.path}/data.json`;
-  return fetchJSONRaw<ArchiveEntryData>(path, cache);
+  return fetchJSONRaw<ArchiveEntryData>(path);
 }
 
 export async function fetchPostWithArchive(
@@ -184,25 +179,20 @@ export async function fetchPostWithArchive(
 
 export async function fetchCommentsData(
   channelPath: string,
-  entry: IndexEntry,
-  cache: RequestCache = "no-cache",
+  entry: IndexEntry
 ): Promise<ArchiveComment[]> {
   const path = `${channelPath}/${entry.path}/comments.json`;
   try {
-    return await fetchJSONRaw<ArchiveComment[]>(path, cache);
+    return await fetchJSONRaw<ArchiveComment[]>(path);
   } catch {
     return [];
   }
 }
 
-export async function fetchDictionaryIndex(
-  cache: RequestCache = "no-cache",
-): Promise<DictionaryIndex> {
-  if (cache !== "no-store") {
-    const cached = await readDictionaryIndexCache();
-    if (cached) return cached;
-  }
-  const config = await fetchJSONRaw<DictionaryConfig>("dictionary/config.json", cache);
+export async function fetchDictionaryIndex(): Promise<DictionaryIndex> {
+  const cached = await readDictionaryIndexCache();
+  if (cached) return cached;
+  const config = await fetchJSONRaw<DictionaryConfig>("dictionary/config.json");
   const entries: IndexedDictionaryEntry[] = config.entries
     .map((index) => ({ index }))
     .sort((a, b) => {
@@ -247,11 +237,10 @@ async function readDictionaryIndexCache(): Promise<DictionaryIndex | null> {
 }
 
 export async function fetchDictionaryEntry(
-  id: string,
-  cache: RequestCache = "force-cache",
+  id: string
 ): Promise<DictionaryEntry> {
   const path = `dictionary/entries/${id}.json`;
-  return fetchJSONRaw<DictionaryEntry>(path, cache);
+  return fetchJSONRaw<DictionaryEntry>(path);
 }
 
 export function findPostBySlug(posts: ArchiveListItem[], slug: string): ArchiveListItem | undefined {

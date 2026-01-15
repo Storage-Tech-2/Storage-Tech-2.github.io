@@ -16,7 +16,7 @@ export function assetURL(
 
 export async function fetchJSONRaw<T>(
   path: string,
-  cache: RequestCache = "force-cache",
+  cache: RequestCache = "no-cache",
 ): Promise<T> {
   const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
   const res = await fetch(url, { cache });
@@ -26,7 +26,7 @@ export async function fetchJSONRaw<T>(
 
 export async function fetchArrayBufferRaw(
   path: string,
-  cache: RequestCache = "force-cache",
+  cache: RequestCache = "no-cache",
 ): Promise<ArrayBuffer> {
   const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
   const res = await fetch(url, { cache });
