@@ -1,15 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { ArchiveIndex, ArchiveListItem, buildEntrySlug, fetchArchiveIndex, fetchPostData } from "@/lib/archive";
-import { type IndexEntry } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { ArchiveIndex, ArchiveListItem, fetchArchiveIndex } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
   initial?: ArchiveIndex;
 };
-
-function keyForEntry(channelPath: string, entry: IndexEntry) {
-  return `${channelPath}/${entry.path}`;
-}
 
 export function useArchiveData({ initial }: Options = {}) {
   const [config, setConfig] = useState(initial?.config ?? null);
@@ -17,7 +12,6 @@ export function useArchiveData({ initial }: Options = {}) {
   const [posts, setPosts] = useState<ArchiveListItem[]>(initial?.posts ?? []);
   const [loading, setLoading] = useState(!initial);
   const [error, setError] = useState<string | null>(null);
-  const inflight = useRef(new Map<string, Promise<ArchiveListItem>>());
 
   useEffect(() => {
     if (disableLiveFetch) {
@@ -35,15 +29,7 @@ export function useArchiveData({ initial }: Options = {}) {
         if (cancelled) return;
         setConfig(idx.config);
         setChannels(idx.channels);
-        setPosts((prev) => {
-          // Preserve already loaded post bodies when matching id/code.
-          const loadedById = new Map(prev.map((p) => [p.entry.id, p]));
-          return idx.posts.map((post) => {
-            const existing = loadedById.get(post.entry.id);
-            if (existing?.data) return { ...post, data: existing.data };
-            return post;
-          });
-        });
+        setPosts(idx.posts);
         setError(null);
       } catch (err) {
         if (!cancelled) setError((err as Error).message || String(err));
@@ -54,7 +40,7 @@ export function useArchiveData({ initial }: Options = {}) {
     if (!initial) run();
     else {
       // Defer refresh slightly to avoid blocking first paint.
-      const id = setTimeout(run, 250);
+      const id = setTimeout(run, 10);
       return () => {
         cancelled = true;
         clearTimeout(id);
@@ -65,27 +51,6 @@ export function useArchiveData({ initial }: Options = {}) {
     };
   }, [initial]);
 
-  const ensurePostLoaded = async (post: ArchiveListItem) => {
-    if (disableLiveFetch) return post;
-    if (post.data) return post;
-    const cacheKey = keyForEntry(post.channel.path, post.entry);
-    const existing = inflight.current.get(cacheKey);
-    if (existing) return existing;
-    const request = (async () => {
-      const data = await fetchPostData(post.channel.path, post.entry);
-      return { ...post, slug: buildEntrySlug(post.entry), data };
-    })();
-    inflight.current.set(cacheKey, request);
-    try {
-      const loaded = await request;
-      setPosts((prev) =>
-        prev.map((p) => (keyForEntry(p.channel.path, p.entry) === cacheKey ? { ...p, data: loaded.data } : p)),
-      );
-      return loaded;
-    } finally {
-      inflight.current.delete(cacheKey);
-    }
-  };
 
-  return { config, channels, posts, loading, error, ensurePostLoaded };
+  return { config, channels, posts, loading, error };
 }
