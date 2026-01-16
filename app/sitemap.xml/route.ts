@@ -28,7 +28,7 @@ export async function GET() {
       urls.push({ loc: `/archives/page/${i}` });
     }
     archive.posts.forEach((post) => {
-      const ts = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry) ?? archive.config.updatedAt;
+      const ts = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
       urls.push({
         loc: `/archives/${post.slug}`,
         lastmod: ts ? new Date(ts).toISOString() : undefined,
