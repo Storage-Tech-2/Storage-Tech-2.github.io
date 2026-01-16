@@ -24,7 +24,7 @@ export async function GET() {
   try {
     const archive = await fetchArchiveIndex();
     const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
-    for (let i = 2; i <= pageCount; i++) {
+    for (let i = 1; i <= pageCount; i++) {
       urls.push({ loc: `/archives/page/${i}` });
     }
     archive.posts.forEach((post) => {
