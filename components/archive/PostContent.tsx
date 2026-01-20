@@ -85,14 +85,13 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     activeDictionaryRef.current = activeDictionary;
   }, [activeDictionary]);
 
-  useEffect(() => {
-    if (!pdfViewer) {
-      setPdfPageInfo({ page: 1, total: 0 });
-    }
-  }, [pdfViewer]);
-
   const handlePdfPageChange = useCallback((page: number, total: number) => {
     setPdfPageInfo((prev) => (prev.page === page && prev.total === total ? prev : { page, total }));
+  }, []);
+
+  const closePdfViewer = useCallback(() => {
+    setPdfViewer(null);
+    setPdfPageInfo({ page: 1, total: 0 });
   }, []);
 
   const setDidQueryParam = useCallback((did: string | null) => {
@@ -465,9 +464,9 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
       ) : null}
 
       {pdfViewer ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-1 sm:p-2" onClick={() => setPdfViewer(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-1 sm:p-2" onClick={closePdfViewer}>
           <div
-            className="relative flex h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-950"
+            className="relative flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-950"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 border-b px-4 py-3 dark:border-gray-800">
@@ -491,7 +490,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                 <button
                   type="button"
                   className="rounded-full border bg-white/80 px-3 py-1 text-sm font-semibold shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
-                  onClick={() => setPdfViewer(null)}
+                  onClick={closePdfViewer}
                 >
                   Close
                 </button>
