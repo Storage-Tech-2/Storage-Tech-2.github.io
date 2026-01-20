@@ -113,7 +113,17 @@ export function AuthorInline({ a }: { a: Author }) {
   );
 }
 
-export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img: ArchiveImage) => void }) {
+type PdfPreviewRequest = { src: string; title?: string; description?: string };
+
+export function AttachmentCard({
+  att,
+  onView,
+  onViewPdf,
+}: {
+  att: Attachment;
+  onView?: (img: ArchiveImage) => void;
+  onViewPdf?: (pdf: PdfPreviewRequest) => void;
+}) {
   const href = att.path && att.canDownload ? att.path : att.url;
   const sourceURL = att.path || att.url;
   const schematicURL = att.litematic && sourceURL ? `https://storagetech2.org/renderer?url=${sourceURL}` : null;
@@ -133,6 +143,8 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
   const embedSrc = att.youtube ? getYouTubeEmbedURL(att.url) : null;
   const videoEmbedSrc = isVideo && sourceURL ? `https://faststream.online/player/#${sourceURL}` : null;
   const isImage = !isVideo && (att.contentType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.name || ""));
+  const isPdf = !att.youtube && (att.contentType?.toLowerCase().includes("pdf") || /\.pdf$/i.test(att.name || ""));
+  const pdfSource = isPdf ? sourceURL : null;
   const imageForView: ArchiveImage = {
     id: att.id,
     name: att.name,
@@ -236,6 +248,15 @@ export function AttachmentCard({ att, onView }: { att: Attachment; onView?: (img
                 className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-800"
               >
                 View Schematic
+              </button>
+            ) : null}
+            {isPdf && pdfSource && onViewPdf ? (
+              <button
+                type="button"
+                onClick={() => onViewPdf({ src: pdfSource, title, description: att.description })}
+                className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                View PDF
               </button>
             ) : null}
             {att.canDownload ? (

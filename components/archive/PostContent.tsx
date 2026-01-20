@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
 import { fetchCommentsData, fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
@@ -14,6 +14,7 @@ import { type ArchiveEntryData, type ArchiveComment, type Author, type IndexedDi
 import { getAuthorName } from "@/lib/utils/authors";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import { replaceAttachmentsInText } from "@/lib/utils/attachments";
+import dynamic from "next/dynamic";
 
 type Props = {
   post: ArchiveListItem;
@@ -22,11 +23,17 @@ type Props = {
   dictionaryTooltips?: Record<string, string>;
 };
 
+const LazyPdfViewer = dynamic(() => import("./PdfViewer").then((mod) => ({ default: mod.PdfViewer })),{
+  ssr: false,
+});
+
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
   const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
   const baseData = data;
   const currentData = liveState ? liveState : baseData;
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; index?: number; mode: "gallery" | "single" } | null>(null);
+  const [pdfViewer, setPdfViewer] = useState<{ src: string; title?: string; description?: string } | null>(null);
+  const [pdfPageInfo, setPdfPageInfo] = useState<{ page: number; total: number }>({ page: 1, total: 0 });
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const activeDictionaryRef = useRef<IndexedDictionaryEntry | null>(null);
   const dictionaryRequestRef = useRef<symbol | null>(null);
@@ -77,6 +84,16 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   useEffect(() => {
     activeDictionaryRef.current = activeDictionary;
   }, [activeDictionary]);
+
+  useEffect(() => {
+    if (!pdfViewer) {
+      setPdfPageInfo({ page: 1, total: 0 });
+    }
+  }, [pdfViewer]);
+
+  const handlePdfPageChange = useCallback((page: number, total: number) => {
+    setPdfPageInfo((prev) => (prev.page === page && prev.total === total ? prev : { page, total }));
+  }, []);
 
   const setDidQueryParam = useCallback((did: string | null) => {
     if (typeof window === "undefined") return;
@@ -408,6 +425,10 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
                     mode: "single",
                   })
                 }
+                onViewPdf={(pdf) => {
+                  setPdfPageInfo({ page: 1, total: 0 });
+                  setPdfViewer(pdf);
+                }}
               />
             ))}
           </div>
@@ -418,7 +439,17 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         <div className="text-sm text-gray-500">Loading comments...</div>
       ) : comments?.length ? (
         <section className="space-y-3">
-          <CommentsList comments={comments} channelPath={post.channel.path} entryPath={post.entry.path} onInternalLink={handleInternalLink} setLightbox={setLightbox} />
+          <CommentsList
+            comments={comments}
+            channelPath={post.channel.path}
+            entryPath={post.entry.path}
+            onInternalLink={handleInternalLink}
+            setLightbox={setLightbox}
+            onViewPdf={(pdf) => {
+              setPdfPageInfo({ page: 1, total: 0 });
+              setPdfViewer(pdf);
+            }}
+          />
         </section>
       ) : null}
 
@@ -431,6 +462,59 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
         >
           View Discord Thread
         </a>
+      ) : null}
+
+      {pdfViewer ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-1 sm:p-2" onClick={() => setPdfViewer(null)}>
+          <div
+            className="relative flex h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-950"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b px-4 py-3 dark:border-gray-800">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100" title={pdfViewer.title || undefined}>
+                  {pdfViewer.title || "PDF Attachment"}
+                </p>
+                {pdfPageInfo.total ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Page {pdfPageInfo.page} / {pdfPageInfo.total}</p>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <a
+                  href={pdfViewer.src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border bg-white/80 px-3 py-1 text-sm shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
+                >
+                  Download
+                </a>
+                <button
+                  type="button"
+                  className="rounded-full border bg-white/80 px-3 py-1 text-sm font-semibold shadow-sm hover:bg-white dark:border-gray-700 dark:bg-gray-900/80"
+                  onClick={() => setPdfViewer(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center text-sm text-gray-700 dark:text-gray-200">Loading PDF viewer…</div>
+                }
+              >
+                <LazyPdfViewer
+                  key={pdfViewer.src}
+                  src={pdfViewer.src}
+                  onPageChange={handlePdfPageChange}
+                />
+              </Suspense>
+            </div>
+            {pdfViewer.description ? (
+              <div className="border-t px-4 py-3 text-sm text-gray-700 dark:border-gray-800 dark:text-gray-300">{pdfViewer.description}</div>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       {lightbox ? (
@@ -538,12 +622,14 @@ function CommentsList({
   entryPath,
   onInternalLink,
   setLightbox,
+  onViewPdf,
 }: {
   comments: ArchiveComment[];
   channelPath: string;
   entryPath: string;
   onInternalLink: (url: URL) => boolean;
   setLightbox: (img: { src: string; alt: string; index?: number; mode: "gallery" | "single" }) => void;
+  onViewPdf: (pdf: { src: string; title?: string; description?: string }) => void;
 }) {
   return (
     <div>
@@ -580,6 +666,7 @@ function CommentsList({
                           mode: "single",
                         })
                       }
+                      onViewPdf={onViewPdf}
                     />
                   ))}
                 </div>
