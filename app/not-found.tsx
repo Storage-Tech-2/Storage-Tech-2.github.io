@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { PostContent } from "@/components/archive/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
@@ -222,13 +223,7 @@ export default function NotFound() {
     hasResolved &&
     ((isArchivePath && (!post || !data)) || (isDictionaryPath && !dictionaryEntry) || (!isArchivePath && !isDictionaryPath) || Boolean(error));
 
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.replace(fallbackHref);
-    }
-  };
+  const handleBack = useBackNavigation(fallbackHref);
 
   return (
     <>

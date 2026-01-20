@@ -1,15 +1,10 @@
 'use client';
 
 import Link from "next/link";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 
 export function PostNav() {
-  const handleBack = () => {
-     if (typeof window !== "undefined" && window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.replace('/archives');
-    }
-  };
+  const handleBack = useBackNavigation("/archives");
 
   return (
     <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
