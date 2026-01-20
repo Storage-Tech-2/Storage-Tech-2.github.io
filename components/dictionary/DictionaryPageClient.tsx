@@ -18,6 +18,7 @@ import {
   setDictionaryStateToUrl,
   writeDictionarySession,
 } from "@/lib/urlState";
+import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
 type Props = {
   entries: IndexedDictionaryEntry[];
@@ -58,6 +59,7 @@ export function DictionaryPageClient({ entries }: Props) {
       setSort(next.sort);
       setCurrentSlug(next.slug ?? null);
     });
+    setInternalNavigationFlag();
   }, [pathname]);
 
   useEffect(() => {

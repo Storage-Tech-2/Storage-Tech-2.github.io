@@ -22,6 +22,7 @@ import {
   writeArchiveSession,
 } from "@/lib/urlState";
 import { disablePagination } from "@/lib/runtimeFlags";
+import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -79,6 +80,7 @@ export function ArchiveShell({
       setSelectedAuthors(next.selectedAuthors || []);
       setSortKey(next.sortKey || "newest");
     });
+    setInternalNavigationFlag();
   }, []);
 
   useEffect(() => {
