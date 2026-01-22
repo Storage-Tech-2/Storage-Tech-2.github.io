@@ -300,7 +300,7 @@ export function transformOutputWithReferencesForWebsite(
         }
       } else if (reference.type === ReferenceType.DISCORD_LINK) {
         if (!isWithinHyperlink) {
-          matchedText = `[[Link]](Message ${reference.url} "${reference.serverName ? `on ${reference.serverName} Discord` : "on Discord"}")`;
+          matchedText = `[[Link]](${reference.url} "Message ${reference.serverName ? `on ${reference.serverName} Discord` : "on Discord"}")`;
         }
         // add suffix
         return matchedText + (reference.serverName && reference.serverJoinURL
