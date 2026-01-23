@@ -184,6 +184,15 @@ export default function NotFound() {
     };
   }, [archiveSlug, dictionarySlug, router]);
 
+  const isArchivePath = Boolean(archiveSlug);
+  const isDictionaryPath = Boolean(dictionarySlug);
+  const lookupSlug = archiveSlug ?? dictionarySlug ?? "";
+  const fallbackHref = dictionarySlug ? "/dictionary" : archiveSlug ? "/archives" : "/";
+  const handleBack = useBackNavigation(fallbackHref);
+  const showNotFound =
+    hasResolved &&
+    ((isArchivePath && (!post || !data)) || (isDictionaryPath && !dictionaryEntry) || (!isArchivePath && !isDictionaryPath) || Boolean(error));
+
   if (archiveSlug && post && data) {
     return (
       <>
@@ -214,15 +223,6 @@ export default function NotFound() {
       </>
     );
   }
-
-  const isArchivePath = Boolean(archiveSlug);
-  const isDictionaryPath = Boolean(dictionarySlug);
-  const lookupSlug = archiveSlug ?? dictionarySlug ?? "";
-  const fallbackHref = dictionarySlug ? "/dictionary" : archiveSlug ? "/archives" : "/";
-  const handleBack = useBackNavigation(fallbackHref);
-  const showNotFound =
-    hasResolved &&
-    ((isArchivePath && (!post || !data)) || (isDictionaryPath && !dictionaryEntry) || (!isArchivePath && !isDictionaryPath) || Boolean(error));
 
   return (
     <>
