@@ -13,6 +13,7 @@ export function PdfViewer({ src, onPageChange }: { src: string; onPageChange?: (
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>();
   const [currentPage, setCurrentPage] = useState(1);
+  const currentPageRef = useRef(1);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export function PdfViewer({ src, onPageChange }: { src: string; onPageChange?: (
     const viewport = containerRef.current.getBoundingClientRect();
     const viewportTop = viewport.top;
     const viewportBottom = viewport.bottom;
-    let bestPage = currentPage;
+    let bestPage = currentPageRef.current;
     let bestRatio = 0;
     pageRefs.current.forEach((el, idx) => {
       if (!el) return;
@@ -43,10 +44,11 @@ export function PdfViewer({ src, onPageChange }: { src: string; onPageChange?: (
         bestPage = idx + 1;
       }
     });
-    if (bestPage !== currentPage) {
+    if (bestPage !== currentPageRef.current) {
+      currentPageRef.current = bestPage;
       setCurrentPage(bestPage);
     }
-  }, [currentPage, numPages]);
+  }, [numPages]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -78,6 +80,7 @@ export function PdfViewer({ src, onPageChange }: { src: string; onPageChange?: (
         onLoadSuccess={({ numPages }) => {
           setNumPages(numPages);
           setError(null);
+          currentPageRef.current = 1;
           setCurrentPage(1);
         }}
         onLoadError={(err) => setError(err?.message || "Failed to load PDF")}

@@ -7,6 +7,7 @@ import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { fetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
+import Link from "next/link";
 
 type Props = {
   entry: IndexedDictionaryEntry;
@@ -92,7 +93,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
                     }
                     const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
                     return (
-                      <a
+                      <Link
                         key={code}
                         href={`/archives/${post.slug}`}
                         className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
@@ -108,7 +109,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
                           </div>
                         </div>
                         <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
-                      </a>
+                      </Link>
                     );
                   })}
                 </div>
