@@ -52,39 +52,59 @@ export type Author = DiscordAuthor | UnknownAuthor;
 
 export type Tag = { id: string; name: string };
 
-export type Image = {
-  id: Snowflake;
-  name: string;
-  url: string;
-  description: string;
-  contentType: string;
-  width?: number;
-  height?: number;
-  canDownload: boolean;
-  path?: string;
-};
 
-export type Attachment = {
-  id: Snowflake;
-  name: string;
-  url: string;
-  description: string;
-  contentType: string;
-  litematic?: { version?: string; size?: string; error?: string };
-  wdl?: { version?: string; error?: string };
-  youtube?: {
-    title: string;
-    author_name: string;
-    author_url: string;
-    thumbnail_url: string;
-    thumbnail_width: number;
-    thumbnail_height: number;
-    width: number;
-    height: number;
-  };
-  canDownload: boolean;
-  path?: string;
-};
+export enum AttachmentSource {
+    DirectUpload = "DirectUpload",
+    MessageAttachment = "MessageAttachment",
+    URLInMessage = "URLInMessage",
+}
+
+export type BaseAttachment = {
+    id: Snowflake,
+    name: string,
+    url: string,
+    description: string,
+    timestamp: number, // Timestamp when the attachment was added
+    author: Author,
+    source: AttachmentSource,
+    contentType: string,
+    path?: string, // Local path if downloaded
+    size?: number, // Size in bytes if known
+    canDownload: boolean, // Whether the file can be downloaded
+}
+
+export type Attachment = BaseAttachment & {
+
+    // For litematics
+    litematic?: {
+        version?: string,
+        size?: string,
+        error?: string,
+    },
+
+    // For wdl files
+    wdl?: {
+        version?: string, // Minecraft version
+        error?: string, // Error message if any
+    },
+
+    // For youtube links
+    youtube?: {
+        title: string, // Video title
+        author_name: string, // Author name
+        author_url: string, // Author URL
+        thumbnail_url: string, // Thumbnail URL
+        thumbnail_width: number, // Thumbnail width
+        thumbnail_height: number, // Thumbnail height
+        width: number, // Video width
+        height: number, // Video height
+    }
+}
+
+export type Image = BaseAttachment & {
+    width?: number,
+    height?: number
+}
 
 export type NestedListItem = { title: string; isOrdered: boolean; items: (string | NestedListItem)[] };
 export type SubmissionRecord = string | (string | NestedListItem)[];
@@ -174,6 +194,7 @@ export type ArchiveEntryData = {
   timestamp?: number;
   archivedAt: number;
   updatedAt: number;
+  num_comments: number;
 };
 
 export interface ChannelRef {
