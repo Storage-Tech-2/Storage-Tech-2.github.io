@@ -4,12 +4,12 @@ import Image from "next/image";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
+import { RelativeTime } from "./RelativeTime";
 import { fetchCommentsData, fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { assetURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { formatDate, timeAgo } from "@/lib/utils/dates";
 import { type ArchiveEntryData, type ArchiveComment, type Author, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
 import { getAuthorName } from "@/lib/utils/authors";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
@@ -214,14 +214,10 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
               <ChannelBadge ch={post.channel} />
               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{post.entry.codes[0]}</span>
               {updatedAt !== undefined ? (
-                <span className="text-gray-700 dark:text-gray-200" suppressHydrationWarning={true} title={formatDate(updatedAt)}>
-                  Updated {timeAgo(updatedAt)}
-                </span>
+                <RelativeTime className="text-gray-700 dark:text-gray-200" prefix="Updated" ts={updatedAt} />
               ) : null}
               {archivedAt !== undefined ? (
-                <span className="text-gray-700 dark:text-gray-200" suppressHydrationWarning={true} title={formatDate(archivedAt)}>
-                  Archived {timeAgo(archivedAt)}
-                </span>
+                <RelativeTime className="text-gray-700 dark:text-gray-200" prefix="Archived" ts={archivedAt} />
               ) : null}
             </div>
           </div>
@@ -643,9 +639,7 @@ function CommentsList({
             <li key={c.id} className="rounded-xl border p-3 dark:border-gray-800">
               <div className="flex items-center justify-between gap-2">
                 <AuthorInline a={c.sender} />
-                <span className="text-xs text-gray-500" suppressHydrationWarning={true} title={formatDate(c.timestamp)}>
-                  {timeAgo(c.timestamp)}
-                </span>
+                <RelativeTime className="text-xs text-gray-500" ts={c.timestamp} />
               </div>
               {c.content ? (
                 <div className="mt-2 text-sm">

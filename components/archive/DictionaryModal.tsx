@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChannelBadge, MarkdownText } from "./ui";
-import { formatDate, timeAgo } from "@/lib/utils/dates";
+import { RelativeTime } from "./RelativeTime";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { fetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
@@ -49,7 +49,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
         <div className="space-y-2">
           <h3 className="text-lg font-bold">{entry.index.terms[0] || entry.index.id}</h3>
           <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-            <span suppressHydrationWarning={true} title={formatDate(entry.index.updatedAt)}>Updated {timeAgo(entry.index.updatedAt)}</span>
+            <RelativeTime ts={entry.index.updatedAt} prefix="Updated" />
           </div>
           {entry.index.terms.length > 1 ? (
             <div className="flex flex-wrap gap-1">
@@ -104,7 +104,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
                             <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                               {post.entry.codes[0]}
                             </span>
-                            {updated !== undefined ? <span suppressHydrationWarning={true} title={formatDate(updated)}>{timeAgo(updated)}</span> : null}
+                            {updated !== undefined ? <RelativeTime ts={updated} /> : null}
                           </div>
                         </div>
                         <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>

@@ -3,9 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChannelBadge, TagList } from "./ui";
+import { RelativeTime } from "./RelativeTime";
 import { type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type SortKey } from "@/lib/types";
-import { formatDate, timeAgo } from "@/lib/utils/dates";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
 
@@ -67,7 +67,7 @@ export function PostCard({ post, sortKey, onNavigate }: Props) {
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
             <ChannelBadge ch={post.channel} />
             <div className="flex flex-col items-end text-right">
-              {displayTs !== undefined && <span suppressHydrationWarning={true} title={displayTs ? formatDate(displayTs) : undefined}>{displayTs ? timeAgo(displayTs) : ""}</span>}
+              {displayTs !== undefined ? <RelativeTime ts={displayTs} /> : null}
             </div>
           </div>
           <div className="min-h-13.5">
