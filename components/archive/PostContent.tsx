@@ -42,6 +42,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
   const didDragRef = useRef(false);
   const [comments, setComments] = useState<ArchiveComment[] | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const numComments = currentData?.num_comments ?? 0;
 
   useEffect(() => {
     if (disableLiveFetch) return;
@@ -63,6 +64,11 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
       setCommentsLoading(false);
       return;
     }
+    if (numComments === 0) {
+      setComments([]);
+      setCommentsLoading(false);
+      return;
+    }
     let cancelled = false;
     setComments(null);
     setCommentsLoading(true);
@@ -79,7 +85,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
     return () => {
       cancelled = true;
     };
-  }, [post.channel.path, post.entry]);
+  }, [post.channel.path, post.entry, numComments]);
 
   useEffect(() => {
     activeDictionaryRef.current = activeDictionary;

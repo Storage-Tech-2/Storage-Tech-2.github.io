@@ -146,15 +146,7 @@ export function AttachmentCard({
   const isImage = !isVideo && (att.contentType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.name || ""));
   const isPdf = !att.youtube && (att.contentType?.toLowerCase().includes("pdf") || /\.pdf$/i.test(att.name || ""));
   const pdfSource = isPdf ? sourceURL : null;
-  const imageForView: ArchiveImage = {
-    id: att.id,
-    name: att.name,
-    url: href,
-    description: att.description,
-    contentType: att.contentType,
-    canDownload: att.canDownload,
-    path: att.path,
-  };
+  const imageForView: ArchiveImage = att;
   const [showSchematic, setShowSchematic] = useState(false);
   return (
     <>
