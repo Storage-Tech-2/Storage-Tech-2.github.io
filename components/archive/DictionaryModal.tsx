@@ -95,6 +95,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
                     return (
                       <Link
                         key={code}
+                        prefetch={false}
                         href={`/archives/${post.slug}`}
                         className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
                       >

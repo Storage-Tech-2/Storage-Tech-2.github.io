@@ -1,6 +1,7 @@
 'use client';
 
 import Image from "next/image";
+import Link from "next/link";
 import React, { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -302,12 +303,15 @@ type LinkWithTooltipProps = React.ComponentProps<"a"> & {
   onInternalNavigate?: (url: URL) => boolean;
 };
 
+function isArchivePostHref(href?: string) {
+  return typeof href === "string" && /^\/archives\//.test(href);
+}
+
 export function LinkWithTooltip(props: LinkWithTooltipProps) {
-  const { title, children, className, onInternalNavigate, ...rest } = props;
+  const { title, children, className, onInternalNavigate, href, ...rest } = props;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (typeof window === "undefined") return;
-    const href = rest.href;
     if (!href || rest.target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     try {
       const url = new URL(href, window.location.href);
@@ -320,16 +324,26 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
       // fall back to default navigation
     }
   };
+  const tooltip = title ? (
+    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
+      {title}
+    </span>
+  ) : null;
+
+  const linkClassName = clsx("underline", className);
+
   return (
     <span className="group relative inline-block">
-      <a {...rest} onClick={handleClick} className={clsx("underline", className)}>
-        {children}
-      </a>
-      {title ? (
-        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
-          {title}
-        </span>
-      ) : null}
+      {href && isArchivePostHref(href) ? (
+        <Link href={href} prefetch={false} onClick={handleClick} className={linkClassName} {...rest}>
+          {children}
+        </Link>
+      ) : (
+        <a {...rest} href={href} onClick={handleClick} className={linkClassName}>
+          {children}
+        </a>
+      )}
+      {tooltip}
     </span>
   );
 }
