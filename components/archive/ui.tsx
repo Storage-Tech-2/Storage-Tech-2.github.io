@@ -36,6 +36,7 @@ export function ChannelBadge({ ch }: { ch: { code: string; name: string; descrip
 function buildTagStyle(color?: string): React.CSSProperties | undefined {
   if (!color) return undefined;
   return {
+    "--tag-color": color,
     "--tag-bg-light": `color-mix(in lab, ${color} 12%, white)`,
     "--tag-bg-dark": `color-mix(in lab, ${color} 18%, black)`,
     "--tag-text-light": `color-mix(in srgb, ${color} 40%, black)`,
@@ -49,7 +50,7 @@ export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag;
   const base = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors";
   const cls =
     state === 1
-      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+      ? (meta ? "text-[color:var(--tag-text-light)] bg-[var(--tag-color)]" : "bg-blue-600 text-white border-blue-600 shadow-sm")
       : state === -1
         ? "bg-red-600 text-white border-red-600 shadow-sm"
         : meta
