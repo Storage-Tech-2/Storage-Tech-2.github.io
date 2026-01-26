@@ -44,7 +44,7 @@ function buildTagStyle(color?: string): React.CSSProperties | undefined {
   } as React.CSSProperties;
 }
 
-export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag; state: -1 | 0 | 1; count?: number; onToggle?: () => void; globalTags?: GlobalTag[] }) {
+export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag; state: -1 | 0 | 1; count?: number; onToggle?: (rightClick: boolean) => void; globalTags?: GlobalTag[] }) {
   const meta = getSpecialTagMeta(tag.name, globalTags);
   const metaStyle = meta?.color ? buildTagStyle(meta.color) : undefined;
   const base = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors";
@@ -58,7 +58,14 @@ export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag;
           : "text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900";
   return (
     <button
-      onClick={onToggle}
+      onClick={(e) => {
+        e.preventDefault();
+        if (onToggle) onToggle(e.type === "contextmenu");
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (onToggle) onToggle(true);
+      }}
       className={clsx(base, cls)}
       style={metaStyle}
       title={state === -1 ? "Excluded" : state === 1 ? "Included" : "Not selected"}

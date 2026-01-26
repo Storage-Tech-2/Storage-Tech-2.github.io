@@ -412,7 +412,7 @@ export function ArchiveShell({
                     <input type="radio" name="tagMode" value="OR" checked={tagMode === "OR"} onChange={() => setTagMode("OR")} />
                     <span>Match any</span>
                   </label>
-                  <span className="text-gray-500">Tip: click tag twice to exclude</span>
+                  <span className="text-gray-500">Tip: right-click on tag to exclude</span>
                 </div>
               </div>
               <div className="mb-4 flex flex-wrap gap-2">
@@ -423,10 +423,10 @@ export function ArchiveShell({
                     state={tagState[tag.name] || 0}
                     count={tagCounts[normalize(tag.name)] || 0}
                     globalTags={globalTags}
-                    onToggle={() => {
+                    onToggle={(rightClick) => {
                       setTagState((prev) => {
                         const cur = prev[tag.name] || 0;
-                        const next = cur === 0 ? 1 : cur === 1 ? -1 : 0;
+                        const next = rightClick ? (cur === -1 ? 0 : -1) : cur === 1 ? 0 : 1;
                         return { ...prev, [tag.name]: next };
                       });
                     }}
