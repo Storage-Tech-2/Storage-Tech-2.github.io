@@ -33,25 +33,14 @@ export function ChannelBadge({ ch }: { ch: { code: string; name: string; descrip
   );
 }
 
-function hexToRgba(value: string, alpha: number) {
-  const raw = value.trim().replace(/^#/, "");
-  if (![3, 4, 6, 8].includes(raw.length)) return null;
-  const normalized = raw.length <= 4 ? raw.split("").map((c) => c + c).join("") : raw.slice(0, 6);
-  const r = parseInt(normalized.slice(0, 2), 16);
-  const g = parseInt(normalized.slice(2, 4), 16);
-  const b = parseInt(normalized.slice(4, 6), 16);
-  if ([r, g, b].some((n) => Number.isNaN(n))) return null;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 function buildTagStyle(color?: string): React.CSSProperties | undefined {
   if (!color) return undefined;
-  const tint = hexToRgba(color, 0.05);
   return {
-    borderColor: color,
-    color,
-    backgroundColor: tint || undefined,
-  };
+    "--tag-bg-light": `color-mix(in lab, ${color} 12%, white)`,
+    "--tag-bg-dark": `color-mix(in lab, ${color} 18%, black)`,
+    "--tag-text-light": `color-mix(in srgb, ${color} 40%, black)`,
+    "--tag-text-dark": `color-mix(in srgb, ${color} 65%, white)`,
+  } as React.CSSProperties;
 }
 
 export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag; state: -1 | 0 | 1; count?: number; onToggle?: () => void; globalTags?: GlobalTag[] }) {
@@ -64,13 +53,13 @@ export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag;
       : state === -1
         ? "bg-red-600 text-white border-red-600 shadow-sm"
         : meta
-          ? "bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+          ? "text-[color:var(--tag-text-light)] dark:text-[color:var(--tag-text-dark)] bg-[var(--tag-bg-light)] dark:bg-[var(--tag-bg-dark)]"
           : "text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900";
   return (
     <button
       onClick={onToggle}
       className={clsx(base, cls)}
-      style={state === 0 ? metaStyle : undefined}
+      style={metaStyle}
       title={state === -1 ? "Excluded" : state === 1 ? "Included" : "Not selected"}
     >
       {meta?.icon && <span className="text-[12px]">{meta.icon}</span>}
@@ -84,7 +73,9 @@ export function TagPill({ name, globalTags }: { name: string; globalTags?: Globa
   const meta = getSpecialTagMeta(name, globalTags);
   const metaStyle = meta?.color ? buildTagStyle(meta.color) : undefined;
   const base = "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold leading-none whitespace-nowrap";
-  const cls = meta ? "bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100" : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+  const cls = meta
+    ? "text-[color:var(--tag-text-light)] dark:text-[color:var(--tag-text-dark)] bg-[var(--tag-bg-light)] dark:bg-[var(--tag-bg-dark)]"
+    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
   return (
     <span className={clsx(base, cls)} style={metaStyle}>
       {meta?.icon && <span className="text-[12px]">{meta.icon}</span>}

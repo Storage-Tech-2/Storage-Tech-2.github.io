@@ -6,6 +6,13 @@
     border-color: #e5e7eb;
 }
 
+/* dark theme border color */
+@media (prefers-color-scheme: dark) {
+    *,:before,:after {
+        border-color: #374151;
+    }
+}
+
 ::selection {
   background: #cbd5e1;
   color: #0f172a;

@@ -250,7 +250,7 @@ export const DEFAULT_GLOBAL_TAGS: GlobalTag[] = [
     {
         name: 'Broken',
         emoji: '💔',
-        colorWeb: '#ef4444',
+        colorWeb: '#ff6969',
     },
     {
         name: 'Tested & Functional',
