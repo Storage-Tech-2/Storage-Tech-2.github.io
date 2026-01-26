@@ -45,5 +45,5 @@ export const siteConfig: SiteConfig = {
     branch: "main",
   },
   repositoryUrl: "https://github.com/Storage-Tech-2/Archive",
-  discordInviteUrl: "https://discord.gg/hztJMTsx2m",
+  discordInviteUrl: "https://discord.gg/storage-tech-2-1375556143186837695",
 };
