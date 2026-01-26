@@ -1,54 +1,66 @@
-import { type Tag } from "../types";
+import { DEFAULT_GLOBAL_TAGS, type GlobalTag, type Tag } from "../types";
 import { normalize } from "./strings";
 
-const SPECIAL_TAG_META: Record<string, { icon: string; classes: string }> = {
-  [normalize("Untested")]: {
-    icon: "🧪",
-    classes: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100",
-  },
-  [normalize("Broken")]: {
-    icon: "⛔",
-    classes: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-100",
-  },
-  [normalize("Tested & Functional")]: {
-    icon: "✅",
-    classes: "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100",
-  },
-  [normalize("Recommended")]: {
-    icon: "⭐",
-    classes: "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100",
-  },
+export type SpecialTagMeta = {
+  icon?: string;
+  color?: string;
 };
 
-const SPECIAL_TAG_ORDER = [normalize("Untested"), normalize("Broken"), normalize("Tested & Functional"), normalize("Recommended")];
+type NormalizedGlobalTag = {
+  tag: GlobalTag;
+  norm: string;
+};
 
-export function getSpecialTagMeta(name: string) {
-  return SPECIAL_TAG_META[normalize(name)];
+function getNormalizedGlobalTags(globalTags?: GlobalTag[]): NormalizedGlobalTag[] {
+  const tags = (globalTags?.length ? globalTags : DEFAULT_GLOBAL_TAGS) || [];
+  const seen = new Set<string>();
+  const normalized: NormalizedGlobalTag[] = [];
+  tags.forEach((tag) => {
+    const norm = normalize(tag.name);
+    if (!norm || seen.has(norm)) return;
+    seen.add(norm);
+    normalized.push({ tag, norm });
+  });
+  return normalized;
 }
 
-export function sortTagsForDisplay(names: string[]) {
+export function getSpecialTagMeta(name: string, globalTags?: GlobalTag[]): SpecialTagMeta | undefined {
+  const norm = normalize(name);
+  const match = getNormalizedGlobalTags(globalTags).find((item) => item.norm === norm);
+  if (!match) return undefined;
+  return {
+    icon: match.tag.emoji,
+    color: match.tag.colorWeb,
+  };
+}
+
+export function sortTagsForDisplay(names: string[], globalTags?: GlobalTag[]) {
   const firstByNorm: Record<string, string> = {};
   names.forEach((n) => {
     const norm = normalize(n);
     if (!firstByNorm[norm]) firstByNorm[norm] = n;
   });
-  const specials = SPECIAL_TAG_ORDER.map((norm) => firstByNorm[norm]).filter(Boolean) as string[];
+  const order = getNormalizedGlobalTags(globalTags).map((item) => item.norm);
+  const orderSet = new Set(order);
+  const specials = order.map((norm) => firstByNorm[norm]).filter(Boolean) as string[];
   const rest = Object.entries(firstByNorm)
-    .filter(([norm]) => !SPECIAL_TAG_ORDER.includes(norm))
+    .filter(([norm]) => !orderSet.has(norm))
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([, original]) => original);
   return [...specials, ...rest];
 }
 
-export function sortTagObjectsForDisplay(tags: Tag[]) {
+export function sortTagObjectsForDisplay(tags: Tag[], globalTags?: GlobalTag[]) {
   const byNorm = new Map<string, Tag>();
   tags.forEach((tag) => {
     const norm = normalize(tag.name);
     if (!byNorm.has(norm)) byNorm.set(norm, tag);
   });
-  const specials = SPECIAL_TAG_ORDER.map((norm) => byNorm.get(norm)).filter(Boolean) as Tag[];
+  const order = getNormalizedGlobalTags(globalTags).map((item) => item.norm);
+  const orderSet = new Set(order);
+  const specials = order.map((norm) => byNorm.get(norm)).filter(Boolean) as Tag[];
   const rest = Array.from(byNorm.entries())
-    .filter(([norm]) => !SPECIAL_TAG_ORDER.includes(norm))
+    .filter(([norm]) => !orderSet.has(norm))
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([, tag]) => tag);
   return [...specials, ...rest];

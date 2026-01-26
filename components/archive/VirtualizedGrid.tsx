@@ -4,7 +4,7 @@ import { useCallback, useMemo } from "react";
 import { AutoSizer, List, WindowScroller } from "react-virtualized";
 import { PostCard } from "./PostCard";
 import { type ArchiveListItem } from "@/lib/archive";
-import { type SortKey } from "@/lib/types";
+import { type GlobalTag, type SortKey } from "@/lib/types";
 
 const GRID_GAP = 16;
 const CARD_HEIGHT = 380;
@@ -14,6 +14,7 @@ const ROW_HEIGHT = CARD_HEIGHT + GRID_GAP;
 type Props = {
   posts: ArchiveListItem[];
   sortKey: SortKey;
+  globalTags?: GlobalTag[];
   onNavigate: (post: ArchiveListItem) => void;
 };
 
@@ -25,7 +26,7 @@ function getColumnCount(width: number) {
   return 1;
 }
 
-export function VirtualizedGrid({ posts, sortKey, onNavigate }: Props) {
+export function VirtualizedGrid({ posts, sortKey, onNavigate, globalTags }: Props) {
  
   if (!posts.length) return null;
 
@@ -38,6 +39,7 @@ export function VirtualizedGrid({ posts, sortKey, onNavigate }: Props) {
               posts={posts}
               onNavigate={onNavigate}
               sortKey={sortKey}
+              globalTags={globalTags}
               width={width}
               height={height}
               isScrolling={isScrolling}
@@ -65,6 +67,7 @@ function VirtualizedGridContent({
   posts,
   onNavigate,
   sortKey,
+  globalTags,
   width,
   height,
   isScrolling,
@@ -94,14 +97,14 @@ function VirtualizedGridContent({
           >
             {rowItems.map((p) => (
               <div key={`${p.channel.path}/${p.entry.path}`} style={{ height: CARD_HEIGHT }}>
-                <PostCard post={p} onNavigate={onNavigate} sortKey={sortKey} />
+                <PostCard post={p} onNavigate={onNavigate} sortKey={sortKey} globalTags={globalTags} />
               </div>
             ))}
           </div>
         </div>
       );
     },
-    [posts, columnCount, onNavigate, sortKey],
+    [posts, columnCount, onNavigate, sortKey, globalTags],
   );
 
   return (

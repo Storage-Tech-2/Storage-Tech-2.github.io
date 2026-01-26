@@ -10,7 +10,7 @@ import { VirtualizedGrid } from "./VirtualizedGrid";
 import { useArchiveData } from "@/hooks/useArchiveData";
 import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
-import { type SortKey } from "@/lib/types";
+import { DEFAULT_GLOBAL_TAGS, type GlobalTag, type SortKey } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
 import { siteConfig } from "@/lib/siteConfig";
@@ -39,6 +39,10 @@ export function ArchiveShell({
 }: Props) {
   const router = useRouter();
   const { posts, channels, error } = useArchiveData({ initial: initialArchive });
+  const globalTags = useMemo<GlobalTag[]>(
+    () => initialArchive.config.globalTags?.length ? initialArchive.config.globalTags : DEFAULT_GLOBAL_TAGS,
+    [initialArchive.config.globalTags],
+  );
   const [q, setQ] = useState("");
   const [committedQ, setCommittedQ] = useState("");
   const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
@@ -187,12 +191,12 @@ export function ArchiveShell({
     });
     const fromEntryRefs = postsPool.flatMap((p) => p.entry.tags || []);
     const names = Array.from(new Set([...fromChannels, ...fromEntryRefs]));
-    let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })));
+    let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })), globalTags);
     if (!selectedChannels.length && !selectedAuthors.length) {
-      tags = tags.filter((tag) => !!getSpecialTagMeta(tag.name));
+      tags = tags.filter((tag) => !!getSpecialTagMeta(tag.name, globalTags));
     }
     return tags;
-  }, [channels, posts, selectedAuthors.length, selectedChannels, normalizedSelectedAuthors]);
+  }, [channels, posts, selectedAuthors.length, selectedChannels, normalizedSelectedAuthors, globalTags]);
 
   const availableAuthors = useMemo(() => {
     const map = new Map<string, string>();
@@ -418,6 +422,7 @@ export function ArchiveShell({
                     tag={tag}
                     state={tagState[tag.name] || 0}
                     count={tagCounts[normalize(tag.name)] || 0}
+                    globalTags={globalTags}
                     onToggle={() => {
                       setTagState((prev) => {
                         const cur = prev[tag.name] || 0;
@@ -445,7 +450,7 @@ export function ArchiveShell({
             <div role="main">
               {(clientReady && pageNumber === 0) ? (
                 <>
-                  <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} onNavigate={handleOpenPost} />
+                  <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} globalTags={globalTags} onNavigate={handleOpenPost} />
                   {pagination}
                 </>
               ) : (
@@ -456,6 +461,7 @@ export function ArchiveShell({
                         key={`${post.channel.path}/${post.entry.path}`}
                         post={post}
                         sortKey={sortKey}
+                        globalTags={globalTags}
                         onNavigate={handleOpenPost}
                       />
                     ))}

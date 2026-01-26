@@ -5,17 +5,18 @@ import Link from "next/link";
 import { ChannelBadge, TagList } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { type ArchiveListItem } from "@/lib/archive";
-import { getEntryArchivedAt, getEntryUpdatedAt, type SortKey } from "@/lib/types";
+import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
 
 type Props = {
   post: ArchiveListItem;
   sortKey: SortKey;
+  globalTags?: GlobalTag[];
   onNavigate: (post: ArchiveListItem) => void;
 };
 
-export function PostCard({ post, sortKey, onNavigate }: Props) {
+export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
   const preview = getPreviewByCode(post.entry.codes[0]);
   const heroSrc = post.entry.mainImagePath
     ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
@@ -71,7 +72,7 @@ export function PostCard({ post, sortKey, onNavigate }: Props) {
             </div>
           </div>
           <div className="min-h-13.5">
-            <TagList tags={post.entry.tags || []} />
+            <TagList tags={post.entry.tags || []} globalTags={globalTags} />
           </div>
         </div>
       </Link>

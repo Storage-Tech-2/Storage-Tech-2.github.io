@@ -224,7 +224,47 @@ export interface ArchiveConfig {
   allTags?: string[];
   allAuthors?: string[];
   allCategories?: string[];
+  globalTags?: GlobalTag[];
 }
+
+
+export type GlobalTag = {
+    name: string;
+    emoji?: string;
+    colorWeb?: string;
+    colorMod?: number;
+    moderated?: boolean;
+}
+
+export type ArchiveConfigJSON = {
+  globalTags?: GlobalTag[];
+}
+
+// use default global tags if not specified
+export const DEFAULT_GLOBAL_TAGS: GlobalTag[] = [
+    {
+        name: 'Untested',
+        emoji: '⁉️',
+        colorWeb: '#fcd34d',
+    },
+    {
+        name: 'Broken',
+        emoji: '💔',
+        colorWeb: '#ef4444',
+    },
+    {
+        name: 'Tested & Functional',
+        emoji: '✅',
+        colorWeb: '#34d399',
+    },
+    {
+        name: 'Recommended',
+        emoji: '⭐',
+        colorWeb: '#60a5fa',
+        moderated: true
+    }
+];
+
 
 export type ArchiveComment = {
   id: string;

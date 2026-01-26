@@ -10,7 +10,7 @@ import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { assetURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { type ArchiveEntryData, type ArchiveComment, type Author, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
+import { type ArchiveEntryData, type ArchiveComment, type Author, type GlobalTag, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
 import { getAuthorName } from "@/lib/utils/authors";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import { replaceAttachmentsInText } from "@/lib/utils/attachments";
@@ -21,13 +21,14 @@ type Props = {
   data?: ArchiveEntryData;
   schemaStyles?: Record<string, StyleInfo>;
   dictionaryTooltips?: Record<string, string>;
+  globalTags?: GlobalTag[];
 };
 
 const LazyPdfViewer = dynamic(() => import("./PdfViewer").then((mod) => ({ default: mod.PdfViewer })),{
   ssr: false,
 });
 
-export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Props) {
+export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags }: Props) {
   const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
   const baseData = data;
   const currentData = liveState ? liveState : baseData;
@@ -228,7 +229,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips }: Pr
             </div>
           </div>
         </div>
-        <TagList tags={post.entry.tags || []} />
+        <TagList tags={post.entry.tags || []} globalTags={globalTags} />
         {currentData ? (
           <div className="flex flex-col gap-2">
             <AuthorsLine authors={currentData.authors || []} />

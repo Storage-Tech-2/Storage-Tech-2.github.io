@@ -2,6 +2,7 @@ import { fetchArrayBufferRaw, fetchJSONRaw } from "./github";
 import {
   ArchiveComment,
   ArchiveConfig,
+  ArchiveConfigJSON,
   ArchivedPostReference,
   ArchiveEntryData,
   ChannelRef,
@@ -10,6 +11,7 @@ import {
   IndexEntry,
   IndexedDictionaryEntry,
   IndexedPost,
+  DEFAULT_GLOBAL_TAGS,
   getEntryUpdatedAt,
 } from "./types";
 import { deserializePersistentIndex, type PersistentIndex } from "./utils/persistentIndex";
@@ -26,6 +28,24 @@ export type DictionaryIndex = {
   config: DictionaryConfig;
   entries: IndexedDictionaryEntry[];
 };
+
+const archiveConfigCache = new Map<string, Promise<ArchiveConfigJSON | null>>();
+
+async function fetchArchiveConfig(): Promise<ArchiveConfigJSON | null> {
+  if (typeof window !== "undefined") return null;
+  const key = "archive-config";
+  const cached = archiveConfigCache.get(key);
+  if (cached) return cached;
+  const promise = (async () => {
+    try {
+      return await fetchJSONRaw<ArchiveConfigJSON>("config.json");
+    } catch {
+      return null;
+    }
+  })();
+  archiveConfigCache.set(key, promise);
+  return promise;
+}
 
 export function slugifyName(input: string) {
   return input
@@ -60,7 +80,7 @@ export function slugMatchesEntry(slug: string, entry: IndexEntry) {
   return entry.codes.some((code) => code.toLowerCase() === slugCode);
 }
 
-function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
+function persistentIndexToArchive(idx: PersistentIndex, archiveConfig?: ArchiveConfigJSON | null): ArchiveIndex {
   const categories = idx.all_categories || [];
   const tags = idx.all_tags || [];
   const authors = idx.all_authors || [];
@@ -102,17 +122,19 @@ function persistentIndexToArchive(idx: PersistentIndex): ArchiveIndex {
     allTags: tags,
     allAuthors: authors,
     allCategories: categories,
+    globalTags: archiveConfig?.globalTags?.length ? archiveConfig.globalTags : DEFAULT_GLOBAL_TAGS,
   };
 
   return { config, channels, posts };
 }
 
 export async function fetchArchiveIndex(): Promise<ArchiveIndex> {
+  const archiveConfig = await fetchArchiveConfig();
   const cached = await readArchiveIndexCache();
-  if (cached) return cached;
+  if (cached) return applyGlobalTagsToArchive(cached, archiveConfig);
   const buffer = await fetchArrayBufferRaw("persistent.idx");
   const idx = deserializePersistentIndex(buffer);
-  return persistentIndexToArchive(idx);
+  return persistentIndexToArchive(idx, archiveConfig);
 }
 
 export type PostWithArchive = {
@@ -219,6 +241,12 @@ async function readArchiveIndexCache(): Promise<ArchiveIndex | null> {
   } catch {
     return null;
   }
+}
+
+function applyGlobalTagsToArchive(base: ArchiveIndex, archiveConfig?: ArchiveConfigJSON | null): ArchiveIndex {
+  const globalTags = archiveConfig?.globalTags?.length ? archiveConfig.globalTags : DEFAULT_GLOBAL_TAGS;
+  if (base.config.globalTags === globalTags) return base;
+  return { ...base, config: { ...base.config, globalTags } };
 }
 
 async function readDictionaryIndexCache(): Promise<DictionaryIndex | null> {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArchiveIndex, ArchiveListItem, fetchArchiveIndex } from "@/lib/archive";
+import { DEFAULT_GLOBAL_TAGS } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 
 type Options = {
@@ -27,7 +28,13 @@ export function useArchiveData({ initial }: Options = {}) {
       try {
         const idx = await fetchArchiveIndex();
         if (cancelled) return;
-        setConfig(idx.config);
+        const mergedConfig = {
+          ...idx.config,
+          globalTags: initial?.config?.globalTags?.length
+            ? initial.config.globalTags
+            : idx.config.globalTags || DEFAULT_GLOBAL_TAGS,
+        };
+        setConfig(mergedConfig);
         setChannels(idx.channels);
         setPosts(idx.posts);
         setError(null);

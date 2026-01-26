@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostWithArchive } from "@/lib/archive";
 import { siteConfig } from "@/lib/siteConfig";
 import { disableArchivePrerender } from "@/lib/runtimeFlags";
+import { DEFAULT_GLOBAL_TAGS } from "@/lib/types";
 import { submissionRecordToMarkdown } from "@/lib/utils/markdown";
 import { getEffectiveStyle } from "@/lib/utils/styles";
 import { truncateStringWithEllipsis } from "@/lib/utils/strings";
@@ -71,6 +72,7 @@ export default async function PostPage({ params }: Params) {
   const payload = await fetchPostWithArchive(slug);
   if (!payload) return notFound();
   const { archive, post: match, data } = payload;
+  const globalTags = archive.config.globalTags?.length ? archive.config.globalTags : DEFAULT_GLOBAL_TAGS;
   const dictionary = await fetchDictionaryIndex();
   const dictionaryTooltips: Record<string, string> = {};
   dictionary.entries.forEach((entry) => {
@@ -87,6 +89,7 @@ export default async function PostPage({ params }: Params) {
           data={data}
           schemaStyles={archive.config.postStyle}
           dictionaryTooltips={dictionaryTooltips}
+          globalTags={globalTags}
         />
       </main>
       <Footer />
