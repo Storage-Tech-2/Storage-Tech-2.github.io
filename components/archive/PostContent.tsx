@@ -7,7 +7,7 @@ import { DictionaryModal } from "./DictionaryModal";
 import { RelativeTime } from "./RelativeTime";
 import { fetchCommentsData, fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
-import { assetURL } from "@/lib/github";
+import { assetURL, attachmentURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type ArchiveEntryData, type ArchiveComment, type Author, type GlobalTag, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
@@ -204,7 +204,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
 
   const attachments = currentData?.attachments?.map((att) => ({
     ...att,
-    path: att.path ? assetURL(post.channel.path, post.entry.path, att.path) : att.path,
+    path: att.path ? attachmentURL(post.channel.path, post.entry.path, att.path) : att.path,
   })) ?? [];
 
   const updatedAt = currentData?.updatedAt ?? post.entry.updatedAt;
@@ -640,7 +640,7 @@ function CommentsList({
         {comments.map((c) => {
           const attachments = (c.attachments || []).map((att) => ({
             ...att,
-            path: att.path ? assetURL(channelPath, entryPath, att.path) : att.path,
+            path: att.path ? attachmentURL(channelPath, entryPath, att.path) : att.path,
           }));
           return (
             <li key={c.id} className="rounded-xl border p-3 dark:border-gray-800">

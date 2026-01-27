@@ -2,7 +2,16 @@ import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "./types";
 
 export function getRawURL(owner: string, repo: string, branch: string, path: string) {
   const safe = encodeURI(path.replace(/^\/+/, ""));
-  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${safe}`;
+  return `https://raw.githubusercontent.com/${owner}/${repo}/refs/heads/${branch}/${safe}`;
+}
+
+export function getMediaURL(owner: string, repo: string, branch: string, path: string) {
+  const safe = encodeURI(path.replace(/^\/+/, ""));
+  return `https://media.githubusercontent.com/media/${owner}/${repo}/refs/heads/${branch}/${safe}`;
+}
+
+function joinAssetPath(channelPath: string, entryPath: string, rel: string) {
+  return [channelPath, entryPath, rel].join("/").replace(/\/{2,}/g, "/").replace(/^\/+/, "");
 }
 
 export function assetURL(
@@ -10,8 +19,17 @@ export function assetURL(
   entryPath: string,
   rel: string,
 ) {
-  const joined = [channelPath, entryPath, rel].join("/").replace(/\/{2,}/g, "/").replace(/^\/+/, "");
+  const joined = joinAssetPath(channelPath, entryPath, rel);
   return getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined);
+}
+
+export function attachmentURL(
+  channelPath: string,
+  entryPath: string,
+  rel: string,
+) {
+  const joined = joinAssetPath(channelPath, entryPath, rel);
+  return getMediaURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined);
 }
 
 export async function fetchJSONRaw<T>(
