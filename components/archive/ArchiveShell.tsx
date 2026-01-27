@@ -190,7 +190,8 @@ export function ArchiveShell({
       return authors.some((a) => authorSet.has(a));
     });
     const fromEntryRefs = postsPool.flatMap((p) => p.entry.tags || []);
-    const names = Array.from(new Set([...fromChannels, ...fromEntryRefs]));
+    const fromGlobals = globalTags.map((tag) => tag.name);
+    const names = Array.from(new Set([...fromGlobals, ...fromChannels, ...fromEntryRefs]));
     let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })), globalTags);
     if (!selectedChannels.length && !selectedAuthors.length) {
       tags = tags.filter((tag) => !!getSpecialTagMeta(tag.name, globalTags));
