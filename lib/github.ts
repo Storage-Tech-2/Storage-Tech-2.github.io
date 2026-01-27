@@ -29,7 +29,11 @@ export function attachmentURL(
   rel: string,
 ) {
   const joined = joinAssetPath(channelPath, entryPath, rel);
-  return getMediaURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined);
+  const base = joined.split(/[?#]/)[0] ?? "";
+  const isMp4 = base.toLowerCase().endsWith(".mp4");
+  return isMp4
+    ? getMediaURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined)
+    : getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined);
 }
 
 export async function fetchJSONRaw<T>(
