@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default async function DictionaryEntryPage({ params }: Params) {
   const dictionary = await fetchDictionaryIndex();
-  const slug = decodeURIComponent(params.slug);
+  const slug = decodeURIComponent((await params).slug);
   const match = findDictionaryEntryBySlug(dictionary.config.entries, slug);
   if (!match) return <DictionaryPageClient entries={dictionary.entries} />;
 
