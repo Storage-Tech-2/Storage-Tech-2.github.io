@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChannelBadge, TagList } from "./ui";
 import { RelativeTime } from "./RelativeTime";
-import { type ArchiveListItem } from "@/lib/archive";
+import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
@@ -43,6 +43,8 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
         onClick={() => {
           onNavigate(post);
         }}
+        onMouseEnter={() => prefetchArchiveEntryData(post)}
+        onFocus={() => prefetchArchiveEntryData(post)}
       >
         <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
           {displaySrc ? (

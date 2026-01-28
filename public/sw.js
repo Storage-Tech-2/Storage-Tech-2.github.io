@@ -9,8 +9,13 @@ const INDEX_SUFFIXES = [
   "/config.json",
   "/dictionary/config.json",
 ];
+const ENTRY_SUFFIXES = [
+  "/data.json",
+  "/comments.json",
+];
+const DICTIONARY_ENTRY_SEGMENT = "/dictionary/entries/";
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -30,7 +35,11 @@ self.addEventListener("activate", (event) => {
 
 function shouldHandle(url) {
   if (!url || (url.protocol !== "http:" && url.protocol !== "https:")) return false;
-  return INDEX_SUFFIXES.some((suffix) => url.pathname.endsWith(suffix));
+  const path = url.pathname;
+  if (INDEX_SUFFIXES.some((suffix) => path.endsWith(suffix))) return true;
+  if (ENTRY_SUFFIXES.some((suffix) => path.endsWith(suffix))) return true;
+  if (path.includes(DICTIONARY_ENTRY_SEGMENT) && path.endsWith(".json")) return true;
+  return false;
 }
 
 function metaRequest(request) {

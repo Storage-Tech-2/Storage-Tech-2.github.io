@@ -15,6 +15,7 @@ import {
   getEntryUpdatedAt,
 } from "./types";
 import { deserializePersistentIndex, type PersistentIndex } from "./utils/persistentIndex";
+import { disableLiveFetch } from "./runtimeFlags";
 
 export type ArchiveListItem = IndexedPost & { slug: string };
 
@@ -31,6 +32,7 @@ export type DictionaryIndex = {
 
 const archiveConfigCache = new Map<string, Promise<ArchiveConfigJSON | null>>();
 export const ARCHIVE_CACHE_TTL_MS = 2 * 60 * 1000;
+export const DICTIONARY_CACHE_TTL_MS = 2 * 60 * 1000;
 
 type ArchiveIndexCache = {
   index: ArchiveIndex;
@@ -41,6 +43,16 @@ type ArchiveIndexCache = {
 let archiveIndexClientCache: ArchiveIndexCache | null = null;
 let archiveIndexPrefetchPromise: Promise<ArchiveIndex | null> | null = null;
 let lastArchiveFetchAt = 0;
+
+type DictionaryIndexCache = {
+  index: DictionaryIndex;
+  fetchedAt: number;
+  updatedAt: number;
+};
+
+let dictionaryIndexClientCache: DictionaryIndexCache | null = null;
+let dictionaryIndexPrefetchPromise: Promise<DictionaryIndex | null> | null = null;
+let lastDictionaryFetchAt = 0;
 
 function getArchiveIndexUpdatedAt(index: ArchiveIndex): number {
   const configUpdated = index.config.updatedAt ?? 0;
@@ -71,6 +83,33 @@ export function getLastArchiveFetchAt() {
   return lastArchiveFetchAt;
 }
 
+function getDictionaryIndexUpdatedAt(index: DictionaryIndex): number {
+  let maxUpdatedAt = 0;
+  for (const entry of index.entries) {
+    const ts = entry.index.updatedAt ?? 0;
+    if (ts > maxUpdatedAt) maxUpdatedAt = ts;
+  }
+  return maxUpdatedAt;
+}
+
+export function getCachedDictionaryIndex(): DictionaryIndexCache | null {
+  return dictionaryIndexClientCache;
+}
+
+export function setCachedDictionaryIndex(index: DictionaryIndex, fetchedAt = Date.now()): DictionaryIndexCache {
+  const cache: DictionaryIndexCache = {
+    index,
+    fetchedAt,
+    updatedAt: getDictionaryIndexUpdatedAt(index),
+  };
+  dictionaryIndexClientCache = cache;
+  return cache;
+}
+
+export function getLastDictionaryFetchAt() {
+  return lastDictionaryFetchAt;
+}
+
 export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promise<ArchiveIndex | null> {
   const cached = getCachedArchiveIndex();
   if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.index;
@@ -88,6 +127,25 @@ export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promis
     }
   })();
   return archiveIndexPrefetchPromise;
+}
+
+export async function prefetchDictionaryIndex(ttlMs = DICTIONARY_CACHE_TTL_MS): Promise<DictionaryIndex | null> {
+  const cached = getCachedDictionaryIndex();
+  if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.index;
+  if (dictionaryIndexPrefetchPromise) return dictionaryIndexPrefetchPromise;
+  dictionaryIndexPrefetchPromise = (async () => {
+    try {
+      const idx = await fetchDictionaryIndex();
+      const fetchedAt = getLastDictionaryFetchAt() || Date.now();
+      setCachedDictionaryIndex(idx, fetchedAt);
+      return idx;
+    } catch {
+      return null;
+    } finally {
+      dictionaryIndexPrefetchPromise = null;
+    }
+  })();
+  return dictionaryIndexPrefetchPromise;
 }
 
 async function fetchArchiveConfig(): Promise<ArchiveConfigJSON | null> {
@@ -209,6 +267,9 @@ export type PostWithArchive = {
 
 const archiveIndexCache = new Map<string, Promise<ArchiveIndex>>();
 const postPayloadCache = new Map<string, Promise<ArchiveEntryData>>();
+const entryPrefetchCache = new Map<string, { promise: Promise<ArchiveEntryData | null>; fetchedAt: number }>();
+const dictionaryPrefetchCache = new Map<string, { promise: Promise<DictionaryEntry | null>; fetchedAt: number }>();
+const ENTRY_PREFETCH_TTL_MS = 10 * 60 * 1000;
 
 export async function fetchPostData(
   channelPath: string,
@@ -216,6 +277,21 @@ export async function fetchPostData(
 ): Promise<ArchiveEntryData> {
   const path = `${channelPath}/${entry.path}/data.json`;
   return fetchJSONRaw<ArchiveEntryData>(path);
+}
+
+export function prefetchArchiveEntryData(
+  post: ArchiveListItem,
+  ttlMs = ENTRY_PREFETCH_TTL_MS,
+): Promise<ArchiveEntryData | null> {
+  if (disableLiveFetch) return Promise.resolve(null);
+  const path = `${post.channel.path}/${post.entry.path}/data.json`;
+  const cached = entryPrefetchCache.get(path);
+  if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.promise;
+  const promise = fetchPostData(post.channel.path, post.entry)
+    .then((data) => data)
+    .catch(() => null);
+  entryPrefetchCache.set(path, { promise, fetchedAt: Date.now() });
+  return promise;
 }
 
 export async function fetchPostWithArchive(
@@ -279,6 +355,7 @@ export async function fetchDictionaryIndex(): Promise<DictionaryIndex> {
   const cached = await readDictionaryIndexCache();
   if (cached) return cached;
   const config = await fetchJSONRaw<DictionaryConfig>("dictionary/config.json");
+  lastDictionaryFetchAt = getLastFetchTimestampForPath("dictionary/config.json") || Date.now();
   const entries: IndexedDictionaryEntry[] = config.entries
     .map((index) => ({ index }))
     .sort((a, b) => {
@@ -333,6 +410,22 @@ export async function fetchDictionaryEntry(
 ): Promise<DictionaryEntry> {
   const path = `dictionary/entries/${id}.json`;
   return fetchJSONRaw<DictionaryEntry>(path);
+}
+
+export function prefetchDictionaryEntryData(
+  id: string,
+  ttlMs = ENTRY_PREFETCH_TTL_MS,
+): Promise<DictionaryEntry | null> {
+  if (disableLiveFetch) return Promise.resolve(null);
+  const key = id.trim();
+  if (!key) return Promise.resolve(null);
+  const cached = dictionaryPrefetchCache.get(key);
+  if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.promise;
+  const promise = fetchDictionaryEntry(key)
+    .then((data) => data)
+    .catch(() => null);
+  dictionaryPrefetchCache.set(key, { promise, fetchedAt: Date.now() });
+  return promise;
 }
 
 export function findPostBySlug(posts: ArchiveListItem[], slug: string): ArchiveListItem | undefined {

@@ -6,7 +6,14 @@ import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
-import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
+import {
+  DICTIONARY_CACHE_TTL_MS,
+  fetchDictionaryEntry,
+  fetchDictionaryIndex,
+  getCachedDictionaryIndex,
+  getLastDictionaryFetchAt,
+  setCachedDictionaryIndex,
+} from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
@@ -24,6 +31,9 @@ type Props = {
   entries: IndexedDictionaryEntry[];
 };
 
+const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
+  list.reduce((max, entry) => Math.max(max, entry.index.updatedAt ?? 0), 0);
+
 export function DictionaryPageClient({ entries }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -32,7 +42,14 @@ export function DictionaryPageClient({ entries }: Props) {
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
   const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
-  const [liveEntries, setLiveEntries] = useState(entries);
+  const entriesUpdatedAt = getEntriesUpdatedAt(entries);
+  const cached = getCachedDictionaryIndex();
+  const cachedEntries = cached?.index.entries ?? null;
+  const cachedUpdatedAt = cached?.updatedAt ?? 0;
+  const preferCached = !!cachedEntries && cachedUpdatedAt >= entriesUpdatedAt;
+  const bootstrapEntries = preferCached && cachedEntries ? cachedEntries : entries;
+  const [liveEntriesOverride, setLiveEntriesOverride] = useState<IndexedDictionaryEntry[] | null>(null);
+  const liveEntries = liveEntriesOverride ?? bootstrapEntries;
   const [currentSlug, setCurrentSlug] = useState<string | null>(null);
   const pathSlug = useMemo(() => {
     if (!pathname) return null;
@@ -79,25 +96,39 @@ export function DictionaryPageClient({ entries }: Props) {
   }, [pathname]);
 
   useEffect(() => {
-    setLiveEntries(entries);
-  }, [entries]);
-
-  useEffect(() => {
-    if (pathSlug) setCurrentSlug(pathSlug);
-  }, [pathSlug]);
-
-  useEffect(() => {
     if (disableLiveFetch) return;
     let cancelled = false;
-    fetchDictionaryIndex()
-      .then((fresh) => {
-        if (!cancelled) setLiveEntries(fresh.entries);
-      })
-      .catch(() => { });
+    const now = Date.now();
+    const cachedNow = getCachedDictionaryIndex();
+    const cachedFresh = cachedNow ? now - cachedNow.fetchedAt < DICTIONARY_CACHE_TTL_MS : false;
+    const run = () => {
+      fetchDictionaryIndex()
+        .then((fresh) => {
+          if (cancelled) return;
+          const fetchedAt = getLastDictionaryFetchAt() || Date.now();
+          setCachedDictionaryIndex(fresh, fetchedAt);
+          const currentUpdatedAt = getEntriesUpdatedAt(liveEntries);
+          const nextUpdatedAt = getEntriesUpdatedAt(fresh.entries);
+          const isSame = currentUpdatedAt === nextUpdatedAt && liveEntries.length === fresh.entries.length;
+          if (!isSame) setLiveEntriesOverride(fresh.entries);
+        })
+        .catch(() => { });
+    };
+    if (cachedFresh) {
+      const delay = Math.max(0, DICTIONARY_CACHE_TTL_MS - (now - (cachedNow?.fetchedAt ?? now)));
+      if (delay > 0) {
+        const id = setTimeout(run, delay);
+        return () => {
+          cancelled = true;
+          clearTimeout(id);
+        };
+      }
+    }
+    run();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [liveEntries]);
 
   const filtered = useMemo(() => filterDictionaryEntries(liveEntries, query, sort), [liveEntries, query, sort]);
 
@@ -148,10 +179,14 @@ export function DictionaryPageClient({ entries }: Props) {
     if (active?.index.id === entryIndex.id) return;
     const full = liveEntries.find((e) => e.index.id === entryIndex.id) || { index: entryIndex };
     if (full.data || disableLiveFetch) {
-      setActive(full as IndexedDictionaryEntry);
+      startTransition(() => {
+        setActive(full as IndexedDictionaryEntry);
+      });
       return;
     }
-    setLoadingEntryId(entryIndex.id);
+    startTransition(() => {
+      setLoadingEntryId(entryIndex.id);
+    });
     fetchDictionaryEntry(entryIndex.id)
       .then((data) => {
         setActive({ ...full, data });

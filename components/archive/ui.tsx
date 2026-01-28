@@ -5,6 +5,7 @@ import Link from "next/link";
 import React, { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { prefetchDictionaryEntryData } from "@/lib/archive";
 import { assetURL } from "@/lib/github";
 import { clsx } from "@/lib/utils/classNames";
 import { getAuthorIconURL, getAuthorName } from "@/lib/utils/authors";
@@ -12,6 +13,7 @@ import { getYouTubeEmbedURL } from "@/lib/utils/media";
 import { postToMarkdown } from "@/lib/utils/markdown";
 import { getSpecialTagMeta, sortTagsForDisplay } from "@/lib/utils/tagDisplay";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
+import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import {
   type Attachment,
   type Author,
@@ -328,7 +330,7 @@ function isArchivePostHref(href?: string) {
 }
 
 export function LinkWithTooltip(props: LinkWithTooltipProps) {
-  const { title, children, className, onInternalNavigate, href, ...rest } = props;
+  const { title, children, className, onInternalNavigate, href, onMouseEnter, onFocus, ...rest } = props;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (typeof window === "undefined") return;
@@ -344,6 +346,33 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
       // fall back to default navigation
     }
   };
+
+  const prefetchDictionaryForHref = () => {
+    if (typeof window === "undefined") return;
+    if (!href) return;
+    try {
+      const url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      let did = url.searchParams.get("did");
+      if (!did && url.pathname.startsWith("/dictionary/")) {
+        const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
+        did = getDictionaryIdFromSlug(decodeURIComponent(slug));
+      }
+      if (did) prefetchDictionaryEntryData(did);
+    } catch {
+      // ignore malformed hrefs
+    }
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    onMouseEnter?.(e);
+    prefetchDictionaryForHref();
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLAnchorElement>) => {
+    onFocus?.(e);
+    prefetchDictionaryForHref();
+  };
   const tooltip = title ? (
     <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
       {title}
@@ -355,11 +384,26 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
   return (
     <span className="group relative inline-block">
       {href && isArchivePostHref(href) ? (
-        <Link href={href} prefetch={false} onClick={handleClick} className={linkClassName} {...rest}>
+        <Link
+          href={href}
+          prefetch={false}
+          onClick={handleClick}
+          onMouseEnter={handleMouseEnter}
+          onFocus={handleFocus}
+          className={linkClassName}
+          {...rest}
+        >
           {children}
         </Link>
       ) : (
-        <a {...rest} href={href} onClick={handleClick} className={linkClassName}>
+        <a
+          {...rest}
+          href={href}
+          onClick={handleClick}
+          onMouseEnter={handleMouseEnter}
+          onFocus={handleFocus}
+          className={linkClassName}
+        >
           {children}
         </a>
       )}
@@ -446,6 +490,8 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
     <button
       type="button"
       onClick={() => onOpen(entry)}
+      onMouseEnter={() => prefetchDictionaryEntryData(entry.index.id)}
+      onFocus={() => prefetchDictionaryEntryData(entry.index.id)}
       className="group flex h-full w-full flex-col items-start rounded-2xl border bg-white text-left transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
     >
       <div className="p-4 text-left">
