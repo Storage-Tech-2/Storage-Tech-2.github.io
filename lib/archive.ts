@@ -30,6 +30,83 @@ export type DictionaryIndex = {
 };
 
 const archiveConfigCache = new Map<string, Promise<ArchiveConfigJSON | null>>();
+const ARCHIVE_CACHE_KEY = "archive-index-cache-v1";
+export const ARCHIVE_CACHE_TTL_MS = 2 * 60 * 1000;
+
+type ArchiveIndexCache = {
+  index: ArchiveIndex;
+  fetchedAt: number;
+  updatedAt: number;
+};
+
+let archiveIndexClientCache: ArchiveIndexCache | null = null;
+let archiveIndexPrefetchPromise: Promise<ArchiveIndex | null> | null = null;
+
+function getArchiveIndexUpdatedAt(index: ArchiveIndex): number {
+  const configUpdated = index.config.updatedAt ?? 0;
+  if (configUpdated) return configUpdated;
+  let maxEntryUpdated = 0;
+  for (const post of index.posts) {
+    const ts = getEntryUpdatedAt(post.entry);
+    if (typeof ts === "number" && ts > maxEntryUpdated) maxEntryUpdated = ts;
+  }
+  return maxEntryUpdated;
+}
+
+export function getCachedArchiveIndex(): ArchiveIndexCache | null {
+  if (archiveIndexClientCache) return archiveIndexClientCache;
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(ARCHIVE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ArchiveIndexCache;
+    if (!parsed?.index || !Array.isArray(parsed.index.posts)) return null;
+    const cache: ArchiveIndexCache = {
+      index: parsed.index,
+      fetchedAt: parsed.fetchedAt || Date.now(),
+      updatedAt: parsed.updatedAt ?? getArchiveIndexUpdatedAt(parsed.index),
+    };
+    archiveIndexClientCache = cache;
+    return cache;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedArchiveIndex(index: ArchiveIndex, fetchedAt = Date.now()): ArchiveIndexCache {
+  const cache: ArchiveIndexCache = {
+    index,
+    fetchedAt,
+    updatedAt: getArchiveIndexUpdatedAt(index),
+  };
+  archiveIndexClientCache = cache;
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.setItem(ARCHIVE_CACHE_KEY, JSON.stringify(cache));
+    } catch {
+      // ignore write failures
+    }
+  }
+  return cache;
+}
+
+export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promise<ArchiveIndex | null> {
+  const cached = getCachedArchiveIndex();
+  if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.index;
+  if (archiveIndexPrefetchPromise) return archiveIndexPrefetchPromise;
+  archiveIndexPrefetchPromise = (async () => {
+    try {
+      const idx = await fetchArchiveIndex();
+      setCachedArchiveIndex(idx);
+      return idx;
+    } catch {
+      return null;
+    } finally {
+      archiveIndexPrefetchPromise = null;
+    }
+  })();
+  return archiveIndexPrefetchPromise;
+}
 
 async function fetchArchiveConfig(): Promise<ArchiveConfigJSON | null> {
   if (typeof window !== "undefined") return null;
@@ -95,6 +172,7 @@ function persistentIndexToArchive(idx: PersistentIndex, archiveConfig?: ArchiveC
   }));
 
   const posts: ArchiveListItem[] = [];
+  let maxEntryUpdatedAt = 0;
   idx.channels.forEach((channel, i) => {
     const channelRef = channels[i];
     channel.entries.forEach((entry) => {
@@ -110,15 +188,18 @@ function persistentIndexToArchive(idx: PersistentIndex, archiveConfig?: ArchiveC
         path: entry.path,
         mainImagePath: entry.main_image_path
       };
+      const entryUpdatedAt = getEntryUpdatedAt(entryRef) ?? 0;
+      if (entryUpdatedAt > maxEntryUpdatedAt) maxEntryUpdatedAt = entryUpdatedAt;
       posts.push({ channel: channelRef, entry: entryRef, slug: buildEntrySlug(entryRef) });
     });
   });
 
   posts.sort((a, b) => (getEntryUpdatedAt(b.entry) ?? 0) - (getEntryUpdatedAt(a.entry) ?? 0));
 
+  const archiveUpdatedAt = Math.max(idx.updated_at ?? 0, maxEntryUpdatedAt);
   const config: ArchiveConfig = {
     postStyle: idx.schemaStyles || {},
-    updatedAt: idx.updated_at,
+    updatedAt: archiveUpdatedAt,
     allTags: tags,
     allAuthors: authors,
     allCategories: categories,

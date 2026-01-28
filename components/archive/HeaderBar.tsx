@@ -4,6 +4,7 @@ import Image from "next/image";
 import { clsx } from "@/lib/utils/classNames";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib/types";
 import Link from "next/link";
+import { prefetchArchiveIndex } from "@/lib/archive";
 
 type Props = {
   siteName: string;
@@ -99,6 +100,8 @@ export function HeaderBar({
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
               onClick={onArchiveClick}
+              onMouseEnter={() => prefetchArchiveIndex()}
+              onFocus={() => prefetchArchiveIndex()}
             >
               Archive
             </Link>
