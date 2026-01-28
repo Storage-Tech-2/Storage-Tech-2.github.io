@@ -1,4 +1,4 @@
-import { fetchArrayBufferRaw, fetchJSONRaw } from "./github";
+import { fetchArrayBufferRaw, fetchJSONRaw, getLastFetchTimestampForPath } from "./github";
 import {
   ArchiveComment,
   ArchiveConfig,
@@ -30,7 +30,6 @@ export type DictionaryIndex = {
 };
 
 const archiveConfigCache = new Map<string, Promise<ArchiveConfigJSON | null>>();
-const ARCHIVE_CACHE_KEY = "archive-index-cache-v1";
 export const ARCHIVE_CACHE_TTL_MS = 2 * 60 * 1000;
 
 type ArchiveIndexCache = {
@@ -41,6 +40,7 @@ type ArchiveIndexCache = {
 
 let archiveIndexClientCache: ArchiveIndexCache | null = null;
 let archiveIndexPrefetchPromise: Promise<ArchiveIndex | null> | null = null;
+let lastArchiveFetchAt = 0;
 
 function getArchiveIndexUpdatedAt(index: ArchiveIndex): number {
   const configUpdated = index.config.updatedAt ?? 0;
@@ -54,23 +54,7 @@ function getArchiveIndexUpdatedAt(index: ArchiveIndex): number {
 }
 
 export function getCachedArchiveIndex(): ArchiveIndexCache | null {
-  if (archiveIndexClientCache) return archiveIndexClientCache;
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.sessionStorage.getItem(ARCHIVE_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as ArchiveIndexCache;
-    if (!parsed?.index || !Array.isArray(parsed.index.posts)) return null;
-    const cache: ArchiveIndexCache = {
-      index: parsed.index,
-      fetchedAt: parsed.fetchedAt || Date.now(),
-      updatedAt: parsed.updatedAt ?? getArchiveIndexUpdatedAt(parsed.index),
-    };
-    archiveIndexClientCache = cache;
-    return cache;
-  } catch {
-    return null;
-  }
+  return archiveIndexClientCache;
 }
 
 export function setCachedArchiveIndex(index: ArchiveIndex, fetchedAt = Date.now()): ArchiveIndexCache {
@@ -80,14 +64,11 @@ export function setCachedArchiveIndex(index: ArchiveIndex, fetchedAt = Date.now(
     updatedAt: getArchiveIndexUpdatedAt(index),
   };
   archiveIndexClientCache = cache;
-  if (typeof window !== "undefined") {
-    try {
-      window.sessionStorage.setItem(ARCHIVE_CACHE_KEY, JSON.stringify(cache));
-    } catch {
-      // ignore write failures
-    }
-  }
   return cache;
+}
+
+export function getLastArchiveFetchAt() {
+  return lastArchiveFetchAt;
 }
 
 export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promise<ArchiveIndex | null> {
@@ -97,7 +78,8 @@ export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promis
   archiveIndexPrefetchPromise = (async () => {
     try {
       const idx = await fetchArchiveIndex();
-      setCachedArchiveIndex(idx);
+      const fetchedAt = getLastArchiveFetchAt() || Date.now();
+      setCachedArchiveIndex(idx, fetchedAt);
       return idx;
     } catch {
       return null;
@@ -214,6 +196,7 @@ export async function fetchArchiveIndex(): Promise<ArchiveIndex> {
   const cached = await readArchiveIndexCache();
   if (cached) return applyGlobalTagsToArchive(cached, archiveConfig);
   const buffer = await fetchArrayBufferRaw("persistent.idx");
+  lastArchiveFetchAt = getLastFetchTimestampForPath("persistent.idx") || Date.now();
   const idx = deserializePersistentIndex(buffer);
   return persistentIndexToArchive(idx, archiveConfig);
 }

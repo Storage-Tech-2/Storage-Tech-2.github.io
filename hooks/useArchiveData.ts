@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArchiveIndex, ArchiveListItem, ARCHIVE_CACHE_TTL_MS, fetchArchiveIndex, getCachedArchiveIndex, setCachedArchiveIndex } from "@/lib/archive";
+import { ArchiveIndex, ArchiveListItem, ARCHIVE_CACHE_TTL_MS, fetchArchiveIndex, getCachedArchiveIndex, getLastArchiveFetchAt, setCachedArchiveIndex } from "@/lib/archive";
 import { DEFAULT_GLOBAL_TAGS } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 
@@ -57,7 +57,8 @@ export function useArchiveData({ initial }: Options = {}) {
       try {
         const idx = await fetchArchiveIndex();
         if (cancelled) return;
-        setCachedArchiveIndex(idx);
+        const fetchedAt = getLastArchiveFetchAt() || Date.now();
+        setCachedArchiveIndex(idx, fetchedAt);
         const mergedConfig = {
           ...idx.config,
           globalTags: initial?.config?.globalTags?.length

@@ -10,6 +10,8 @@ export function getMediaURL(owner: string, repo: string, branch: string, path: s
   return `https://media.githubusercontent.com/media/${owner}/${repo}/refs/heads/${branch}/${safe}`;
 }
 
+const lastFetchTimestamps = new Map<string, number>();
+
 function joinAssetPath(channelPath: string, entryPath: string, rel: string) {
   return [channelPath, entryPath, rel].join("/").replace(/\/{2,}/g, "/").replace(/^\/+/, "");
 }
@@ -43,6 +45,8 @@ export async function fetchJSONRaw<T>(
   const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
   const res = await fetch(url, { cache });
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  const fetchedAt = Number(res.headers.get("x-st2-sw-fetched-at")) || Date.now();
+  lastFetchTimestamps.set(url, fetchedAt);
   return res.json();
 }
 
@@ -53,7 +57,14 @@ export async function fetchArrayBufferRaw(
   const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
   const res = await fetch(url, { cache });
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  const fetchedAt = Number(res.headers.get("x-st2-sw-fetched-at")) || Date.now();
+  lastFetchTimestamps.set(url, fetchedAt);
   return res.arrayBuffer();
+}
+
+export function getLastFetchTimestampForPath(path: string) {
+  const url = getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, path);
+  return lastFetchTimestamps.get(url) ?? 0;
 }
 
 export async function asyncPool<T, R>(limit: number, items: T[], fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
