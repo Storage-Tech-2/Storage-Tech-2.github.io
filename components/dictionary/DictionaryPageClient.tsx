@@ -1,7 +1,7 @@
 'use client';
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
@@ -19,12 +19,6 @@ import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
-import {
-  getDictionaryStateFromUrl,
-  readDictionarySession,
-  setDictionaryStateToUrl,
-  writeDictionarySession,
-} from "@/lib/urlState";
 import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
 type Props = {
@@ -37,8 +31,8 @@ const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
 export function DictionaryPageClient({ entries }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
-  const [committedQuery, setCommittedQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
   const activeIdRef = useRef<string | null>(null);
@@ -51,7 +45,6 @@ export function DictionaryPageClient({ entries }: Props) {
   const bootstrapEntries = preferCached && cachedEntries ? cachedEntries : entries;
   const [liveEntriesOverride, setLiveEntriesOverride] = useState<IndexedDictionaryEntry[] | null>(null);
   const liveEntries = liveEntriesOverride ?? bootstrapEntries;
-  const [currentSlug, setCurrentSlug] = useState<string | null>(null);
   const pathSlug = useMemo(() => {
     if (!pathname) return null;
     const match = pathname.match(/^\/dictionary\/(.+)$/);
@@ -60,41 +53,24 @@ export function DictionaryPageClient({ entries }: Props) {
   }, [pathname]);
 
   useEffect(() => {
-    const fromUrl = getDictionaryStateFromUrl(pathname);
-    const hasUrlState = fromUrl.committedQuery || fromUrl.sort !== "az" || !!fromUrl.slug;
-    const fromSession = hasUrlState ? null : readDictionarySession();
-    const next = fromSession
-      ? {
-        query: fromSession.query || "",
-        committedQuery: fromSession.committedQuery ?? fromSession.query ?? "",
-        sort: (fromSession.sort === "updated" ? "updated" : "az") as "az" | "updated",
-        slug: fromSession.slug ?? null,
-      }
-      : fromUrl;
-    startTransition(() => {
-      setQuery(next.query);
-      setCommittedQuery(next.committedQuery);
-      setSort(next.sort);
-      setCurrentSlug(next.slug ?? null);
-    });
     setInternalNavigationFlag();
-  }, [pathname]);
+  }, []);
+
+  const urlQuery = searchParams?.get("q") ?? "";
+  const urlSortParam = searchParams?.get("sort");
+  const urlSort = urlSortParam === "updated" ? "updated" : "az";
 
   useEffect(() => {
-    const handlePopState = () => {
-      const parsed = getDictionaryStateFromUrl(pathname);
-      startTransition(() => {
-        setQuery(parsed.query);
-        setCommittedQuery(parsed.committedQuery);
-        setSort(parsed.sort);
-        setCurrentSlug(parsed.slug ?? null);
-      });
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [pathname]);
+    startTransition(() => {
+      setQuery(urlQuery);
+    });
+  }, [urlQuery]);
+
+  useEffect(() => {
+    startTransition(() => {
+      setSort(urlSort);
+    });
+  }, [urlSort]);
 
   useEffect(() => {
     if (disableLiveFetch) return;
@@ -143,24 +119,6 @@ export function DictionaryPageClient({ entries }: Props) {
   }, [liveEntries]);
 
   useEffect(() => {
-    setDictionaryStateToUrl({
-      query,
-      committedQuery,
-      sort,
-      slug: currentSlug,
-    });
-  }, [committedQuery, sort, currentSlug, query]);
-
-  useEffect(() => {
-    writeDictionarySession({
-      query,
-      committedQuery,
-      sort,
-      slug: currentSlug,
-    });
-  }, [query, committedQuery, sort, currentSlug]);
-
-  useEffect(() => {
     if (typeof document === "undefined") return;
     const baseTitle = `Dictionary · ${siteConfig.siteName}`;
     if (active) {
@@ -177,10 +135,16 @@ export function DictionaryPageClient({ entries }: Props) {
 
   useEffect(() => {
     if (!pathSlug) {
+      setActive(null);
+      setLoadingEntryId(null);
       return;
     }
     const entryIndex = findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
-    if (!entryIndex) return;
+    if (!entryIndex) {
+      setActive(null);
+      setLoadingEntryId(null);
+      return;
+    }
     if (activeIdRef.current === entryIndex.id) return;
     const full = liveEntries.find((e) => e.index.id === entryIndex.id) || { index: entryIndex };
     if (full.data || disableLiveFetch) {
@@ -204,30 +168,31 @@ export function DictionaryPageClient({ entries }: Props) {
       });
   }, [pathSlug, liveEntries]);
 
+  const buildDictionaryUrl = (next?: { slug?: string | null; q?: string; sort?: "az" | "updated" }) => {
+    const slug = next && "slug" in next ? next.slug : pathSlug;
+    const q = (next && (next.q !== undefined) ? next.q : urlQuery).trim();
+    const nextSort = next && next.sort ? next.sort : urlSort;
+    const sp = new URLSearchParams();
+    if (q) sp.set("q", q);
+    if (nextSort !== "az") sp.set("sort", nextSort);
+    const base = slug ? `/dictionary/${encodeURIComponent(slug)}` : "/dictionary";
+    const queryString = sp.toString();
+    return queryString ? `${base}?${queryString}` : base;
+  };
+
   const openEntry = (ent: IndexedDictionaryEntry) => {
     const slug = buildDictionarySlug(ent.index);
-    setCurrentSlug(slug);
-    if (typeof window !== "undefined") {
-      const sp = new URLSearchParams(window.location.search);
-      const queryString = sp.toString();
-      const next = queryString ? `/dictionary/${encodeURIComponent(slug)}?${queryString}` : `/dictionary/${encodeURIComponent(slug)}`;
-      window.history.pushState(window.history.state, "", next);
-    }
-    if (ent.data || disableLiveFetch) {
-      setActive(ent);
-      return;
-    }
-    setLoadingEntryId(ent.index.id);
-    fetchDictionaryEntry(ent.index.id)
-      .then((data) => {
-        setActive({ ...ent, data });
-      })
-      .catch(() => {
-        setActive(ent);
-      })
-      .finally(() => {
-        setLoadingEntryId(null);
-      });
+    router.push(buildDictionaryUrl({ slug }));
+  };
+
+  const commitSearch = () => {
+    const nextQuery = query.trim();
+    router.replace(buildDictionaryUrl({ q: nextQuery }));
+  };
+
+  const updateSort = (nextSort: "az" | "updated") => {
+    setSort(nextSort);
+    router.replace(buildDictionaryUrl({ sort: nextSort }));
   };
 
   return (
@@ -244,9 +209,9 @@ export function DictionaryPageClient({ entries }: Props) {
         onSortChange={() => { }}
         dictionaryQuery={query}
         onDictionarySearchChange={setQuery}
-        onDictionarySearchCommit={() => setCommittedQuery(query)}
+        onDictionarySearchCommit={commitSearch}
         dictionarySort={sort}
-        onDictionarySortChange={setSort}
+        onDictionarySortChange={updateSort}
         onArchiveClick={() => router.push("/archives")}
         onDictionaryClick={() => { }}
       />
@@ -269,18 +234,9 @@ export function DictionaryPageClient({ entries }: Props) {
         <DictionaryModal
           entry={active}
           onClose={() => {
+            router.replace(buildDictionaryUrl({ slug: null }));
             setActive(null);
-            setCurrentSlug(null);
-            if (typeof window !== "undefined") {
-              const sp = new URLSearchParams(window.location.search);
-              const queryString = sp.toString();
-              const next = queryString ? `/dictionary?${queryString}` : "/dictionary";
-              if (pathSlug) {
-                router.replace(next);
-              } else {
-                window.history.replaceState(window.history.state, "", next);
-              }
-            }
+            setLoadingEntryId(null);
           }}
           dictionaryTooltips={dictionaryTooltips}
         />
