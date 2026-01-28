@@ -331,7 +331,11 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
                   key={img.id}
                   type="button"
                   onClick={() => setActiveImageIndex(index)}
-                  className={`relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
+                  className={`relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border ${
+                    index === activeImageIndex
+                      ? "border-blue-500 dark:border-blue-400"
+                      : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
+                  }`}
                   title={img.description || img.name}
                 >
                   <Image src={img.path || img.url} alt={img.description || img.name} fill className="object-contain" sizes="112px" unoptimized />
@@ -590,7 +594,11 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
                       setActiveImageIndex(index);
                       setLightbox({ src: img.path || img.url, alt: img.description || img.name, index, mode: "gallery" });
                     }}
-                    className={`relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border ${index === activeImageIndex ? "border-blue-500" : "border-transparent"}`}
+                    className={`relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border ${
+                      index === activeImageIndex
+                        ? "border-blue-400"
+                        : "border-white/10 hover:border-white/40"
+                    }`}
                     title={img.description || img.name}
                   >
                     <Image src={img.path || img.url} alt={img.description || img.name} fill className="object-contain" sizes="112px" unoptimized />

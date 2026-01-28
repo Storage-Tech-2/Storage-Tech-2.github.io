@@ -1,16 +1,22 @@
 @import "tailwindcss";
 
-*,:before,:after {
-    box-sizing: border-box;
-    border-style: solid;
-    border-color: #e5e7eb;
+:root {
+  --default-border: #e5e7eb;
 }
 
 /* dark theme border color */
 @media (prefers-color-scheme: dark) {
-    *,:before,:after {
-        border-color: #374151;
-    }
+  :root {
+    --default-border: #374151;
+  }
+}
+
+@layer base {
+  *,:before,:after {
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: var(--default-border);
+  }
 }
 
 ::selection {
