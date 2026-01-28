@@ -10,12 +10,12 @@ import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { Footer } from "@/components/layout/Footer";
 import {
   buildEntrySlug,
-  fetchPostData,
   findPostBySlug,
   type ArchiveListItem,
   prefetchDictionaryEntryData,
   prefetchArchiveIndex,
   prefetchDictionaryIndex,
+  prefetchArchiveEntryData,
 } from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { siteConfig } from "@/lib/siteConfig";
@@ -121,7 +121,7 @@ export default function NotFound() {
             return;
           }
           const [postData, dictionaryEntries] = await Promise.all([
-            fetchPostData(found.channel.path, found.entry),
+            prefetchArchiveEntryData(found),
             ensureDictionaryIndex(),
           ]);
           if (cancelled) return;

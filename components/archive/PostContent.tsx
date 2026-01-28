@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
 import { RelativeTime } from "./RelativeTime";
-import { fetchCommentsData, fetchDictionaryEntry, fetchPostData } from "@/lib/archive";
+import { fetchCommentsData, fetchDictionaryEntry, prefetchArchiveEntryData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { assetURL, attachmentURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
@@ -51,7 +51,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   useEffect(() => {
     if (disableLiveFetch) return;
     let cancelled = false;
-    fetchPostData(post.channel.path, post.entry)
+    prefetchArchiveEntryData(post)
       .then((fresh) => {
         if (!cancelled) setLiveState(fresh);
       })
@@ -59,7 +59,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     return () => {
       cancelled = true;
     };
-  }, [post.channel.path, post.entry, setLiveState]);
+  }, [post, setLiveState]);
 
   useEffect(() => {
     if (disableLiveFetch) {
