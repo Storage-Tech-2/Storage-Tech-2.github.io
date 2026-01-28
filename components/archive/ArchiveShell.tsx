@@ -56,6 +56,7 @@ export function ArchiveShell({
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const sidebarShellRef = useRef<HTMLElement | null>(null);
+  const skipUrlSyncRef = useRef(true);
   useEffect(() => {
     const hasUrlState = (state: ReturnType<typeof getArchiveFiltersFromUrl>) =>
       state.committedQ ||
@@ -153,6 +154,7 @@ export function ArchiveShell({
   }, [clientReady]);
 
   useEffect(() => {
+    if (skipUrlSyncRef.current) return;
     setArchiveFiltersToUrl({
       q,
       committedQ,
@@ -165,6 +167,7 @@ export function ArchiveShell({
   }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q]);
 
   useEffect(() => {
+    if (skipUrlSyncRef.current) return;
     if (typeof window === "undefined") return;
     writeArchiveSession({
       q,
@@ -176,6 +179,10 @@ export function ArchiveShell({
       sortKey,
     });
   }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey]);
+
+  useEffect(() => {
+    skipUrlSyncRef.current = false;
+  }, []);
 
   const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
   const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);

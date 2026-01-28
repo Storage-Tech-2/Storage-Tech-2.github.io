@@ -36,7 +36,6 @@ export function DictionaryPageClient({ entries }: Props) {
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
   const activeIdRef = useRef<string | null>(null);
-  const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
   const entriesUpdatedAt = getEntriesUpdatedAt(entries);
   const cached = getCachedDictionaryIndex();
   const cachedEntries = cached?.index.entries ?? null;
@@ -56,6 +55,11 @@ export function DictionaryPageClient({ entries }: Props) {
     return findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
   }, [pathSlug, liveEntries]);
   const activeMatchesSlug = !!active && !!slugEntryIndex && active.index.id === slugEntryIndex.id;
+  const slugEntry = useMemo(() => {
+    if (!slugEntryIndex) return null;
+    return liveEntries.find((entry) => entry.index.id === slugEntryIndex.id) || { index: slugEntryIndex };
+  }, [slugEntryIndex, liveEntries]);
+  const modalEntry = activeMatchesSlug && active ? active : slugEntry;
 
   useEffect(() => {
     setInternalNavigationFlag();
@@ -148,9 +152,6 @@ export function DictionaryPageClient({ entries }: Props) {
       });
       return;
     }
-    startTransition(() => {
-      setLoadingEntryId(slugEntryIndex.id);
-    });
     fetchDictionaryEntry(slugEntryIndex.id)
       .then((data) => {
         setActive({ ...full, data });
@@ -158,9 +159,6 @@ export function DictionaryPageClient({ entries }: Props) {
       .catch(() => {
         setActive(full as IndexedDictionaryEntry);
       })
-      .finally(() => {
-        setLoadingEntryId(null);
-      });
   }, [slugEntryIndex, liveEntries]);
 
   const buildDictionaryUrl = (next?: { slug?: string | null; q?: string; sort?: "az" | "updated" }) => {
@@ -177,7 +175,7 @@ export function DictionaryPageClient({ entries }: Props) {
 
   const openEntry = (ent: IndexedDictionaryEntry) => {
     const slug = buildDictionarySlug(ent.index);
-    router.push(buildDictionaryUrl({ slug }));
+    router.push(buildDictionaryUrl({ slug }), { scroll: false });
   };
 
   const handleInternalLink = (url: URL) => {
@@ -192,7 +190,7 @@ export function DictionaryPageClient({ entries }: Props) {
         // ignore malformed slugs
       }
     }
-    router.push(buildDictionaryUrl({ slug: slug || null }));
+    router.push(buildDictionaryUrl({ slug: slug || null }), { scroll: false });
     return true;
   };
 
@@ -241,18 +239,16 @@ export function DictionaryPageClient({ entries }: Props) {
         </div>
       </main>
 
-      {activeMatchesSlug ? (
+      {modalEntry ? (
         <DictionaryModal
-          entry={active}
+          entry={modalEntry}
           onClose={() => {
             //setActive(null);
-            router.replace(buildDictionaryUrl({ slug: null }));
+            router.replace(buildDictionaryUrl({ slug: null }), { scroll: false });
           }}
           dictionaryTooltips={dictionaryTooltips}
           onInternalLink={handleInternalLink}
         />
-      ) : slugEntryIndex && loadingEntryId === slugEntryIndex.id ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 text-sm text-white">Loading term…</div>
       ) : null}
       <Footer />
     </div>
