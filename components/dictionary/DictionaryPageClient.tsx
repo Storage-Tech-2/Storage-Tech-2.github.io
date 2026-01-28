@@ -180,6 +180,22 @@ export function DictionaryPageClient({ entries }: Props) {
     router.push(buildDictionaryUrl({ slug }));
   };
 
+  const handleInternalLink = (url: URL) => {
+    if (typeof window === "undefined") return false;
+    if (url.origin !== window.location.origin) return false;
+    if (!url.pathname.startsWith("/dictionary")) return false;
+    let slug = url.pathname.replace(/^\/dictionary\/?/, "").replace(/\/+$/, "");
+    if (slug) {
+      try {
+        slug = decodeURIComponent(slug);
+      } catch {
+        // ignore malformed slugs
+      }
+    }
+    router.push(buildDictionaryUrl({ slug: slug || null }));
+    return true;
+  };
+
   const commitSearch = () => {
     const nextQuery = query.trim();
     router.replace(buildDictionaryUrl({ q: nextQuery }));
@@ -229,10 +245,11 @@ export function DictionaryPageClient({ entries }: Props) {
         <DictionaryModal
           entry={active}
           onClose={() => {
-            setActive(null);
+            //setActive(null);
             router.replace(buildDictionaryUrl({ slug: null }));
           }}
           dictionaryTooltips={dictionaryTooltips}
+          onInternalLink={handleInternalLink}
         />
       ) : slugEntryIndex && loadingEntryId === slugEntryIndex.id ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 text-sm text-white">Loading term…</div>
