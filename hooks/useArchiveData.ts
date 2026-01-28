@@ -94,7 +94,7 @@ export function useArchiveData({ initial }: Options = {}) {
     return () => {
       cancelled = true;
     };
-  }, [initial]);
+  }, [channels.length, config?.updatedAt, initial, posts.length, preferCached]);
 
 
   return { config, channels, posts, loading, error };

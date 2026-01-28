@@ -31,6 +31,8 @@ type Props = {
   pageCount?: number;
 };
 
+let hasHydratedArchiveShell = false;
+
 export function ArchiveShell({
   initialArchive,
   pageNumber = 0,
@@ -109,11 +111,13 @@ export function ArchiveShell({
 
   const pendingScrollRef = useRef<number | null>(null);
 
-  const [clientReady, setClientReady] = useState(false);
+  const [clientReady, setClientReady] = useState(hasHydratedArchiveShell);
   useEffect(() => {
+    hasHydratedArchiveShell = true;
+    if (clientReady) return;
     const id = requestAnimationFrame(() => setClientReady(true));
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [clientReady]);
   const commitSearch = () => setCommittedQ(q);
  
   useEffect(() => {
