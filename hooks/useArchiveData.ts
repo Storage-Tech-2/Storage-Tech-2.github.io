@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ArchiveIndex, ArchiveListItem, ARCHIVE_CACHE_TTL_MS, fetchArchiveIndex, getCachedArchiveIndex, getLastArchiveFetchAt, setCachedArchiveIndex } from "@/lib/archive";
+import { ArchiveIndex, ArchiveListItem, fetchArchiveIndex, getCachedArchiveIndex, getLastArchiveFetchAt, setCachedArchiveIndex } from "@/lib/archive";
+import { ARCHIVE_CACHE_TTL_MS } from "@/lib/cacheConstants";
 import { DEFAULT_GLOBAL_TAGS } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 

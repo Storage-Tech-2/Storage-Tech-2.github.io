@@ -1,8 +1,11 @@
-/* Service worker for caching archive index assets with stale-while-revalidate. */
 const CACHE_VERSION = "v1";
 const INDEX_CACHE = `st2-archive-index-${CACHE_VERSION}`;
 const META_CACHE = `st2-archive-index-meta-${CACHE_VERSION}`;
-const TTL_MS = 10 * 60 * 1000;
+// __CACHE_CONSTANTS_START__
+const INDEX_TTL_MS = 300000;
+const ENTRY_TTL_MS = 1800000;
+const DICTIONARY_ENTRY_TTL_MS = 3600000;
+// __CACHE_CONSTANTS_END__
 
 const INDEX_SUFFIXES = [
   "/persistent.idx",
@@ -42,6 +45,13 @@ function shouldHandle(url) {
   return false;
 }
 
+function getTTLForPath(path) {
+  if (path.includes(DICTIONARY_ENTRY_SEGMENT) && path.endsWith(".json")) return DICTIONARY_ENTRY_TTL_MS;
+  if (ENTRY_SUFFIXES.some((suffix) => path.endsWith(suffix))) return ENTRY_TTL_MS;
+  if (INDEX_SUFFIXES.some((suffix) => path.endsWith(suffix))) return INDEX_TTL_MS;
+  return INDEX_TTL_MS;
+}
+
 function metaRequest(request) {
   const base = (self.registration && self.registration.scope) ? self.registration.scope : `${self.location.origin}/`;
   const url = new URL("__sw-meta__", base);
@@ -61,17 +71,17 @@ async function setMetaTimestamp(metaCache, request, timestamp) {
   await metaCache.put(metaRequest(request), new Response(String(timestamp)));
 }
 
-async function updateCache(request, cache, metaCache) {
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      await cache.put(request, response.clone());
-      await setMetaTimestamp(metaCache, request, Date.now());
-    }
-  } catch {
-    // ignore update failures
-  }
-}
+// async function updateCache(request, cache, metaCache) {
+//   try {
+//     const response = await fetch(request);
+//     if (response && response.ok) {
+//       await cache.put(request, response.clone());
+//       await setMetaTimestamp(metaCache, request, Date.now());
+//     }
+//   } catch {
+//     // ignore update failures
+//   }
+// }
 
 async function withFetchedAtHeader(response, fetchedAt) {
   if (!response || response.type === "opaque") return response;
@@ -98,9 +108,10 @@ self.addEventListener("fetch", (event) => {
     const cached = await cache.match(request);
     const fetchedAt = cached ? await getMetaTimestamp(metaCache, request) : 0;
     const age = fetchedAt ? Date.now() - fetchedAt : Number.POSITIVE_INFINITY;
+    const ttlMs = getTTLForPath(url.pathname);
 
-    if (cached && age < TTL_MS) {
-      event.waitUntil(updateCache(request, cache, metaCache));
+    if (cached && age < ttlMs) {
+      // event.waitUntil(updateCache(request, cache, metaCache));
       return withFetchedAtHeader(cached, fetchedAt);
     }
 

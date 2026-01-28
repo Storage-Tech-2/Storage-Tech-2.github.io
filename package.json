@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "images": "tsx scripts/prefetch-previews.ts",
-    "build": "next build",
+    "build": "tsx scripts/build-sw.ts && next build",
+    "clean": "tsx scripts/clean.ts",
     "start": "next start",
     "lint": "eslint"
   },

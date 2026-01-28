@@ -7,13 +7,13 @@ import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import {
-  DICTIONARY_CACHE_TTL_MS,
   fetchDictionaryEntry,
   fetchDictionaryIndex,
   getCachedDictionaryIndex,
   getLastDictionaryFetchAt,
   setCachedDictionaryIndex,
 } from "@/lib/archive";
+import { DICTIONARY_CACHE_TTL_MS } from "@/lib/cacheConstants";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";

@@ -5,7 +5,7 @@ import Link from "next/link";
 import React, { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { prefetchDictionaryEntryData } from "@/lib/archive";
+import { prefetchArchiveIndex, prefetchDictionaryEntryData } from "@/lib/archive";
 import { assetURL } from "@/lib/github";
 import { clsx } from "@/lib/utils/classNames";
 import { getAuthorIconURL, getAuthorName } from "@/lib/utils/authors";
@@ -492,6 +492,7 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
       onClick={() => onOpen(entry)}
       onMouseEnter={() => prefetchDictionaryEntryData(entry.index.id)}
       onFocus={() => prefetchDictionaryEntryData(entry.index.id)}
+      onPointerEnter={() => prefetchArchiveIndex()}
       className="group flex h-full w-full flex-col items-start rounded-2xl border bg-white text-left transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
     >
       <div className="p-4 text-left">

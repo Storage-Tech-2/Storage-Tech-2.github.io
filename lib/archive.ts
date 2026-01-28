@@ -16,6 +16,13 @@ import {
 } from "./types";
 import { deserializePersistentIndex, type PersistentIndex } from "./utils/persistentIndex";
 import { disableLiveFetch } from "./runtimeFlags";
+import {
+  ARCHIVE_CACHE_TTL_MS,
+  DICTIONARY_CACHE_TTL_MS,
+  DICTIONARY_PREFETCH_MAX,
+  ENTRY_PREFETCH_MAX,
+  ENTRY_PREFETCH_TTL_MS,
+} from "./cacheConstants";
 
 export type ArchiveListItem = IndexedPost & { slug: string };
 
@@ -31,8 +38,6 @@ export type DictionaryIndex = {
 };
 
 const archiveConfigCache = new Map<string, Promise<ArchiveConfigJSON | null>>();
-export const ARCHIVE_CACHE_TTL_MS = 2 * 60 * 1000;
-export const DICTIONARY_CACHE_TTL_MS = 2 * 60 * 1000;
 
 type ArchiveIndexCache = {
   index: ArchiveIndex;
@@ -269,7 +274,24 @@ const archiveIndexCache = new Map<string, Promise<ArchiveIndex>>();
 const postPayloadCache = new Map<string, Promise<ArchiveEntryData>>();
 const entryPrefetchCache = new Map<string, { promise: Promise<ArchiveEntryData | null>; fetchedAt: number }>();
 const dictionaryPrefetchCache = new Map<string, { promise: Promise<DictionaryEntry | null>; fetchedAt: number }>();
-const ENTRY_PREFETCH_TTL_MS = 10 * 60 * 1000;
+
+function prunePrefetchCache<T>(
+  cache: Map<string, { promise: Promise<T | null>; fetchedAt: number }>,
+  maxSize: number,
+  ttlMs: number,
+) {
+  if (cache.size === 0) return;
+  const now = Date.now();
+  for (const [key, value] of cache.entries()) {
+    if (now - value.fetchedAt > ttlMs) cache.delete(key);
+  }
+  if (cache.size <= maxSize) return;
+  const overflow = cache.size - maxSize;
+  const entries = Array.from(cache.entries()).sort((a, b) => a[1].fetchedAt - b[1].fetchedAt);
+  for (let i = 0; i < overflow; i += 1) {
+    cache.delete(entries[i][0]);
+  }
+}
 
 export async function fetchPostData(
   channelPath: string,
@@ -285,6 +307,7 @@ export function prefetchArchiveEntryData(
 ): Promise<ArchiveEntryData | null> {
   if (disableLiveFetch) return Promise.resolve(null);
   const path = `${post.channel.path}/${post.entry.path}/data.json`;
+  prunePrefetchCache(entryPrefetchCache, ENTRY_PREFETCH_MAX, ttlMs);
   const cached = entryPrefetchCache.get(path);
   if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.promise;
   const promise = fetchPostData(post.channel.path, post.entry)
@@ -419,6 +442,7 @@ export function prefetchDictionaryEntryData(
   if (disableLiveFetch) return Promise.resolve(null);
   const key = id.trim();
   if (!key) return Promise.resolve(null);
+  prunePrefetchCache(dictionaryPrefetchCache, DICTIONARY_PREFETCH_MAX, ttlMs);
   const cached = dictionaryPrefetchCache.get(key);
   if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.promise;
   const promise = fetchDictionaryEntry(key)

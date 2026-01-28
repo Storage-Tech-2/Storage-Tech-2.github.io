@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChannelBadge, MarkdownText } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { fetchArchiveIndex, prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
+import { fetchArchiveIndex, getCachedArchiveIndex, prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import Link from "next/link";
@@ -21,25 +21,44 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
   const decorated = entry.data
     ? transformOutputWithReferencesForWebsite(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id])
     : "";
-  const [referencedBy, setReferencedBy] = useState<Array<{ code: string; post?: ArchiveListItem }>>([]);
+  const referencedCodes = useMemo(
+    () => (entry.data as { referencedBy?: string[] } | undefined)?.referencedBy || [],
+    [entry],
+  );
+  const cachedArchive = getCachedArchiveIndex()?.index ?? null;
+  const referencedByFromCache = useMemo(() => {
+    if (!referencedCodes.length || !cachedArchive) return [];
+    const byCode = new Map(cachedArchive.posts.map((post) => [post.entry.codes[0], post]));
+    return referencedCodes.map((code) => ({ code, post: byCode.get(code) }));
+  }, [cachedArchive, referencedCodes]);
+  const [referencedByLive, setReferencedByLive] = useState<{
+    key: string;
+    items: Array<{ code: string; post?: ArchiveListItem }>;
+  } | null>(null);
+  const referencedBy = referencedByLive?.key === entry.index.id
+    ? referencedByLive.items
+    : referencedByFromCache;
+  const referencedByResolved = referencedByLive?.key === entry.index.id;
   const isInline = variant === "inline";
 
   useEffect(() => {
     if (disableLiveFetch) return;
-    const referencedCodes = (entry.data as { referencedBy?: string[] } | undefined)?.referencedBy;
-    if (!referencedCodes?.length) return;
+    if (!referencedCodes.length) return;
     let cancelled = false;
     fetchArchiveIndex()
       .then((archive) => {
         if (cancelled) return;
         const byCode = new Map(archive.posts.map((post) => [post.entry.codes[0], post]));
-        setReferencedBy(referencedCodes.map((code) => ({ code, post: byCode.get(code) })));
+        setReferencedByLive({
+          key: entry.index.id,
+          items: referencedCodes.map((code) => ({ code, post: byCode.get(code) })),
+        });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [entry]);
+  }, [entry, referencedCodes]);
 
   const content = (
     <article
@@ -78,44 +97,54 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
                 <MarkdownText text={decorated} onInternalLink={onInternalLink} />
               </div>
             ) : null}
-            {referencedBy.length > 0 ? (
+            {referencedCodes.length > 0 ? (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Referenced By</h4>
-                <div className="space-y-2">
-                  {referencedBy.map(({ code, post }) => {
-                    if (!post) {
-                      return (
-                        <div key={code} className="flex items-center justify-between rounded-lg border px-3 py-2 dark:border-gray-800">
-                          <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">{code}</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Not found in archive</span>
-                        </div>
-                      );
-                    }
-                    const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
-                    return (
-                      <Link
-                        key={code}
-                        prefetch={false}
-                        href={`/archives/${post.slug}`}
-                        className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
-                        onMouseEnter={() => prefetchArchiveEntryData(post)}
-                        onFocus={() => prefetchArchiveEntryData(post)}
-                      >
-                        <div className="space-y-1">
-                          <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                            <ChannelBadge ch={post.channel} />
-                            <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                              {post.entry.codes[0]}
-                            </span>
-                            {updated !== undefined ? <RelativeTime ts={updated} /> : null}
+                {referencedBy.length > 0 ? (
+                  <div className="space-y-2">
+                    {referencedBy.map(({ code, post }) => {
+                      if (!post) {
+                        return (
+                          <div key={code} className="flex items-center justify-between rounded-lg border px-3 py-2 dark:border-gray-800">
+                            <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">{code}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Not found in archive</span>
                           </div>
-                        </div>
-                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                        );
+                      }
+                      const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
+                      return (
+                        <Link
+                          key={code}
+                          prefetch={false}
+                          href={`/archives/${post.slug}`}
+                          className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
+                          onMouseEnter={() => prefetchArchiveEntryData(post)}
+                          onFocus={() => prefetchArchiveEntryData(post)}
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                              <ChannelBadge ch={post.channel} />
+                              <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                {post.entry.codes[0]}
+                              </span>
+                              {updated !== undefined ? <RelativeTime ts={updated} /> : null}
+                            </div>
+                          </div>
+                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : referencedByResolved ? (
+                  <div className="rounded-lg border px-3 py-2 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                    No referenced posts found.
+                  </div>
+                ) : (
+                  <div className="rounded-lg border px-3 py-2 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                    Loading referenced posts…
+                  </div>
+                )}
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">
