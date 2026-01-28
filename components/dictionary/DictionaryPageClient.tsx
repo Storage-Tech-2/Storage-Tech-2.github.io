@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { DictionaryCard } from "@/components/archive/ui";
@@ -41,6 +41,7 @@ export function DictionaryPageClient({ entries }: Props) {
   const [committedQuery, setCommittedQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
+  const activeIdRef = useRef<string | null>(null);
   const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
   const entriesUpdatedAt = getEntriesUpdatedAt(entries);
   const cached = getCachedDictionaryIndex();
@@ -171,12 +172,16 @@ export function DictionaryPageClient({ entries }: Props) {
   }, [active]);
 
   useEffect(() => {
+    activeIdRef.current = active?.index.id ?? null;
+  }, [active]);
+
+  useEffect(() => {
     if (!pathSlug) {
       return;
     }
     const entryIndex = findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
     if (!entryIndex) return;
-    if (active?.index.id === entryIndex.id) return;
+    if (activeIdRef.current === entryIndex.id) return;
     const full = liveEntries.find((e) => e.index.id === entryIndex.id) || { index: entryIndex };
     if (full.data || disableLiveFetch) {
       startTransition(() => {
@@ -197,7 +202,7 @@ export function DictionaryPageClient({ entries }: Props) {
       .finally(() => {
         setLoadingEntryId(null);
       });
-  }, [pathSlug, liveEntries, active]);
+  }, [pathSlug, liveEntries]);
 
   const openEntry = (ent: IndexedDictionaryEntry) => {
     const slug = buildDictionarySlug(ent.index);
@@ -206,7 +211,7 @@ export function DictionaryPageClient({ entries }: Props) {
       const sp = new URLSearchParams(window.location.search);
       const queryString = sp.toString();
       const next = queryString ? `/dictionary/${encodeURIComponent(slug)}?${queryString}` : `/dictionary/${encodeURIComponent(slug)}`;
-      window.history.replaceState(window.history.state, "", next);
+      window.history.pushState(window.history.state, "", next);
     }
     if (ent.data || disableLiveFetch) {
       setActive(ent);
