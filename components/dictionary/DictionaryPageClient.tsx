@@ -7,10 +7,11 @@ import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import {
-  fetchDictionaryEntry,
-  fetchDictionaryIndex,
   getCachedDictionaryIndex,
   getLastDictionaryFetchAt,
+  prefetchArchiveIndex,
+  prefetchDictionaryEntryData,
+  prefetchDictionaryIndex,
   setCachedDictionaryIndex,
 } from "@/lib/archive";
 import { DICTIONARY_CACHE_TTL_MS } from "@/lib/cacheConstants";
@@ -65,6 +66,11 @@ export function DictionaryPageClient({ entries }: Props) {
     setInternalNavigationFlag();
   }, []);
 
+  useEffect(() => {
+    if (disableLiveFetch) return;
+    prefetchArchiveIndex();
+  }, []);
+
   const urlQuery = searchParams?.get("q") ?? "";
   const urlSortParam = searchParams?.get("sort");
   const urlSort = urlSortParam === "updated" ? "updated" : "az";
@@ -88,9 +94,9 @@ export function DictionaryPageClient({ entries }: Props) {
     const cachedNow = getCachedDictionaryIndex();
     const cachedFresh = cachedNow ? now - cachedNow.fetchedAt < DICTIONARY_CACHE_TTL_MS : false;
     const run = () => {
-      fetchDictionaryIndex()
+      prefetchDictionaryIndex()
         .then((fresh) => {
-          if (cancelled) return;
+          if (cancelled || !fresh) return;
           const fetchedAt = getLastDictionaryFetchAt() || Date.now();
           setCachedDictionaryIndex(fresh, fetchedAt);
           const currentUpdatedAt = getEntriesUpdatedAt(liveEntries);
@@ -152,13 +158,14 @@ export function DictionaryPageClient({ entries }: Props) {
       });
       return;
     }
-    fetchDictionaryEntry(slugEntryIndex.id)
+    prefetchDictionaryEntryData(slugEntryIndex.id)
       .then((data) => {
-        setActive({ ...full, data });
-      })
-      .catch(() => {
-        setActive(full as IndexedDictionaryEntry);
-      })
+        if (data) {
+          setActive({ ...full, data });
+        } else {
+          setActive(full as IndexedDictionaryEntry);
+        }
+      });
   }, [slugEntryIndex, liveEntries]);
 
   const buildDictionaryUrl = (next?: { slug?: string | null; q?: string; sort?: "az" | "updated" }) => {

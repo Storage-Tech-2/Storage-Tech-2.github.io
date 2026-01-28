@@ -10,12 +10,12 @@ import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { Footer } from "@/components/layout/Footer";
 import {
   buildEntrySlug,
-  fetchArchiveIndex,
-  fetchDictionaryIndex,
-  fetchDictionaryEntry,
   fetchPostData,
   findPostBySlug,
   type ArchiveListItem,
+  prefetchDictionaryEntryData,
+  prefetchArchiveIndex,
+  prefetchDictionaryIndex,
 } from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { siteConfig } from "@/lib/siteConfig";
@@ -97,7 +97,8 @@ export default function NotFound() {
     const ensureDictionaryIndex = async () => {
       if (dictionaryIndexRef.current) return dictionaryIndexRef.current;
       if (inflightDictionaryRef.current) return inflightDictionaryRef.current;
-      const promise = fetchDictionaryIndex().then((dictionary) => {
+      const promise = prefetchDictionaryIndex().then((dictionary) => {
+        if (!dictionary) throw new Error("Failed to load dictionary index");
         dictionaryIndexRef.current = dictionary.entries;
         return dictionary.entries;
       });
@@ -112,8 +113,8 @@ export default function NotFound() {
     async function run() {
       try {
         if (kind === "archive") {
-          const archive = await fetchArchiveIndex();
-          if (cancelled || !slug) return;
+          const archive = await prefetchArchiveIndex();
+          if (cancelled || !slug || !archive) return;
           const found = findPostBySlug(archive.posts, slug);
           if (!found) {
             setError("We could not find this entry in the archive.");
@@ -155,9 +156,9 @@ export default function NotFound() {
             if (summary) tooltipMap[entry.index.id] = summary;
           });
           setDictionaryTooltips(tooltipMap);
-          let entryData: Awaited<ReturnType<typeof fetchDictionaryEntry>> | null = null;
+          let entryData: Awaited<ReturnType<typeof prefetchDictionaryEntryData>> | null = null;
           try {
-            entryData = await fetchDictionaryEntry(entryIndex.id);
+            entryData = await prefetchDictionaryEntryData(entryIndex.id);
           } catch {
             // ignore and fallback to index-only entry
           }

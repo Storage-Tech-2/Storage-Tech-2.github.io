@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChannelBadge, MarkdownText } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { fetchArchiveIndex, getCachedArchiveIndex, prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
+import { getCachedArchiveIndex, prefetchArchiveEntryData, prefetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import Link from "next/link";
@@ -45,9 +45,9 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
     if (disableLiveFetch) return;
     if (!referencedCodes.length) return;
     let cancelled = false;
-    fetchArchiveIndex()
+    prefetchArchiveIndex()
       .then((archive) => {
-        if (cancelled) return;
+        if (cancelled || !archive) return;
         const byCode = new Map(archive.posts.map((post) => [post.entry.codes[0], post]));
         setReferencedByLive({
           key: entry.index.id,

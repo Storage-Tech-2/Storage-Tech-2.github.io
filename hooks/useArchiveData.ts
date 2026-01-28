@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArchiveIndex, ArchiveListItem, fetchArchiveIndex, getCachedArchiveIndex, getLastArchiveFetchAt, setCachedArchiveIndex } from "@/lib/archive";
+import { ArchiveIndex, ArchiveListItem, getCachedArchiveIndex, getLastArchiveFetchAt, prefetchArchiveIndex, setCachedArchiveIndex } from "@/lib/archive";
 import { ARCHIVE_CACHE_TTL_MS } from "@/lib/cacheConstants";
 import { DEFAULT_GLOBAL_TAGS } from "@/lib/types";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
@@ -56,7 +56,8 @@ export function useArchiveData({ initial }: Options = {}) {
         setLoading((prev) => prev || !posts.length);
       }
       try {
-        const idx = await fetchArchiveIndex();
+        const idx = await prefetchArchiveIndex();
+        if (!idx) throw new Error("Failed to load archive index");
         if (cancelled) return;
         const fetchedAt = getLastArchiveFetchAt() || Date.now();
         setCachedArchiveIndex(idx, fetchedAt);

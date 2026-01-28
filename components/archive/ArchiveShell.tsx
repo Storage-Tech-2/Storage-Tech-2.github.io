@@ -1,7 +1,7 @@
 'use client';
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ArchiveFilters } from "./ArchiveFilters";
 import { TagChip } from "./ui";
 import { HeaderBar } from "./HeaderBar";
@@ -40,6 +40,7 @@ export function ArchiveShell({
   pageCount,
 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const { posts, channels, error } = useArchiveData({ initial: initialArchive });
   const globalTags = useMemo<GlobalTag[]>(
     () => initialArchive.config.globalTags?.length ? initialArchive.config.globalTags : DEFAULT_GLOBAL_TAGS,
@@ -122,9 +123,6 @@ export function ArchiveShell({
   const commitSearch = () => setCommittedQ(q);
  
   useEffect(() => {
-    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
     const captureScroll = () => {
       const savedScroll = sessionStorage.getItem("archive-scroll");
       if (!savedScroll) return;
@@ -155,7 +153,7 @@ export function ArchiveShell({
 
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
-    setArchiveFiltersToUrl({
+    setArchiveFiltersToUrl(router, {
       q,
       committedQ,
       tagMode,
@@ -163,8 +161,8 @@ export function ArchiveShell({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    });
-  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q]);
+    }, pathname);
+  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname]);
 
   useEffect(() => {
     if (skipUrlSyncRef.current) return;

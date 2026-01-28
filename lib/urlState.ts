@@ -18,6 +18,10 @@ type DictionaryState = {
   slug: string | null;
 };
 
+type RouterLike = {
+  replace: (href: string, options?: { scroll?: boolean }) => void;
+};
+
 const ARCHIVE_SORTS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"];
 
 export function getArchiveFiltersFromUrl(): ArchiveFilters {
@@ -46,11 +50,10 @@ export function getArchiveFiltersFromUrl(): ArchiveFilters {
   };
 }
 
-export function setArchiveFiltersToUrl(filters: ArchiveFilters) {
+export function setArchiveFiltersToUrl(router: RouterLike, filters: ArchiveFilters, pathname?: string) {
   if (typeof window === "undefined") return;
   const include = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === 1);
   const exclude = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === -1);
-  const url = new URL(window.location.href);
   const sp = new URLSearchParams();
   if (filters.committedQ.trim()) sp.set("q", filters.committedQ.trim());
   if (filters.sortKey !== "newest") sp.set("sort", filters.sortKey);
@@ -61,8 +64,11 @@ export function setArchiveFiltersToUrl(filters: ArchiveFilters) {
   if (filters.selectedAuthors.length) sp.set("authors", serializeListParam(filters.selectedAuthors));
  
   const query = sp.toString();
-  const next = query ? `${url.pathname}?${query}` : url.pathname;
-  window.history.replaceState(window.history.state, "", next);
+  const currentPathname = pathname ?? window.location.pathname;
+  const next = query ? `${currentPathname}?${query}` : currentPathname;
+  const current = `${currentPathname}${window.location.search}`;
+  if (next === current) return;
+  router.replace(next, { scroll: false });
 }
 
 export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryState {
@@ -78,7 +84,7 @@ export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryS
   return { query: q, committedQuery: q, sort, slug };
 }
 
-export function setDictionaryStateToUrl(state: DictionaryState) {
+export function setDictionaryStateToUrl(router: RouterLike, state: DictionaryState, pathname?: string) {
   if (typeof window === "undefined") return;
   const sp = new URLSearchParams();
   if (state.committedQuery.trim()) sp.set("q", state.committedQuery.trim());
@@ -86,7 +92,10 @@ export function setDictionaryStateToUrl(state: DictionaryState) {
   const queryString = sp.toString();
   const path = state.slug ? `/dictionary/${encodeURIComponent(state.slug)}` : "/dictionary";
   const next = queryString ? `${path}?${queryString}` : path;
-  window.history.replaceState(window.history.state, "", next);
+  const currentPathname = pathname ?? window.location.pathname;
+  const current = `${currentPathname}${window.location.search}`;
+  if (next === current) return;
+  router.replace(next, { scroll: false });
 }
 
 export function readArchiveSession(): ArchiveFilters | null {

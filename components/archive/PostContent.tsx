@@ -1,6 +1,7 @@
 'use client';
 
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
@@ -29,6 +30,8 @@ const LazyPdfViewer = dynamic(() => import("./PdfViewer").then((mod) => ({ defau
 });
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
   const baseData = data;
   const currentData = liveState ? liveState : baseData;
@@ -102,16 +105,20 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   }, []);
 
   const setDidQueryParam = useCallback((did: string | null) => {
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
+    if (!pathname || typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
     if (did) {
-      url.searchParams.set("did", did);
+      sp.set("did", did);
     } else {
-      url.searchParams.delete("did");
+      sp.delete("did");
     }
-    const next = `${url.pathname}${url.search}${url.hash}`;
-    window.history.replaceState(window.history.state, "", next);
-  }, []);
+    const hash = window.location.hash;
+    const query = sp.toString();
+    const next = query ? `${pathname}?${query}${hash}` : `${pathname}${hash}`;
+    const current = `${pathname}${window.location.search}${hash}`;
+    if (next === current) return;
+    router.replace(next, { scroll: false });
+  }, [pathname, router]);
 
   const openDictionaryEntry = useCallback((did: string) => {
     const trimmed = did.trim();

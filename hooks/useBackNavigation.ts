@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 export const NAV_SESSION_KEY = "archive-nav-origin";
@@ -14,9 +15,9 @@ export function setInternalNavigationFlag() {
 }
 
 export function useBackNavigation(fallbackHref: string) {
+  const router = useRouter();
   return useCallback(() => {
     if (typeof window === "undefined") return;
-    const hasHistory = window.history.length > 1;
     const hasInternalFlag = (() => {
       try {
         return typeof window.sessionStorage !== "undefined" && window.sessionStorage.getItem(NAV_SESSION_KEY) === "1";
@@ -33,10 +34,16 @@ export function useBackNavigation(fallbackHref: string) {
       }
     }
 
-    if (hasHistory && (hasInternalFlag || sameOriginReferrer)) {
-      window.history.back();
+    if (hasInternalFlag || sameOriginReferrer) {
+      const beforeHref = window.location.href;
+      router.back();
+      window.setTimeout(() => {
+        if (window.location.href === beforeHref) {
+          router.push(fallbackHref);
+        }
+      }, 150);
     } else {
-      window.location.href = fallbackHref;
+      router.push(fallbackHref);
     }
-  }, [fallbackHref]);
+  }, [fallbackHref, router]);
 }
