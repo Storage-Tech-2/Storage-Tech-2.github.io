@@ -154,7 +154,7 @@ export function DictionaryPageClient({ entries }: Props) {
     const full = liveEntries.find((e) => e.index.id === slugEntryIndex.id) || { index: slugEntryIndex };
     if (full.data || disableLiveFetch) {
       startTransition(() => {
-        setActive(full as IndexedDictionaryEntry);
+        setActive(full);
       });
       return;
     }
@@ -163,7 +163,7 @@ export function DictionaryPageClient({ entries }: Props) {
         if (data) {
           setActive({ ...full, data });
         } else {
-          setActive(full as IndexedDictionaryEntry);
+          setActive(full);
         }
       });
   }, [slugEntryIndex, liveEntries]);
