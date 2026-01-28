@@ -269,7 +269,7 @@ export function ArchiveShell({
         {Array.from({ length: pageCount }, (_, i) => {
           const page = i + 1;
           const href = `/archives/page/${page}`;
-          return page === pageNumber ? (
+          return (page === pageNumber || (page === 1 && pageNumber === 0)) ? (
             <span
               key={page}
               className="rounded-full border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-sm"
