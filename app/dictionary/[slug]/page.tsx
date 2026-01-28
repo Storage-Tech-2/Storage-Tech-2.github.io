@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DictionaryPageClient } from "@/components/dictionary/DictionaryPageClient";
-import { fetchDictionaryIndex } from "@/lib/archive";
+import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { disableDictionaryPrerender } from "@/lib/runtimeFlags";
 import { siteConfig } from "@/lib/siteConfig";
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const description =
     truncateStringWithEllipsis(match.summary?.trim() ||
-    `Dictionary entry ${match.id} from ${siteConfig.siteName}`, 200);
+      `Dictionary entry ${match.id} from ${siteConfig.siteName}`, 200);
   const title = `${match.terms?.[0] ?? match.id} | ${siteConfig.siteName} Dictionary`;
 
   return {
@@ -54,7 +54,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default async function DictionaryEntryPage(_params: Params) {
+export default async function DictionaryEntryPage({ params }: Params) {
   const dictionary = await fetchDictionaryIndex();
-  return <DictionaryPageClient entries={dictionary.entries}/>;
+  const slug = decodeURIComponent(params.slug);
+  const match = findDictionaryEntryBySlug(dictionary.config.entries, slug);
+  if (!match) return <DictionaryPageClient entries={dictionary.entries} />;
+
+  const data = await fetchDictionaryEntry(match.id);
+  return (
+    <DictionaryPageClient
+      entries={dictionary.entries}
+      initialActiveEntry={{ index: match, data }}
+    />
+  );
 }

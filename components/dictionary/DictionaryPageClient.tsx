@@ -24,18 +24,19 @@ import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
 type Props = {
   entries: IndexedDictionaryEntry[];
+  initialActiveEntry?: IndexedDictionaryEntry | null;
 };
 
 const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
   list.reduce((max, entry) => Math.max(max, entry.index.updatedAt ?? 0), 0);
 
-export function DictionaryPageClient({ entries }: Props) {
+export function DictionaryPageClient({ entries, initialActiveEntry = null }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
-  const [active, setActive] = useState<IndexedDictionaryEntry | null>(null);
+  const [active, setActive] = useState<IndexedDictionaryEntry | null>(initialActiveEntry);
   const activeIdRef = useRef<string | null>(null);
   const entriesUpdatedAt = getEntriesUpdatedAt(entries);
   const cached = getCachedDictionaryIndex();
