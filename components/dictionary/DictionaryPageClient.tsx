@@ -51,6 +51,11 @@ export function DictionaryPageClient({ entries }: Props) {
     if (!match) return null;
     return decodeURIComponent(match[1].replace(/\/+$/, ""));
   }, [pathname]);
+  const slugEntryIndex = useMemo(() => {
+    if (!pathSlug) return null;
+    return findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
+  }, [pathSlug, liveEntries]);
+  const activeMatchesSlug = !!active && !!slugEntryIndex && active.index.id === slugEntryIndex.id;
 
   useEffect(() => {
     setInternalNavigationFlag();
@@ -121,32 +126,22 @@ export function DictionaryPageClient({ entries }: Props) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const baseTitle = `Dictionary · ${siteConfig.siteName}`;
-    if (active) {
+    if (activeMatchesSlug && active) {
       const term = active.index.terms?.[0] || active.index.id;
       document.title = `${term} | ${baseTitle}`;
     } else {
       document.title = baseTitle;
     }
-  }, [active]);
+  }, [active, activeMatchesSlug]);
 
   useEffect(() => {
     activeIdRef.current = active?.index.id ?? null;
   }, [active]);
 
   useEffect(() => {
-    if (!pathSlug) {
-      setActive(null);
-      setLoadingEntryId(null);
-      return;
-    }
-    const entryIndex = findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
-    if (!entryIndex) {
-      setActive(null);
-      setLoadingEntryId(null);
-      return;
-    }
-    if (activeIdRef.current === entryIndex.id) return;
-    const full = liveEntries.find((e) => e.index.id === entryIndex.id) || { index: entryIndex };
+    if (!slugEntryIndex) return;
+    if (activeIdRef.current === slugEntryIndex.id) return;
+    const full = liveEntries.find((e) => e.index.id === slugEntryIndex.id) || { index: slugEntryIndex };
     if (full.data || disableLiveFetch) {
       startTransition(() => {
         setActive(full as IndexedDictionaryEntry);
@@ -154,9 +149,9 @@ export function DictionaryPageClient({ entries }: Props) {
       return;
     }
     startTransition(() => {
-      setLoadingEntryId(entryIndex.id);
+      setLoadingEntryId(slugEntryIndex.id);
     });
-    fetchDictionaryEntry(entryIndex.id)
+    fetchDictionaryEntry(slugEntryIndex.id)
       .then((data) => {
         setActive({ ...full, data });
       })
@@ -166,7 +161,7 @@ export function DictionaryPageClient({ entries }: Props) {
       .finally(() => {
         setLoadingEntryId(null);
       });
-  }, [pathSlug, liveEntries]);
+  }, [slugEntryIndex, liveEntries]);
 
   const buildDictionaryUrl = (next?: { slug?: string | null; q?: string; sort?: "az" | "updated" }) => {
     const slug = next && "slug" in next ? next.slug : pathSlug;
@@ -230,17 +225,16 @@ export function DictionaryPageClient({ entries }: Props) {
         </div>
       </main>
 
-      {active ? (
+      {activeMatchesSlug ? (
         <DictionaryModal
           entry={active}
           onClose={() => {
-            router.replace(buildDictionaryUrl({ slug: null }));
             setActive(null);
-            setLoadingEntryId(null);
+            router.replace(buildDictionaryUrl({ slug: null }));
           }}
           dictionaryTooltips={dictionaryTooltips}
         />
-      ) : loadingEntryId ? (
+      ) : slugEntryIndex && loadingEntryId === slugEntryIndex.id ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 text-sm text-white">Loading term…</div>
       ) : null}
       <Footer />
