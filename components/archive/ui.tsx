@@ -5,7 +5,7 @@ import Link from "next/link";
 import React, { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { prefetchArchiveIndex, prefetchDictionaryEntryData } from "@/lib/archive";
+import { findPostBySlug, prefetchArchiveEntryData, prefetchArchiveIndex, prefetchDictionaryEntryData } from "@/lib/archive";
 import { assetURL } from "@/lib/github";
 import { clsx } from "@/lib/utils/classNames";
 import { getAuthorIconURL, getAuthorName } from "@/lib/utils/authors";
@@ -364,14 +364,44 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
     }
   };
 
+  const prefetchArchiveForHref = () => {
+    if (typeof window === "undefined") return;
+    if (!href) return;
+    try {
+      const url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (!url.pathname.startsWith("/archives/")) return;
+      const slug = url.pathname.replace("/archives/", "").replace(/\/+$/, "");
+      if (!slug) {
+        prefetchArchiveIndex();
+        return;
+      }
+      prefetchArchiveIndex().then((idx) => {
+        if (!idx) return;
+        let decodedSlug = slug;
+        try {
+          decodedSlug = decodeURIComponent(slug);
+        } catch {
+          // ignore decode issues and fall back to raw slug
+        }
+        const match = findPostBySlug(idx.posts, decodedSlug);
+        if (match) prefetchArchiveEntryData(match);
+      });
+    } catch {
+      // ignore malformed hrefs
+    }
+  };
+
   const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     onMouseEnter?.(e);
     prefetchDictionaryForHref();
+    prefetchArchiveForHref();
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLAnchorElement>) => {
     onFocus?.(e);
     prefetchDictionaryForHref();
+    prefetchArchiveForHref();
   };
   const tooltip = title ? (
     <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
