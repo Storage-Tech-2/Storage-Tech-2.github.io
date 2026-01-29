@@ -254,6 +254,7 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
             //setActive(null);
             router.replace(buildDictionaryUrl({ slug: null }), { scroll: false });
           }}
+          closeHref={buildDictionaryUrl({ slug: null })}
           dictionaryTooltips={dictionaryTooltips}
           onInternalLink={handleInternalLink}
         />

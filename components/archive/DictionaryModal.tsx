@@ -12,12 +12,13 @@ import Link from "next/link";
 type Props = {
   entry: IndexedDictionaryEntry;
   onClose: () => void;
+  closeHref?: string;
   dictionaryTooltips?: Record<string, string>;
   onInternalLink?: (url: URL) => boolean;
   variant?: "modal" | "inline";
 };
 
-export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternalLink, variant = "modal" }: Props) {
+export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips, onInternalLink, variant = "modal" }: Props) {
   const decorated = entry.data
     ? transformOutputWithReferencesForWebsite(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id])
     : "";
@@ -62,7 +63,7 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
 
   const content = (
     <article
-      className="w-full max-w-3xl rounded-2xl border bg-white p-0 shadow-xl dark:border-gray-800 dark:bg-gray-900"
+      className="relative z-10 w-full max-w-3xl rounded-2xl border bg-white p-0 shadow-xl dark:border-gray-800 dark:bg-gray-900"
       onClick={(e) => e.stopPropagation()}
     >
       <header className="flex items-start justify-between gap-3 border-b p-4">
@@ -84,9 +85,24 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
             </div>
           ) : null}
         </div>
-        <button onClick={onClose} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-          Close
-        </button>
+        {closeHref ? (
+          <Link
+            href={closeHref}
+            prefetch={false}
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+              event.preventDefault();
+              onClose();
+            }}
+            className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            Close
+          </Link>
+        ) : (
+          <button onClick={onClose} className="rounded-full border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+            Close
+          </button>
+        )}
       </header>
       <div className="p-4">
         {entry.data ? (
@@ -179,6 +195,20 @@ export function DictionaryModal({ entry, onClose, dictionaryTooltips, onInternal
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 p-4" onClick={onClose}>
+      {closeHref ? (
+        <Link
+          href={closeHref}
+          prefetch={false}
+          className="absolute inset-0"
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+            event.preventDefault();
+            onClose();
+          }}
+        >
+          <span className="sr-only">Close</span>
+        </Link>
+      ) : null}
       {content}
     </div>
   );
