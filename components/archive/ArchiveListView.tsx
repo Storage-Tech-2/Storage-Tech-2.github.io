@@ -2,13 +2,13 @@
 
 import type { MouseEvent, RefObject } from "react";
 import { ArchiveFilters } from "./ArchiveFilters";
-import { TagChip } from "./ui";
 import { PostCard } from "./PostCard";
 import { VirtualizedGrid } from "./VirtualizedGrid";
 import type { ArchiveListItem } from "@/lib/archive";
 import type { ChannelRef, GlobalTag } from "@/lib/types";
 import type { ArchiveFiltersModel } from "@/hooks/useArchiveFilters";
 import { normalize } from "@/lib/utils/strings";
+import { TagChip } from "../ui/Tags";
 
 type Props = {
   sidebarRef: RefObject<HTMLElement | null>;

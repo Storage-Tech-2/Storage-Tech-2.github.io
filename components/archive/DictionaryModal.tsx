@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { ChannelBadge, MarkdownText } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { getCachedArchiveIndex, prefetchArchiveEntryData, prefetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
@@ -9,6 +8,8 @@ import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } fr
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import Link from "next/link";
 import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
+import { ChannelBadge } from "../ui/ChannelBadge";
+import { MarkdownText } from "../ui/LinkHelpers";
 
 type Props = {
   entry: IndexedDictionaryEntry;

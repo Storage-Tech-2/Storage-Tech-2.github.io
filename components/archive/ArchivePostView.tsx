@@ -1,6 +1,6 @@
 'use client';
 
-import { PostContent } from "./PostContent";
+import { PostContent } from "../post-content/PostContent";
 import { PostNav } from "./PostNav";
 import { Footer } from "@/components/layout/Footer";
 import type { ArchiveConfig, ArchiveEntryData, GlobalTag } from "@/lib/types";

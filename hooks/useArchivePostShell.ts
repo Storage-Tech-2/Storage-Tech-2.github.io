@@ -72,35 +72,27 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     document.title = `${openPost.entry.name} | ${siteConfig.siteName}`;
   }, [openPost]);
 
-  const closePost = useCallback(() => {
-    if (typeof window === "undefined") return;
-    const listHref = listUrlRef.current || archiveRootHref;
-    window.history.replaceState(window.history.state, "", listHref);
-    listUrlRef.current = null;
+  const resetOpenState = useCallback((restoreScroll: boolean) => {
     setOpenPost(null);
     setOpenData(null);
     setOpenError(null);
     openRequestRef.current = null;
     setOpenDictionaryTooltips({});
-    if (openScrollRef.current !== null) {
+    if (openScrollRef.current !== null && restoreScroll) {
       pendingScrollRef.current = openScrollRef.current;
-      openScrollRef.current = null;
     }
-  }, [archiveRootHref, pendingScrollRef]);
+    openScrollRef.current = null;
+  }, [pendingScrollRef]);
 
-  const openPostFromList = useCallback((post: ArchiveListItem, event?: MouseEvent<HTMLAnchorElement>) => {
-    if (!isPlainLeftClick(event)) return false;
-    if (typeof window === "undefined") return true;
-    const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (!openPost) {
-      listUrlRef.current = currentHref;
-      openScrollRef.current = window.scrollY;
-      sessionStorage.setItem("archive-scroll", `${window.scrollY}`);
-    }
-    pendingScrollRef.current = null;
-    const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
-    window.history.pushState(window.history.state, "", nextHref);
-    requestAnimationFrame(() => window.scrollTo(0, 0));
+  const closePost = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const listHref = listUrlRef.current || archiveRootHref;
+    window.history.replaceState(window.history.state, "", listHref);
+    listUrlRef.current = null;
+    resetOpenState(true);
+  }, [archiveRootHref, resetOpenState]);
+
+  const loadPost = useCallback((post: ArchiveListItem) => {
     setOpenPost(post);
     setOpenData(null);
     setOpenError(null);
@@ -126,9 +118,29 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
       .catch((err) => {
         if (openRequestRef.current !== requestToken) return;
         setOpenError((err as Error).message || "Unable to load this entry.");
-      })
+      });
+  }, []);
+
+  const openPostFromList = useCallback((post: ArchiveListItem, event?: MouseEvent<HTMLAnchorElement>) => {
+    if (!isPlainLeftClick(event)) return false;
+    if (typeof window === "undefined") return true;
+    const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (!openPost) {
+      listUrlRef.current = currentHref;
+      openScrollRef.current = window.scrollY;
+      sessionStorage.setItem("archive-scroll", `${window.scrollY}`);
+    }
+    pendingScrollRef.current = null;
+    const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
+    const currentState = window.history.state;
+    const nextState = (currentState && typeof currentState === "object")
+      ? { ...(currentState as Record<string, unknown>), archiveListHref: listUrlRef.current || currentHref }
+      : { archiveListHref: listUrlRef.current || currentHref };
+    window.history.pushState(nextState, "", nextHref);
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+    loadPost(post);
     return true;
-  }, [archiveRootHref, openPost, pendingScrollRef]);
+  }, [archiveRootHref, loadPost, openPost, pendingScrollRef]);
 
   const handleArchiveUrlNavigate = useCallback((url: URL) => {
     const slug = extractArchiveSlugFromUrl(url);
@@ -138,6 +150,43 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     openPostFromList(match);
     return true;
   }, [openPostFromList, posts]);
+
+  const openPostFromUrl = useCallback((post: ArchiveListItem) => {
+    if (openPost?.slug === post.slug) return;
+    if (typeof window !== "undefined" && !listUrlRef.current) {
+      const historyState = window.history.state as { archiveListHref?: string } | null;
+      listUrlRef.current = historyState?.archiveListHref || archiveRootHref;
+    }
+    pendingScrollRef.current = null;
+    loadPost(post);
+  }, [archiveRootHref, loadPost, openPost, pendingScrollRef]);
+
+  const closePostFromUrl = useCallback(() => {
+    if (!openPost) return;
+    resetOpenState(true);
+  }, [openPost, resetOpenState]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncFromLocation = () => {
+      const url = new URL(window.location.href);
+      const slug = extractArchiveSlugFromUrl(url);
+      if (!slug) {
+        closePostFromUrl();
+        return;
+      }
+      const match = findPostBySlug(posts, slug);
+      if (!match) return;
+      openPostFromUrl(match);
+    };
+    syncFromLocation();
+    window.addEventListener("popstate", syncFromLocation);
+    window.addEventListener("pageshow", syncFromLocation);
+    return () => {
+      window.removeEventListener("popstate", syncFromLocation);
+      window.removeEventListener("pageshow", syncFromLocation);
+    };
+  }, [closePostFromUrl, openPostFromUrl, posts]);
 
   return {
     openPost,

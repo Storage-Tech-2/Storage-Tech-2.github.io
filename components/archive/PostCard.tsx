@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import type { MouseEvent } from "react";
-import { ChannelBadge, TagList } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
 import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
+import { ChannelBadge } from "../ui/ChannelBadge";
+import { TagList } from "../ui/Tags";
 
 type Props = {
   post: ArchiveListItem;

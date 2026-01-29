@@ -3,7 +3,6 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
-import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import {
@@ -21,6 +20,7 @@ import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
+import { DictionaryCard } from "../ui/LinkHelpers";
 
 type Props = {
   entries: IndexedDictionaryEntry[];

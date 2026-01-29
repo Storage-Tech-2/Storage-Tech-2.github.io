@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PostContent } from "@/components/archive/PostContent";
+import { PostContent } from "@/components/post-content/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
 import { Footer } from "@/components/layout/Footer";
 import { fetchArchiveIndex, fetchDictionaryIndex, fetchPostWithArchive } from "@/lib/archive";

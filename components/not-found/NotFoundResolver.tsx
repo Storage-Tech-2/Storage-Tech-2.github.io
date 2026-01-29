@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
-import { PostContent } from "@/components/archive/PostContent";
+import { PostContent } from "@/components/post-content/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { Footer } from "@/components/layout/Footer";
