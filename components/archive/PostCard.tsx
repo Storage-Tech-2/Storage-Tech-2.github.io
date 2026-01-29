@@ -58,7 +58,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
               priority={false}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">{post.entry ? "No image" : "Loading..."}</div>
+            <div className="flex h-full w-full items-center justify-center text-sm text-gray-700 dark:text-gray-200">{post.entry ? "No image" : "Loading..."}</div>
           )}
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3">
