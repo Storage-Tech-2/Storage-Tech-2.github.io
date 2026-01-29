@@ -397,6 +397,10 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
   const onPrefetch = () => {
     prefetchDictionaryForHref();
     prefetchArchiveForHref();
+
+  }
+
+  const shouldPrefetch = () => {
     if (href && isArchivePostHref(href)) {
       return true; // prefetch
     } else {
@@ -419,6 +423,7 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
           href={href}
           onClick={handleClick}
           onPrefetch={onPrefetch}
+          shouldPrefetch={shouldPrefetch}
           className={linkClassName}
           {...rest}
         >
