@@ -16,11 +16,11 @@ type Props = {
   onClose(): void;
   closeHref?: string;
   dictionaryTooltips?: Record<string, string>;
-  onInternalLink?(url: URL): boolean;
+  onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
   variant?: "modal" | "inline";
 };
 
-export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips, onInternalLink, variant = "modal" }: Props) {
+export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips, onLinkClick, variant = "modal" }: Props) {
   const decorated = entry.data
     ? transformOutputWithReferencesForWebsite(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id])
     : "";
@@ -112,7 +112,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
             {entry.data.definition ? (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-300">Definition</h4>
-                <MarkdownText text={decorated} onInternalLink={onInternalLink} />
+                <MarkdownText text={decorated} onLinkClick={onLinkClick} />
               </div>
             ) : null}
             {referencedCodes.length > 0 ? (
@@ -135,18 +135,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                       key={code}
                       href={`/archives/${post.slug}`}
                       className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
-                      onClick={(event) => {
-                        if (!onInternalLink) return;
-                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-                        try {
-                          const url = new URL(`/archives/${post.slug}`, window.location.href);
-                          if (onInternalLink(url)) {
-                            event.preventDefault();
-                          }
-                        } catch {
-                          // fall back to default navigation
-                        }
-                      }}
+                      onClick={onLinkClick}
                       beforePrefetch={() => {
                         prefetchArchiveEntryData(post);
                       }}

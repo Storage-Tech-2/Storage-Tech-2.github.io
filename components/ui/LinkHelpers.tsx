@@ -9,14 +9,11 @@ import { findPostBySlug, prefetchArchiveEntryData, prefetchArchiveIndex, prefetc
 import { getDictionaryIdFromSlug, buildDictionarySlug } from "@/lib/dictionary";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import { postToMarkdown } from "@/lib/utils/markdown";
-import { getArchiveSlugInfo } from "@/lib/utils/urls";
+import { getArchiveSlugInfo, getDictionarySlugInfo } from "@/lib/utils/urls";
 import type { IndexedDictionaryEntry, Reference, StyleInfo, SubmissionRecords } from "@/lib/types";
 import { ForesightPrefetchLink } from "@/components/ui/ForesightPrefetchLink";
 
-type LinkWithTooltipProps = React.ComponentProps<"a"> & {
-  onInternalNavigate?: (url: URL) => boolean;
-};
-
+type LinkWithTooltipProps = React.ComponentProps<"a">
 function linkTargetForHref(href?: string) {
   if (!href) return undefined;
   if (typeof window === "undefined") {
@@ -32,20 +29,7 @@ function linkTargetForHref(href?: string) {
   }
 }
 
-export function LinkWithTooltip({ title, children, className, onInternalNavigate, href, ...rest }: LinkWithTooltipProps) {
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    if (typeof window === "undefined") return;
-    if (!href || rest.target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    try {
-      const url = new URL(href, window.location.href);
-      if (url.origin !== window.location.origin) return;
-      if (onInternalNavigate && onInternalNavigate(url)) {
-        e.preventDefault();
-      }
-    } catch {
-      // ignore malformed url
-    }
-  };
+export function LinkWithTooltip({ title, children, className, onClick, href, ...rest }: LinkWithTooltipProps) {
 
   const prefetchDictionaryForHref = () => {
     if (typeof window === "undefined" || !href) return;
@@ -53,9 +37,9 @@ export function LinkWithTooltip({ title, children, className, onInternalNavigate
       const url = new URL(href, window.location.href);
       if (url.origin !== window.location.origin) return;
       let did = url.searchParams.get("did");
-      if (!did && url.pathname.startsWith("/dictionary/")) {
-        const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
-        did = getDictionaryIdFromSlug(decodeURIComponent(slug));
+      if (!did) {
+        const { slug } = getDictionarySlugInfo(url);
+        if (slug) did = getDictionaryIdFromSlug(slug);
       }
       if (did) prefetchDictionaryEntryData(did);
     } catch {
@@ -100,11 +84,11 @@ export function LinkWithTooltip({ title, children, className, onInternalNavigate
   return (
     <span className="group relative inline-block">
       {href ? (
-        <ForesightPrefetchLink href={href} onClick={handleClick} beforePrefetch={onPrefetch} className={linkClassName} {...rest}>
+        <ForesightPrefetchLink href={href} onClick={onClick} beforePrefetch={onPrefetch} className={linkClassName} {...rest}>
           {children}
         </ForesightPrefetchLink>
       ) : (
-        <a {...rest} href={href} onClick={handleClick} className={linkClassName}>
+        <a {...rest} href={href} onClick={onClick} className={linkClassName}>
           {children}
         </a>
       )}
@@ -113,7 +97,7 @@ export function LinkWithTooltip({ title, children, className, onInternalNavigate
   );
 }
 
-export function MarkdownText({ text, onInternalLink }: { text: string; onInternalLink?(url: URL): boolean }) {
+export function MarkdownText({ text, onLinkClick }: { text: string; onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -127,7 +111,7 @@ export function MarkdownText({ text, onInternalLink }: { text: string; onInterna
           return (
             <LinkWithTooltip
               {...props}
-              onInternalNavigate={onInternalLink}
+              onClick={onLinkClick}
               target={target}
               rel={target === "_blank" ? "noreferrer" : props.rel}
             />
@@ -150,14 +134,14 @@ export function RecordRenderer({
   schemaStyles,
   references,
   dictionaryTooltips,
-  onInternalLink,
+  onLinkClick,
 }: {
   records: SubmissionRecords;
   recordStyles?: Record<string, StyleInfo>;
   schemaStyles?: Record<string, StyleInfo>;
   references?: Reference[];
   dictionaryTooltips?: Record<string, string>;
-  onInternalLink?(url: URL): boolean;
+  onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
 }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles]);
   const decorated = useMemo(
@@ -166,7 +150,7 @@ export function RecordRenderer({
   );
 
   if (!decorated) return null;
-  return <MarkdownText text={decorated} onInternalLink={onInternalLink} />;
+  return <MarkdownText text={decorated} onLinkClick={onLinkClick} />;
 }
 
 export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry; onOpen?(entry: IndexedDictionaryEntry): void }) {

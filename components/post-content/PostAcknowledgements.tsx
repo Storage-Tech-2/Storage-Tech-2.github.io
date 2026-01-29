@@ -8,14 +8,14 @@ type Props = {
   acknowledgements: Array<Partial<Author> & { reason?: string }>;
   authorReferences?: Reference[];
   dictionaryTooltips?: Record<string, string>;
-  onInternalLink: (url: URL) => boolean;
+  onLinkClick(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
 };
 
 export function PostAcknowledgements({
   acknowledgements,
   authorReferences,
   dictionaryTooltips,
-  onInternalLink,
+  onLinkClick,
 }: Props) {
   if (!acknowledgements.length) return null;
 
@@ -59,7 +59,7 @@ export function PostAcknowledgements({
                   {handle ? <span className="text-xs text-gray-500">@{handle}</span> : null}
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-300">
-                  <MarkdownText text={decorated} onInternalLink={onInternalLink} />
+                  <MarkdownText text={decorated} onLinkClick={onLinkClick} />
                 </div>
               </div>
             </li>

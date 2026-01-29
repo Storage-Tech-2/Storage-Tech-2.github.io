@@ -5,6 +5,7 @@ import { DictionaryModal } from "../archive/DictionaryModal";
 import { RelativeTime } from "../ui/RelativeTime";
 import { fetchCommentsData, fetchDictionaryEntry, prefetchArchiveEntryData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
+import { getDictionarySlugInfo } from "@/lib/utils/urls";
 import { assetURL, attachmentURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
@@ -173,20 +174,28 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     return true;
   }, [setDidQueryParam]);
 
-  const handleInternalLink = useCallback((url: URL) => {
-    if (url.origin !== (typeof window !== "undefined" ? window.location.origin : url.origin)) return false;
+  const onLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+    const href = e.currentTarget.href;
+    if (!href) return;
+    let url: URL;
+    try {
+      url = new URL(href, window.location.href);
+    } catch {
+      return;
+    }
+    if (url.origin !==  window.location.origin) return;
     let did = url.searchParams.get("did");
-    if (!did && url.pathname.startsWith("/dictionary/")) {
-      const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
-      did = getDictionaryIdFromSlug(decodeURIComponent(slug));
+    if (!did) {
+      const { slug } = getDictionarySlugInfo(url);
+      if (slug) did = getDictionaryIdFromSlug(slug);
     }
     if (did) {
-      return openDictionaryEntry(did);
+      openDictionaryEntry(did);
     }
     if (onArchiveNavigate) {
-      return onArchiveNavigate(url);
+      onArchiveNavigate(url);
     }
-    return false;
+    e.preventDefault();
   }, [onArchiveNavigate, openDictionaryEntry]);
 
   useEffect(() => {
@@ -281,7 +290,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           schemaStyles={schemaStyles}
           references={currentData.references}
           dictionaryTooltips={dictionaryTooltips}
-          onInternalLink={handleInternalLink}
+          onLinkClick={onLinkClick}
         />
       ) : (
         <div className="text-sm text-gray-500">Loading post body...</div>
@@ -291,7 +300,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         acknowledgements={acknowledgements}
         authorReferences={authorReferences}
         dictionaryTooltips={dictionaryTooltips}
-        onInternalLink={handleInternalLink}
+        onLinkClick={onLinkClick}
       />
 
       <PostAttachmentsSection
@@ -310,7 +319,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           comments={comments}
           channelPath={post.channel.path}
           entryPath={post.entry.path}
-          onInternalLink={handleInternalLink}
+          onLinkClick={onLinkClick}
           setLightbox={setLightbox}
           onViewPdf={(pdf) => {
             setPdfPageInfo({ page: 1, total: 0 });
@@ -360,7 +369,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
             setDidQueryParam(null);
           }}
           dictionaryTooltips={dictionaryTooltips}
-          onInternalLink={handleInternalLink}
+          onLinkClick={onLinkClick}
         />
       ) : null}
     </article>

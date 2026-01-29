@@ -11,7 +11,7 @@ type Props = {
   comments: ArchiveComment[];
   channelPath: string;
   entryPath: string;
-  onInternalLink: (url: URL) => boolean;
+  onLinkClick(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
   setLightbox: (lightbox: LightboxState) => void;
   onViewPdf: (pdf: PdfViewerState) => void;
 };
@@ -20,7 +20,7 @@ export function PostCommentsSection({
   comments,
   channelPath,
   entryPath,
-  onInternalLink,
+  onLinkClick,
   setLightbox,
   onViewPdf,
 }: Props) {
@@ -43,7 +43,7 @@ export function PostCommentsSection({
               </div>
               {c.content ? (
                 <div className="mt-2 text-sm">
-                  <MarkdownText text={replaceAttachmentsInText(c.content, attachments)} onInternalLink={onInternalLink} />
+                  <MarkdownText text={replaceAttachmentsInText(c.content, attachments)} onLinkClick={onLinkClick} />
                 </div>
               ) : null}
               {attachments.length ? (

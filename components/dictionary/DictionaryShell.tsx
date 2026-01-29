@@ -21,6 +21,7 @@ import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 import { DictionaryCard } from "../ui/LinkHelpers";
+import { buildDictionaryUrl, getDictionarySlugInfo } from "@/lib/utils/urls";
 
 type Props = {
   entries: IndexedDictionaryEntry[];
@@ -44,14 +45,6 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     }
     return { pathname: window.location.pathname, search: window.location.search };
   });
-  const stripBasePath = (path: string) => {
-    if (!basePath) return path;
-    return path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path;
-  };
-  const withBasePath = (path: string) => {
-    if (!basePath) return path;
-    return path.startsWith(basePath) ? path : `${basePath}${path}`;
-  };
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(initialActiveEntry);
@@ -207,17 +200,11 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
       });
   }, [slugEntryIndex, liveEntries]);
 
-  const buildDictionaryUrl = (next?: { slug?: string | null; q?: string; sort?: "az" | "updated" }) => {
+  const buildDictionaryHref = (next?: { slug?: string | null; q?: string; sort?: "az" | "updated" }) => {
     const slug = next && "slug" in next ? next.slug : pathSlug;
-    const q = (next && (next.q !== undefined) ? next.q : urlQuery).trim();
+    const q = next && next.q !== undefined ? next.q : urlQuery;
     const nextSort = next && next.sort ? next.sort : urlSort;
-    const sp = new URLSearchParams();
-    if (q) sp.set("q", q);
-    if (nextSort !== "az") sp.set("sort", nextSort);
-    const base = slug ? `/dictionary/${encodeURIComponent(slug)}` : "/dictionary";
-    const queryString = sp.toString();
-    const nextPath = queryString ? `${base}?${queryString}` : base;
-    return withBasePath(nextPath);
+    return buildDictionaryUrl({ slug, q, sort: nextSort }, basePath);
   };
 
   const updateHistory = (href: string, mode: "push" | "replace" = "push") => {
@@ -233,34 +220,36 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
 
   const openEntry = (ent: IndexedDictionaryEntry) => {
     const slug = buildDictionarySlug(ent.index);
-    updateHistory(buildDictionaryUrl({ slug }), "push");
+    updateHistory(buildDictionaryHref({ slug }), "push");
   };
 
-  const handleInternalLink = (url: URL) => {
-    if (typeof window === "undefined") return false;
-    if (url.origin !== window.location.origin) return false;
-    const path = stripBasePath(url.pathname);
-    if (!path.startsWith("/dictionary")) return false;
-    let slug = path.replace(/^\/dictionary\/?/, "").replace(/\/+$/, "");
-    if (slug) {
-      try {
-        slug = decodeURIComponent(slug);
-      } catch {
-        // ignore malformed slugs
-      }
+  const onLinkClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) =>{
+    if (typeof window === "undefined") return;
+    const href = e.currentTarget.href;
+    let url: URL;
+    try {
+      url = new URL(href, window.location.href);
     }
-    updateHistory(buildDictionaryUrl({ slug: slug || null }), "push");
+    catch {
+      return;
+    }
+
+    if (url.origin !== window.location.origin) return;
+
+    const dictionarySlug = getDictionarySlugInfo(url).slug;
+    if (!dictionarySlug) return;
+    updateHistory(buildDictionaryHref({ slug: dictionarySlug || null }), "push");
     return true;
   };
 
   const commitSearch = () => {
     const nextQuery = query.trim();
-    updateHistory(buildDictionaryUrl({ q: nextQuery }), "replace");
+    updateHistory(buildDictionaryHref({ q: nextQuery }), "replace");
   };
 
   const updateSort = (nextSort: "az" | "updated") => {
     setSort(nextSort);
-    updateHistory(buildDictionaryUrl({ sort: nextSort }), "replace");
+    updateHistory(buildDictionaryHref({ sort: nextSort }), "replace");
   };
 
   return (
@@ -302,11 +291,11 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
           entry={modalEntry}
           onClose={() => {
             //setActive(null);
-            updateHistory(buildDictionaryUrl({ slug: null }), "replace");
+            updateHistory(buildDictionaryHref({ slug: null }), "replace");
           }}
-          closeHref={buildDictionaryUrl({ slug: null })}
+          closeHref={buildDictionaryHref({ slug: null })}
           dictionaryTooltips={dictionaryTooltips}
-          onInternalLink={handleInternalLink}
+          onLinkClick={onLinkClick}
         />
       ) : null}
       <Footer />
