@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AttachmentCard, AuthorInline, AuthorsLine, ChannelBadge, EndorsersLine, MarkdownText, RecordRenderer, TagList } from "./ui";
 import { DictionaryModal } from "./DictionaryModal";
@@ -30,7 +30,6 @@ const LazyPdfViewer = dynamic(() => import("./PdfViewer").then((mod) => ({ defau
 });
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
   const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
   const baseData = data;
@@ -118,8 +117,9 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     const next = query ? `${path}?${query}${hash}` : `${path}${hash}`;
     const current = `${window.location.pathname}${window.location.search}${hash}`;
     if (next === current) return;
-    router.replace(next, { scroll: false });
-  }, [pathname, router]);
+    // Avoid triggering Next.js navigation on non-prerendered archive pages.
+    window.history.replaceState(window.history.state, "", next);
+  }, [pathname]);
 
   const openDictionaryEntry = useCallback((did: string) => {
     const trimmed = did.trim();

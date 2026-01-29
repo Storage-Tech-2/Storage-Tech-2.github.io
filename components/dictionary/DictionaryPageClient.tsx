@@ -1,7 +1,7 @@
 'use client';
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
 import { DictionaryCard } from "@/components/archive/ui";
 import { HeaderBar } from "@/components/archive/HeaderBar";
@@ -31,9 +31,27 @@ const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
   list.reduce((max, entry) => Math.max(max, entry.index.updatedAt ?? 0), 0);
 
 export function DictionaryPageClient({ entries, initialActiveEntry = null }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const basePath = siteConfig.basePath || "";
+  const [location, setLocation] = useState(() => {
+    if (typeof window === "undefined") {
+      const rawSearch = searchParams?.toString() ?? "";
+      return {
+        pathname: pathname ?? "",
+        search: rawSearch ? `?${rawSearch}` : "",
+      };
+    }
+    return { pathname: window.location.pathname, search: window.location.search };
+  });
+  const stripBasePath = (path: string) => {
+    if (!basePath) return path;
+    return path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path;
+  };
+  const withBasePath = (path: string) => {
+    if (!basePath) return path;
+    return path.startsWith(basePath) ? path : `${basePath}${path}`;
+  };
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(initialActiveEntry);
@@ -46,12 +64,17 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
   const bootstrapEntries = preferCached && cachedEntries ? cachedEntries : entries;
   const [liveEntriesOverride, setLiveEntriesOverride] = useState<IndexedDictionaryEntry[] | null>(null);
   const liveEntries = liveEntriesOverride ?? bootstrapEntries;
+  const normalizedPathname = useMemo(() => {
+    const raw = location.pathname || "";
+    if (!basePath) return raw;
+    return raw.startsWith(basePath) ? raw.slice(basePath.length) || "/" : raw;
+  }, [location.pathname, basePath]);
   const pathSlug = useMemo(() => {
-    if (!pathname) return null;
-    const match = pathname.match(/^\/dictionary\/(.+)$/);
+    if (!normalizedPathname) return null;
+    const match = normalizedPathname.match(/^\/dictionary\/(.+)$/);
     if (!match) return null;
     return decodeURIComponent(match[1].replace(/\/+$/, ""));
-  }, [pathname]);
+  }, [normalizedPathname]);
   const slugEntryIndex = useMemo(() => {
     if (!pathSlug) return null;
     return findDictionaryEntryBySlug(liveEntries.map((e) => e.index), pathSlug);
@@ -68,12 +91,27 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePopState = () => {
+      setLocation({ pathname: window.location.pathname, search: window.location.search });
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
     if (disableLiveFetch) return;
     prefetchArchiveIndex();
   }, []);
 
-  const urlQuery = searchParams?.get("q") ?? "";
-  const urlSortParam = searchParams?.get("sort");
+  const currentSearchParams = useMemo(() => {
+    const raw = location.search.startsWith("?") ? location.search.slice(1) : location.search;
+    return new URLSearchParams(raw);
+  }, [location.search]);
+  const urlQuery = currentSearchParams.get("q") ?? "";
+  const urlSortParam = currentSearchParams.get("sort");
   const urlSort = urlSortParam === "updated" ? "updated" : "az";
 
   useEffect(() => {
@@ -178,19 +216,32 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
     if (nextSort !== "az") sp.set("sort", nextSort);
     const base = slug ? `/dictionary/${encodeURIComponent(slug)}` : "/dictionary";
     const queryString = sp.toString();
-    return queryString ? `${base}?${queryString}` : base;
+    const nextPath = queryString ? `${base}?${queryString}` : base;
+    return withBasePath(nextPath);
+  };
+
+  const updateHistory = (href: string, mode: "push" | "replace" = "push") => {
+    if (typeof window === "undefined") return;
+    const url = new URL(href, window.location.origin);
+    if (mode === "replace") {
+      window.history.replaceState(window.history.state, "", url);
+    } else {
+      window.history.pushState(window.history.state, "", url);
+    }
+    setLocation({ pathname: url.pathname, search: url.search });
   };
 
   const openEntry = (ent: IndexedDictionaryEntry) => {
     const slug = buildDictionarySlug(ent.index);
-    router.push(buildDictionaryUrl({ slug }), { scroll: false });
+    updateHistory(buildDictionaryUrl({ slug }), "push");
   };
 
   const handleInternalLink = (url: URL) => {
     if (typeof window === "undefined") return false;
     if (url.origin !== window.location.origin) return false;
-    if (!url.pathname.startsWith("/dictionary")) return false;
-    let slug = url.pathname.replace(/^\/dictionary\/?/, "").replace(/\/+$/, "");
+    const path = stripBasePath(url.pathname);
+    if (!path.startsWith("/dictionary")) return false;
+    let slug = path.replace(/^\/dictionary\/?/, "").replace(/\/+$/, "");
     if (slug) {
       try {
         slug = decodeURIComponent(slug);
@@ -198,18 +249,18 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
         // ignore malformed slugs
       }
     }
-    router.push(buildDictionaryUrl({ slug: slug || null }), { scroll: false });
+    updateHistory(buildDictionaryUrl({ slug: slug || null }), "push");
     return true;
   };
 
   const commitSearch = () => {
     const nextQuery = query.trim();
-    router.replace(buildDictionaryUrl({ q: nextQuery }));
+    updateHistory(buildDictionaryUrl({ q: nextQuery }), "replace");
   };
 
   const updateSort = (nextSort: "az" | "updated") => {
     setSort(nextSort);
-    router.replace(buildDictionaryUrl({ sort: nextSort }));
+    updateHistory(buildDictionaryUrl({ sort: nextSort }), "replace");
   };
 
   return (
@@ -250,7 +301,7 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
           entry={modalEntry}
           onClose={() => {
             //setActive(null);
-            router.replace(buildDictionaryUrl({ slug: null }), { scroll: false });
+            updateHistory(buildDictionaryUrl({ slug: null }), "replace");
           }}
           closeHref={buildDictionaryUrl({ slug: null })}
           dictionaryTooltips={dictionaryTooltips}
