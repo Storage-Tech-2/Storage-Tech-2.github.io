@@ -13,6 +13,7 @@
   "dependencies": {
     "@next/third-parties": "^16.1.1",
     "@tanstack/react-virtual": "^3.13.18",
+    "js.foresight": "^3.4.0",
     "next": "^16.1.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

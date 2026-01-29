@@ -7,7 +7,7 @@ import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
-import { HoverPrefetchLink } from "../HoverPrefetchLink";
+import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
 
 type Props = {
   post: ArchiveListItem;
@@ -37,14 +37,13 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
 
   return (
     <article className="group flex h-full min-h-95 flex-col rounded-2xl bg-white transition hover:shadow-md dark:bg-gray-900">
-      <HoverPrefetchLink
+      <ForesightPrefetchLink
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
         onClick={() => {
           onNavigate(post);
         }}
-        onMouseEnter={() => prefetchArchiveEntryData(post)}
-        onFocus={() => prefetchArchiveEntryData(post)}
+        onPrefetch={() => prefetchArchiveEntryData(post)}
       >
         <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
           {displaySrc ? (
@@ -77,7 +76,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
             <TagList tags={post.entry.tags || []} globalTags={globalTags} />
           </div>
         </div>
-      </HoverPrefetchLink>
+      </ForesightPrefetchLink>
     </article>
   );
 }

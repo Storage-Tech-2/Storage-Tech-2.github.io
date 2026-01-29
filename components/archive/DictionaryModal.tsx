@@ -8,7 +8,7 @@ import { getCachedArchiveIndex, prefetchArchiveEntryData, prefetchArchiveIndex, 
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import Link from "next/link";
-import { HoverPrefetchLink } from "../HoverPrefetchLink";
+import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
 
 type Props = {
   entry: IndexedDictionaryEntry;
@@ -130,12 +130,11 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                       }
                       const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
                       return (
-                        <HoverPrefetchLink
+                        <ForesightPrefetchLink
                           key={code}
                           href={`/archives/${post.slug}`}
                           className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
-                          onMouseEnter={() => prefetchArchiveEntryData(post)}
-                          onFocus={() => prefetchArchiveEntryData(post)}
+                          onPrefetch={() => prefetchArchiveEntryData(post)}
                         >
                           <div className="space-y-1">
                             <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
@@ -148,7 +147,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                             </div>
                           </div>
                           <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
-                        </HoverPrefetchLink>
+                        </ForesightPrefetchLink>
                       );
                     })}
                   </div>

@@ -25,7 +25,7 @@ import {
   type GlobalTag,
   type Tag,
 } from "@/lib/types";
-import { HoverPrefetchLink } from "../HoverPrefetchLink";
+import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
 
 export function ChannelBadge({ ch }: { ch: { code: string; name: string; description?: string } }) {
   return (
@@ -324,6 +324,7 @@ export function ImageThumb({ img, onClick }: { img: ArchiveImage; onClick?: () =
 
 type LinkWithTooltipProps = React.ComponentProps<"a"> & {
   onInternalNavigate?: (url: URL) => boolean;
+  onPrefetch?: () => void;
 };
 
 function isArchivePostHref(href?: string) {
@@ -331,7 +332,7 @@ function isArchivePostHref(href?: string) {
 }
 
 export function LinkWithTooltip(props: LinkWithTooltipProps) {
-  const { title, children, className, onInternalNavigate, href, onMouseEnter, onFocus, ...rest } = props;
+  const { title, children, className, onInternalNavigate, href, ...rest } = props;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (typeof window === "undefined") return;
@@ -393,17 +394,16 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
     }
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    onMouseEnter?.(e);
+  const onPrefetch = () => {
     prefetchDictionaryForHref();
     prefetchArchiveForHref();
-  };
+    if (href && isArchivePostHref(href)) {
+      return true; // prefetch
+    } else {
+      return false; // do not prefetch
+    }
+  }
 
-  const handleFocus = (e: React.FocusEvent<HTMLAnchorElement>) => {
-    onFocus?.(e);
-    prefetchDictionaryForHref();
-    prefetchArchiveForHref();
-  };
   const tooltip = title ? (
     <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-sm text-white shadow-lg group-hover:block">
       {title}
@@ -414,24 +414,21 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
 
   return (
     <span className="group relative inline-block">
-      {href && isArchivePostHref(href) ? (
-        <HoverPrefetchLink
+      {href ? (
+        <ForesightPrefetchLink
           href={href}
           onClick={handleClick}
-          onMouseEnter={handleMouseEnter}
-          onFocus={handleFocus}
+          onPrefetch={onPrefetch}
           className={linkClassName}
           {...rest}
         >
           {children}
-        </HoverPrefetchLink>
+        </ForesightPrefetchLink>
       ) : (
         <a
           {...rest}
           href={href}
           onClick={handleClick}
-          onMouseEnter={handleMouseEnter}
-          onFocus={handleFocus}
           className={linkClassName}
         >
           {children}

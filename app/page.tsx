@@ -4,7 +4,7 @@ import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { LegacyRedirect } from "@/components/home/LegacyRedirect";
 import { siteConfig } from "@/lib/siteConfig";
-import { HoverPrefetchLink } from "@/components/HoverPrefetchLink";
+import { ForesightPrefetchLink } from "@/components/ForesightPrefetchLink";
 
 export default function Home() {
   const pillars = [
@@ -97,9 +97,9 @@ export default function Home() {
                   {card}
                 </a>
               ) : (
-                <HoverPrefetchLink key={pillar.title} href={pillar.href} className="h-full">
+                <ForesightPrefetchLink key={pillar.title} href={pillar.href} className="h-full">
                   {card}
-                </HoverPrefetchLink>
+                </ForesightPrefetchLink>
               );
             })}
           </div>
