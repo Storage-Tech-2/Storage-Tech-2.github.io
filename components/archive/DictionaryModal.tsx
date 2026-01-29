@@ -157,8 +157,26 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                     No referenced posts found.
                   </div>
                 ) : (
-                  <div className="rounded-lg border px-3 py-2 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
-                    Loading referenced posts…
+                  <div className="rounded-lg border px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:text-gray-300">
+                    <div className="font-medium">Referenced codes</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {referencedCodes.map((code) => (
+                        <span
+                          key={code}
+                          className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                        >
+                          {code}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                      Open the archives to search by code.
+                    </div>
+                    <div className="mt-2">
+                      <Link href="/archives" className="text-xs text-blue-600 hover:underline dark:text-blue-400">
+                        Go to archives
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
