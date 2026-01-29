@@ -15,7 +15,7 @@ type Props = {
   posts: ArchiveListItem[];
   sortKey: SortKey;
   globalTags?: GlobalTag[];
-  onNavigate: (post: ArchiveListItem) => void;
+  onNavigate?(post: ArchiveListItem): void;
 };
 
 function getColumnCount(width: number) {
@@ -72,7 +72,7 @@ export function VirtualizedGrid({ posts, sortKey, onNavigate, globalTags }: Prop
     if (!element) return;
     const next = element.getBoundingClientRect().top + window.scrollY;
     setScrollMargin((prev) => (Math.abs(prev - next) > 1 ? next : prev));
-  });
+  }, [containerRef]);
 
   const virtualizer = useWindowVirtualizer({
     count: rowCount,

@@ -202,7 +202,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         setDidQueryParam(null);
       }
     };
-  }, [openDictionaryEntry, setDidQueryParam]);
+  }, [openDictionaryEntry, pathname, setDidQueryParam]);
 
   const images = currentData?.images?.map((img) => ({
     ...img,

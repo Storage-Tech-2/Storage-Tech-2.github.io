@@ -47,7 +47,7 @@ function buildTagStyle(color?: string): React.CSSProperties | undefined {
   } as React.CSSProperties;
 }
 
-export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag; state: -1 | 0 | 1; count?: number; onToggle?: (rightClick: boolean) => void; globalTags?: GlobalTag[] }) {
+export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag; state: -1 | 0 | 1; count?: number; onToggle?(rightClick: boolean): void; globalTags?: GlobalTag[] }) {
   const meta = getSpecialTagMeta(tag.name, globalTags);
   const metaStyle = meta?.color ? buildTagStyle(meta.color) : undefined;
   const base = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors";
@@ -153,8 +153,8 @@ export function AttachmentCard({
   onViewPdf,
 }: {
   att: Attachment;
-  onView?: (img: ArchiveImage) => void;
-  onViewPdf?: (pdf: PdfPreviewRequest) => void;
+  onView?(img: ArchiveImage): void;
+  onViewPdf?(pdf: PdfPreviewRequest): void;
 }) {
   const href = att.path && att.canDownload ? att.path : att.url;
   const sourceURL = att.path || att.url;
@@ -313,7 +313,7 @@ export function AttachmentCard({
   );
 }
 
-export function ImageThumb({ img, onClick }: { img: ArchiveImage; onClick?: () => void }) {
+export function ImageThumb({ img, onClick }: { img: ArchiveImage; onClick?(): void }) {
   const src = img.path ? img.path : img.url;
   return (
     <button className="block overflow-hidden rounded-lg border bg-black/5 dark:bg-white/5" onClick={onClick} title={img.description}>
@@ -459,7 +459,7 @@ function linkTargetForHref(href?: string) {
   }
 }
 
-export function MarkdownText({ text, onInternalLink }: { text: string; onInternalLink?: (url: URL) => boolean }) {
+export function MarkdownText({ text, onInternalLink }: { text: string; onInternalLink?(url: URL): boolean }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -503,7 +503,7 @@ export function RecordRenderer({
   schemaStyles?: Record<string, StyleInfo>;
   references?: Reference[];
   dictionaryTooltips?: Record<string, string>;
-  onInternalLink?: (url: URL) => boolean;
+  onInternalLink?(url: URL): boolean;
 }) {
   const markdown = useMemo(() => postToMarkdown(records, recordStyles, schemaStyles), [records, recordStyles, schemaStyles]);
   const decorated = useMemo(
@@ -515,7 +515,7 @@ export function RecordRenderer({
   return <MarkdownText text={decorated} onInternalLink={onInternalLink} />;
 }
 
-export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry; onOpen: (entry: IndexedDictionaryEntry) => void }) {
+export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry; onOpen?(entry: IndexedDictionaryEntry): void }) {
   const primary = entry.index.terms[0] || entry.index.id;
   const extraCount = Math.max(0, (entry.index.terms?.length || 0) - 1);
   const slug = buildDictionarySlug(entry.index);
@@ -527,7 +527,7 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
       onClick={(event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
         event.preventDefault();
-        onOpen(entry);
+        onOpen?.(entry);
       }}
       onMouseEnter={() => prefetchDictionaryEntryData(entry.index.id)}
       onFocus={() => prefetchDictionaryEntryData(entry.index.id)}

@@ -13,7 +13,7 @@ type Props = {
   post: ArchiveListItem;
   sortKey: SortKey;
   globalTags?: GlobalTag[];
-  onNavigate: (post: ArchiveListItem) => void;
+  onNavigate?(post: ArchiveListItem): void;
 };
 
 export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
@@ -41,7 +41,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
         onClick={() => {
-          onNavigate(post);
+          onNavigate?.(post);
         }}
         onPrefetch={() => prefetchArchiveEntryData(post)}
       >

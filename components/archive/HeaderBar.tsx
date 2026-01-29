@@ -12,15 +12,15 @@ type Props = {
   logoSrc: string;
   discordInviteUrl?: string;
   q?: string;
-  onSearchChange?: (val: string) => void;
-  onSearchCommit?: () => void;
+  onSearchChange?(val: string): void;
+  onSearchCommit?(): void;
   sortKey?: SortKey;
-  onSortChange?: (val: SortKey) => void;
+  onSortChange?(val: SortKey): void;
   dictionaryQuery?: string;
-  onDictionarySearchChange?: (val: string) => void;
-  onDictionarySearchCommit?: () => void;
+  onDictionarySearchChange?(val: string): void;
+  onDictionarySearchCommit?(): void;
   dictionarySort?: "az" | "updated";
-  onDictionarySortChange?: (val: "az" | "updated") => void;
+  onDictionarySortChange?(val: "az" | "updated"): void;
 };
 
 export function HeaderBar({

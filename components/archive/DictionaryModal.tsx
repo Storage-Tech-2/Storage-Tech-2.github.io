@@ -12,10 +12,10 @@ import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
 
 type Props = {
   entry: IndexedDictionaryEntry;
-  onClose: () => void;
+  onClose(): void;
   closeHref?: string;
   dictionaryTooltips?: Record<string, string>;
-  onInternalLink?: (url: URL) => boolean;
+  onInternalLink?(url: URL): boolean;
   variant?: "modal" | "inline";
 };
 
