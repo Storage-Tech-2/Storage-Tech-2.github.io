@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useMemo } from "react";
-import { AutoSizer, List, WindowScroller } from "react-virtualized";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "./PostCard";
 import { type ArchiveListItem } from "@/lib/archive";
 import { type GlobalTag, type SortKey } from "@/lib/types";
@@ -26,101 +26,107 @@ function getColumnCount(width: number) {
   return 1;
 }
 
+function useElementWidth<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const update = () => {
+      const nextWidth = element.getBoundingClientRect().width;
+      setWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+    };
+
+    update();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }
+
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, width };
+}
+
 export function VirtualizedGrid({ posts, sortKey, onNavigate, globalTags }: Props) {
- 
+  const { ref: containerRef, width } = useElementWidth<HTMLDivElement>();
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  const columnCount = useMemo(() => {
+    const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
+    const effectiveWidth = Math.max(width, viewportWidth);
+    return getColumnCount(effectiveWidth);
+  }, [width]);
+
+  const rowCount = useMemo(() => Math.ceil(posts.length / columnCount), [posts.length, columnCount]);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const element = containerRef.current;
+    if (!element) return;
+    const next = element.getBoundingClientRect().top + window.scrollY;
+    setScrollMargin((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+  });
+
+  const virtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 2,
+    scrollMargin,
+    useFlushSync: false,
+  });
+
   if (!posts.length) return null;
 
   return (
-    <WindowScroller>
-      {({ height, isScrolling, onChildScroll, registerChild, scrollTop }) => (
-        <AutoSizer disableHeight>
-          {({ width }) => (
-            <VirtualizedGridContent
-              posts={posts}
-              onNavigate={onNavigate}
-              sortKey={sortKey}
-              globalTags={globalTags}
-              width={width}
-              height={height}
-              isScrolling={isScrolling}
-              onChildScroll={onChildScroll}
-              registerChild={registerChild}
-              scrollTop={scrollTop}
-            />
-          )}
-        </AutoSizer>
-      )}
-    </WindowScroller>
-  );
-}
-
-type GridContentProps = Props & {
-  width: number;
-  height: number;
-  isScrolling: boolean;
-  onChildScroll: (params: { clientHeight: number; scrollHeight: number; scrollTop: number }) => void;
-  registerChild: (el: Element | null) => void;
-  scrollTop: number;
-};
-
-function VirtualizedGridContent({
-  posts,
-  onNavigate,
-  sortKey,
-  globalTags,
-  width,
-  height,
-  isScrolling,
-  onChildScroll,
-  registerChild,
-  scrollTop,
-}: GridContentProps) {
-  const columnCount = useMemo(() => {
-    const viewport = typeof window !== "undefined" ? window.innerWidth : width;
-    return getColumnCount(Math.max(width, viewport));
-  }, [width]);
-  const rowCount = useMemo(() => Math.ceil(posts.length / columnCount), [posts.length, columnCount]);
-
-  const rowRenderer = useCallback(
-    ({ index, key, style }: { index: number; key: string; style: React.CSSProperties }) => {
-      const start = index * columnCount;
-      const rowItems = posts.slice(start, start + columnCount);
-      return (
-        <div key={key} style={{ ...style, paddingBottom: GRID_GAP }}>
-          <div
-            style={{
-              display: "grid",
-              gap: GRID_GAP,
-              gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-              alignItems: "stretch",
-            }}
-          >
-            {rowItems.map((p) => (
-              <div key={`${p.channel.path}/${p.entry.path}`} style={{ height: CARD_HEIGHT }}>
-                <PostCard post={p} onNavigate={onNavigate} sortKey={sortKey} globalTags={globalTags} />
+    <div ref={containerRef} style={{ position: "relative" }}>
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((item) => {
+          const start = item.index * columnCount;
+          const rowItems = posts.slice(start, start + columnCount);
+          return (
+            <div
+              key={item.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${item.size}px`,
+                transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
+                paddingBottom: GRID_GAP,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gap: GRID_GAP,
+                  gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                  alignItems: "stretch",
+                }}
+              >
+                {rowItems.map((p) => (
+                  <div key={`${p.channel.path}/${p.entry.path}`} style={{ height: CARD_HEIGHT }}>
+                    <PostCard post={p} onNavigate={onNavigate} sortKey={sortKey} globalTags={globalTags} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      );
-    },
-    [posts, columnCount, onNavigate, sortKey, globalTags],
-  );
-
-  return (
-    <div ref={registerChild}>
-      <List
-        autoHeight
-        height={height}
-        width={width}
-        rowCount={rowCount}
-        rowHeight={ROW_HEIGHT}
-        rowRenderer={rowRenderer}
-        isScrolling={isScrolling}
-        onScroll={onChildScroll}
-        scrollTop={scrollTop}
-        overscanRowCount={2}
-      />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

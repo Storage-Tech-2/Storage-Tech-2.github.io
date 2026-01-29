@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "@next/third-parties": "^16.1.1",
+    "@tanstack/react-virtual": "^3.13.18",
     "next": "^16.1.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.3.0",
-    "react-virtualized": "^9.22.6",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.4",
     "tsx": "^4.20.5"
@@ -27,7 +27,6 @@
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "@types/react-virtualized": "^9.22.3",
     "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.1",
@@ -35,9 +34,9 @@
     "typescript": "^5.9.3"
   },
   "browserslist": [
-      "last 2 Chrome versions",
-      "last 2 Firefox versions",
-      "last 2 Edge versions",
-      "last 2 Safari versions"
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Edge versions",
+    "last 2 Safari versions"
   ]
 }

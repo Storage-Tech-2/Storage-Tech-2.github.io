@@ -53,7 +53,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default async function DictionaryEntryPage({ params }: Params) {
   const dictionary = await fetchDictionaryIndex();
   const slug = decodeURIComponent((await params).slug);
