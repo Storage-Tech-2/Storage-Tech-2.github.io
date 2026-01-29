@@ -2,7 +2,6 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { RefObject } from "react";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
 import { type ArchiveListItem } from "@/lib/archive";
 import { DEFAULT_GLOBAL_TAGS, type ChannelRef, type GlobalTag, type SortKey, type Tag } from "@/lib/types";
@@ -33,7 +32,6 @@ type Options = {
   pageCount?: number;
   clientReady: boolean;
   isPostOpen: boolean;
-  sidebarRef?: RefObject<HTMLElement | null>;
 };
 
 export function useArchiveFilters({
@@ -45,7 +43,6 @@ export function useArchiveFilters({
   pageCount,
   clientReady,
   isPostOpen,
-  sidebarRef,
 }: Options) {
   const router = useRouter();
   const pathname = usePathname();
@@ -318,11 +315,6 @@ export function useArchiveFilters({
     setCommittedQ("");
     setSortKey("newest");
   };
-
-  useEffect(() => {
-    const el = sidebarRef?.current || null;
-    if (el && el.scrollTop !== 0) el.scrollTop = 0;
-  }, [selectedAuthors, selectedChannels, tagState, tagMode, filteredPosts.length, sidebarRef]);
 
   return {
     search: {

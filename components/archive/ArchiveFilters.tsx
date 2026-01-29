@@ -10,11 +10,11 @@ type Props = {
   channelCounts: Record<string, number>;
   authorOptions: Array<{ name: string; norm: string; count: number; selected: boolean }>;
   authorQuery: string;
-  onToggleChannel: (code: string) => void;
-  onResetFilters: () => void;
-  onToggleAuthor: (name: string) => void;
-  onAuthorQueryChange: (val: string) => void;
-  onClearAuthors: () => void;
+  onToggleChannel(code: string): void;
+  onResetFilters(): void;
+  onToggleAuthor(name: string): void;
+  onAuthorQueryChange(val: string): void;
+  onClearAuthors(): void;
 };
 
 export function ArchiveFilters({

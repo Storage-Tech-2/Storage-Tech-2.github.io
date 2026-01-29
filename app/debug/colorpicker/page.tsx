@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HeaderBar } from "@/components/archive/HeaderBar";
+import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { TagColorLab } from "./ColorWebLab";
 import { siteConfig } from "@/lib/siteConfig";

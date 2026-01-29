@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { HeaderBar } from "@/components/archive/HeaderBar";
+import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { LegacyRedirect } from "@/components/home/LegacyRedirect";
 import { siteConfig } from "@/lib/siteConfig";

@@ -7,7 +7,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
-export function PdfViewer({ src, onPageChange }: { src: string; onPageChange?: (page: number, total: number) => void }) {
+export function PdfViewer({ src, onPageChange }: { src: string; onPageChange?(page: number, total: number): void }) {
   const [numPages, setNumPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);

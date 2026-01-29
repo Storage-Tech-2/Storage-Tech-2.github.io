@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { HeaderBar } from "@/components/archive/HeaderBar";
+import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { siteConfig } from "@/lib/siteConfig";
 import type { Metadata } from "next";

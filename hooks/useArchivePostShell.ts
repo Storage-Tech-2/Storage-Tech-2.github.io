@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MouseEvent, MutableRefObject } from "react";
+import type { MouseEvent, RefObject } from "react";
 import {
   findPostBySlug,
   getCachedDictionaryIndex,
@@ -15,7 +15,7 @@ import type { ArchiveEntryData, IndexedDictionaryEntry } from "@/lib/types";
 type Options = {
   posts: ArchiveListItem[];
   archiveRootHref: string;
-  pendingScrollRef: MutableRefObject<number | null>;
+  pendingScrollRef: RefObject<number | null>;
 };
 
 const buildDictionaryTooltips = (entries: IndexedDictionaryEntry[] | null) => {
@@ -51,7 +51,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
   const [openPost, setOpenPost] = useState<ArchiveListItem | null>(null);
   const [openData, setOpenData] = useState<ArchiveEntryData | null>(null);
   const [openDictionaryTooltips, setOpenDictionaryTooltips] = useState<Record<string, string>>({});
-  const [openLoading, setOpenLoading] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
   const openRequestRef = useRef<symbol | null>(null);
   const listUrlRef = useRef<string | null>(null);
@@ -81,7 +80,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     setOpenPost(null);
     setOpenData(null);
     setOpenError(null);
-    setOpenLoading(false);
     openRequestRef.current = null;
     setOpenDictionaryTooltips({});
     if (openScrollRef.current !== null) {
@@ -101,12 +99,11 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     }
     pendingScrollRef.current = null;
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
-    window.history.replaceState(window.history.state, "", nextHref);
+    window.history.pushState(window.history.state, "", nextHref);
     requestAnimationFrame(() => window.scrollTo(0, 0));
     setOpenPost(post);
     setOpenData(null);
     setOpenError(null);
-    setOpenLoading(true);
     const requestToken = Symbol("archive-entry");
     openRequestRef.current = requestToken;
     const cachedDictionary = getCachedDictionaryIndex()?.index ?? null;
@@ -130,11 +127,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
         if (openRequestRef.current !== requestToken) return;
         setOpenError((err as Error).message || "Unable to load this entry.");
       })
-      .finally(() => {
-        if (openRequestRef.current === requestToken) {
-          setOpenLoading(false);
-        }
-      });
     return true;
   }, [archiveRootHref, openPost, pendingScrollRef]);
 
@@ -151,7 +143,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     openPost,
     openData,
     openDictionaryTooltips,
-    openLoading,
     openError,
     isPostOpen: Boolean(openPost),
     openPostFromList,

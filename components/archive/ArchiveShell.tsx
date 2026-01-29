@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HeaderBar } from "./HeaderBar";
+import { HeaderBar } from "../layout/HeaderBar";
 import { ArchivePostView } from "./ArchivePostView";
 import { ArchiveListView } from "./ArchiveListView";
 import { useArchiveData } from "@/hooks/useArchiveData";
@@ -50,7 +50,6 @@ export function ArchiveShell({
     openPost,
     openData,
     openDictionaryTooltips,
-    openLoading,
     openError,
     isPostOpen,
     openPostFromList,
@@ -67,8 +66,19 @@ export function ArchiveShell({
     pageCount,
     clientReady,
     isPostOpen,
-    sidebarRef: sidebarShellRef,
   });
+
+  useEffect(() => {
+    const el = sidebarShellRef.current;
+    if (!el) return;
+    if (el.scrollTop !== 0) el.scrollTo({ top: 0 });
+  }, [
+    filters.authors.selected,
+    filters.channels.selected,
+    filters.tags.state,
+    filters.tags.mode,
+    filters.results.filtered.length,
+  ]);
 
   useArchiveScrollRestore({
     pendingScrollRef,
@@ -84,7 +94,6 @@ export function ArchiveShell({
           post={openPost}
           data={openData}
           dictionaryTooltips={openDictionaryTooltips}
-          loading={openLoading}
           error={openError}
           globalTags={globalTags}
           archiveConfig={archiveConfig}

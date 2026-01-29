@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect } from "react";
-import type { MutableRefObject } from "react";
+import type { RefObject } from "react";
 
 type Options = {
-  pendingScrollRef: MutableRefObject<number | null>;
+  pendingScrollRef: RefObject<number | null>;
   clientReady: boolean;
   isPostOpen: boolean;
   restoreKey?: number;

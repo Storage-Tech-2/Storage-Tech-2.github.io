@@ -10,7 +10,6 @@ type Props = {
   post: ArchiveListItem | null;
   data: ArchiveEntryData | null;
   dictionaryTooltips: Record<string, string>;
-  loading: boolean;
   error: string | null;
   globalTags: GlobalTag[];
   archiveConfig: ArchiveConfig;
