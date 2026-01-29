@@ -446,8 +446,8 @@ export function ArchiveShell({
               <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                 {(pageSize && showPagination) ? (
                   <span>
-                    Showing {Math.min(filteredPosts.length, Math.max(0, (pageNumber - 1) * pageSize + 1))}-
-                    {Math.min(filteredPosts.length, pageNumber * pageSize)} of {filteredPosts.length}/{posts.length} posts
+                    Showing {Math.min(filteredPosts.length, Math.max(0, Math.max(pageNumber - 1, 0) * pageSize + 1))}-
+                    {Math.min(filteredPosts.length, Math.max(pageNumber, 1) * pageSize)} of {filteredPosts.length}/{posts.length} posts
                   </span>
                 ) : (
                   <span>
