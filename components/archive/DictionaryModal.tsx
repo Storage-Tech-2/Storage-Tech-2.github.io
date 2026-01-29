@@ -134,7 +134,10 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                           key={code}
                           href={`/archives/${post.slug}`}
                           className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
-                          onPrefetch={() => prefetchArchiveEntryData(post)}
+                          onPrefetch={() => {
+                            void import("@/components/not-found/NotFoundResolver");
+                            prefetchArchiveEntryData(post);
+                          }}
                         >
                           <div className="space-y-1">
                             <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>

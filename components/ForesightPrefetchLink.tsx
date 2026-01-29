@@ -17,16 +17,6 @@ export function ForesightPrefetchLink({ children, className, onPrefetch, shouldP
   const router = useRouter() // import from "next/navigation" not "next/router"
   const { elementRef } = useForesight<HTMLAnchorElement>({
     callback: () => {
-      if (typeof window !== "undefined") {
-        try {
-          const url = new URL(props.href.toString(), window.location.origin)
-          if (url.origin === window.location.origin && url.pathname.includes("/archives/")) {
-            void import("@/components/not-found/NotFoundResolver")
-          }
-        } catch {
-          // ignore malformed hrefs
-        }
-      }
       if (onPrefetch) {
         onPrefetch();
       }

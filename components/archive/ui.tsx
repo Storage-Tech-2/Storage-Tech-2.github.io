@@ -373,6 +373,7 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
       const url = new URL(href, window.location.href);
       if (url.origin !== window.location.origin) return;
       if (!url.pathname.startsWith("/archives/")) return;
+      void import("@/components/not-found/NotFoundResolver");
       const slug = url.pathname.replace("/archives/", "").replace(/\/+$/, "");
       if (!slug) {
         prefetchArchiveIndex();
