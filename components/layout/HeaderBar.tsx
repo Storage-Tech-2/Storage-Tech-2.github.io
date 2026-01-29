@@ -94,7 +94,7 @@ export function HeaderBar(props: Props) {
                   ? "bg-blue-600 text-white dark:bg-blue-500"
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
-              onPrefetch={() => prefetchArchiveIndex()}
+              beforePrefetch={() => prefetchArchiveIndex()}
             >
               Archive
             </ForesightPrefetchLink>
@@ -106,7 +106,7 @@ export function HeaderBar(props: Props) {
                   ? "bg-blue-600 text-white dark:bg-blue-500"
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
-              onPrefetch={() => prefetchDictionaryIndex()}
+              beforePrefetch={() => prefetchDictionaryIndex()}
             >
               Dictionary
             </ForesightPrefetchLink>

@@ -9,10 +9,9 @@ import { findPostBySlug, prefetchArchiveEntryData, prefetchArchiveIndex, prefetc
 import { getDictionaryIdFromSlug, buildDictionarySlug } from "@/lib/dictionary";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import { postToMarkdown } from "@/lib/utils/markdown";
+import { getArchiveSlugInfo } from "@/lib/utils/urls";
 import type { IndexedDictionaryEntry, Reference, StyleInfo, SubmissionRecords } from "@/lib/types";
 import { ForesightPrefetchLink } from "@/components/ui/ForesightPrefetchLink";
-
-const isArchivePostHref = (href?: string) => typeof href === "string" && /^\/archives\//.test(href);
 
 type LinkWithTooltipProps = React.ComponentProps<"a"> & {
   onInternalNavigate?: (url: URL) => boolean;
@@ -69,22 +68,15 @@ export function LinkWithTooltip({ title, children, className, onInternalNavigate
     try {
       const url = new URL(href, window.location.href);
       if (url.origin !== window.location.origin) return;
-      if (!url.pathname.startsWith("/archives/")) return;
-      void import("@/components/not-found/NotFoundResolver");
-      const slugSegment = url.pathname.replace("/archives/", "").replace(/\/+$/, "");
-      if (!slugSegment) {
+      const { slug, isArchiveRoot } = getArchiveSlugInfo(url);
+      if (isArchiveRoot) {
         prefetchArchiveIndex();
         return;
       }
+      if (!slug) return;
       prefetchArchiveIndex().then((idx) => {
         if (!idx) return;
-        let decodedSlug = slugSegment;
-        try {
-          decodedSlug = decodeURIComponent(slugSegment);
-        } catch {
-          // ignore
-        }
-        const match = findPostBySlug(idx.posts, decodedSlug);
+        const match = findPostBySlug(idx.posts, slug);
         if (match) prefetchArchiveEntryData(match);
       });
     } catch {
@@ -108,7 +100,7 @@ export function LinkWithTooltip({ title, children, className, onInternalNavigate
   return (
     <span className="group relative inline-block">
       {href ? (
-        <ForesightPrefetchLink href={href} onClick={handleClick} onPrefetch={onPrefetch} shouldPrefetch={() => isArchivePostHref(href)} className={linkClassName} {...rest}>
+        <ForesightPrefetchLink href={href} onClick={handleClick} beforePrefetch={onPrefetch} className={linkClassName} {...rest}>
           {children}
         </ForesightPrefetchLink>
       ) : (

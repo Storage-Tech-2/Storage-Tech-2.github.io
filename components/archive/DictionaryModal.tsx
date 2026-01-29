@@ -147,8 +147,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                           // fall back to default navigation
                         }
                       }}
-                      onPrefetch={() => {
-                        void import("@/components/not-found/NotFoundResolver");
+                      beforePrefetch={() => {
                         prefetchArchiveEntryData(post);
                       }}
                     >

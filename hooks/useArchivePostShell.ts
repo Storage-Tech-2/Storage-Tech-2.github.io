@@ -10,6 +10,7 @@ import {
   type ArchiveListItem,
 } from "@/lib/archive";
 import { siteConfig } from "@/lib/siteConfig";
+import { getArchiveSlugInfo } from "@/lib/utils/urls";
 import type { ArchiveEntryData, IndexedDictionaryEntry } from "@/lib/types";
 
 type Options = {
@@ -33,18 +34,34 @@ const isPlainLeftClick = (event?: MouseEvent<HTMLAnchorElement>) => {
   return !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0);
 };
 
-const extractArchiveSlugFromUrl = (url: URL) => {
-  const basePath = siteConfig.basePath || "";
-  const rawPath = url.pathname;
-  const normalizedPath = basePath && rawPath.startsWith(basePath) ? rawPath.slice(basePath.length) : rawPath;
-  if (!normalizedPath.startsWith("/archives/")) return null;
-  const slug = normalizedPath.replace("/archives/", "").replace(/\/+$/, "");
-  if (!slug) return null;
-  try {
-    return decodeURIComponent(slug);
-  } catch {
-    return slug;
+const extractArchiveSlugFromUrl = (url: URL) => getArchiveSlugInfo(url).slug;
+
+const getCurrentHref = () => {
+  if (typeof window === "undefined") return "";
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+};
+
+const buildArchiveHistoryState = (listHref: string) => {
+  if (typeof window === "undefined") return { archiveListHref: listHref };
+  const currentState = window.history.state;
+  return (currentState && typeof currentState === "object")
+    ? { ...(currentState as Record<string, unknown>), archiveListHref: listHref }
+    : { archiveListHref: listHref };
+};
+
+const syncDocumentTitle = (post: ArchiveListItem | null, titleRef: React.MutableRefObject<string | null>) => {
+  if (typeof document === "undefined") return;
+  if (!post) {
+    if (titleRef.current !== null) {
+      document.title = titleRef.current;
+      titleRef.current = null;
+    }
+    return;
   }
+  if (titleRef.current === null) {
+    titleRef.current = document.title;
+  }
+  document.title = `${post.entry.name} | ${siteConfig.siteName}`;
 };
 
 export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }: Options) {
@@ -58,18 +75,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
   const titleRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (!openPost) {
-      if (titleRef.current !== null) {
-        document.title = titleRef.current;
-        titleRef.current = null;
-      }
-      return;
-    }
-    if (titleRef.current === null) {
-      titleRef.current = document.title;
-    }
-    document.title = `${openPost.entry.name} | ${siteConfig.siteName}`;
+    syncDocumentTitle(openPost, titleRef);
   }, [openPost]);
 
   const resetOpenState = useCallback((restoreScroll: boolean) => {
@@ -124,7 +130,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
   const openPostFromList = useCallback((post: ArchiveListItem, event?: MouseEvent<HTMLAnchorElement>) => {
     if (!isPlainLeftClick(event)) return false;
     if (typeof window === "undefined") return true;
-    const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const currentHref = getCurrentHref();
     if (!openPost) {
       listUrlRef.current = currentHref;
       openScrollRef.current = window.scrollY;
@@ -132,10 +138,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     }
     pendingScrollRef.current = null;
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
-    const currentState = window.history.state;
-    const nextState = (currentState && typeof currentState === "object")
-      ? { ...(currentState as Record<string, unknown>), archiveListHref: listUrlRef.current || currentHref }
-      : { archiveListHref: listUrlRef.current || currentHref };
+    const nextState = buildArchiveHistoryState(listUrlRef.current || currentHref);
     window.history.pushState(nextState, "", nextHref);
     requestAnimationFrame(() => window.scrollTo(0, 0));
     loadPost(post);
@@ -169,8 +172,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
   useEffect(() => {
     if (typeof window === "undefined") return;
     const syncFromLocation = () => {
-      const url = new URL(window.location.href);
-      const slug = extractArchiveSlugFromUrl(url);
+      const slug = extractArchiveSlugFromUrl(new URL(window.location.href));
       if (!slug) {
         closePostFromUrl();
         return;

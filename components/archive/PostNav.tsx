@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from "react";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { prefetchArchiveIndex } from "@/lib/archive";
 import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
@@ -12,9 +11,6 @@ type Props = {
 
 export function PostNav({ onBack, onHome }: Props) {
   const handleBack = useBackNavigation("/archives");
-  useEffect(() => {
-    prefetchArchiveIndex();
-  }, []);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
@@ -29,7 +25,7 @@ export function PostNav({ onBack, onHome }: Props) {
           }
           handleBack();
         }}
-        onPrefetch={() => prefetchArchiveIndex()}
+        beforePrefetch={() => prefetchArchiveIndex()}
       >
         ← Back
       </ForesightPrefetchLink>
@@ -41,7 +37,7 @@ export function PostNav({ onBack, onHome }: Props) {
           event.preventDefault();
           onHome();
         }}
-        onPrefetch={() => prefetchArchiveIndex()}
+        beforePrefetch={() => prefetchArchiveIndex()}
       >
         Archive home
       </ForesightPrefetchLink>

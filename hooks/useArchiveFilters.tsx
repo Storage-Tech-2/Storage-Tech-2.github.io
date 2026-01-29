@@ -34,6 +34,53 @@ type Options = {
   hydrated: boolean;
 };
 
+type FilterState = {
+  q: string;
+  committedQ: string;
+  tagMode: "OR" | "AND";
+  tagState: Record<string, -1 | 0 | 1>;
+  selectedChannels: string[];
+  selectedAuthors: string[];
+  sortKey: SortKey;
+};
+
+const isUrlStateActive = (state: ReturnType<typeof getArchiveFiltersFromUrl>) =>
+  Boolean(
+    state.committedQ ||
+    state.sortKey !== "newest" ||
+    state.tagMode !== "AND" ||
+    Object.keys(state.tagState).length > 0 ||
+    state.selectedChannels.length > 0 ||
+    state.selectedAuthors.length > 0,
+  );
+
+const toFilterState = (state: Partial<FilterState>): FilterState => ({
+  q: state.q || "",
+  committedQ: state.committedQ ?? state.q ?? "",
+  tagMode: state.tagMode === "OR" ? "OR" : "AND",
+  tagState: state.tagState || {},
+  selectedChannels: state.selectedChannels || [],
+  selectedAuthors: state.selectedAuthors || [],
+  sortKey: state.sortKey || "newest",
+});
+
+const buildInitialState = () => {
+  const fromUrl = getArchiveFiltersFromUrl();
+  if (isUrlStateActive(fromUrl)) return toFilterState(fromUrl);
+  const fromSession = readArchiveSession();
+  return fromSession ? toFilterState(fromSession) : toFilterState(fromUrl);
+};
+
+const buildPersistedState = (state: FilterState) => ({
+  q: state.q,
+  committedQ: state.committedQ,
+  tagMode: state.tagMode,
+  tagState: state.tagState,
+  selectedChannels: state.selectedChannels,
+  selectedAuthors: state.selectedAuthors,
+  sortKey: state.sortKey,
+});
+
 export function useArchiveFilters({
   posts,
   channels,
@@ -58,35 +105,20 @@ export function useArchiveFilters({
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const skipUrlSyncRef = useRef(true);
 
+  const applyFilterState = (state: FilterState) => {
+    setQ(state.q);
+    setCommittedQ(state.committedQ);
+    setTagMode(state.tagMode);
+    setTagState(state.tagState);
+    setSelectedChannels(state.selectedChannels);
+    setSelectedAuthors(state.selectedAuthors);
+    setSortKey(state.sortKey);
+  };
+
   useEffect(() => {
-    const hasUrlState = (state: ReturnType<typeof getArchiveFiltersFromUrl>) =>
-      state.committedQ ||
-      state.sortKey !== "newest" ||
-      state.tagMode !== "AND" ||
-      Object.keys(state.tagState).length > 0 ||
-      state.selectedChannels.length > 0 ||
-      state.selectedAuthors.length > 0;
-    const fromUrl = getArchiveFiltersFromUrl();
-    const fromSession = hasUrlState(fromUrl) ? null : readArchiveSession();
-    const next = fromSession
-      ? {
-        q: fromSession.q || "",
-        committedQ: fromSession.committedQ ?? fromSession.q ?? "",
-        tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
-        tagState: fromSession.tagState || {},
-        selectedChannels: fromSession.selectedChannels || [],
-        selectedAuthors: fromSession.selectedAuthors || [],
-        sortKey: fromSession.sortKey || "newest",
-      }
-      : fromUrl;
+    const next = buildInitialState();
     startTransition(() => {
-      setQ(next.q || "");
-      setCommittedQ(next.committedQ || "");
-      setTagMode(next.tagMode);
-      setTagState(next.tagState || {});
-      setSelectedChannels(next.selectedChannels || []);
-      setSelectedAuthors(next.selectedAuthors || []);
-      setSortKey(next.sortKey || "newest");
+      applyFilterState(next);
     });
     setInternalNavigationFlag();
   }, []);
@@ -94,15 +126,9 @@ export function useArchiveFilters({
   useEffect(() => {
     const handlePopState = () => {
       if (typeof window === "undefined") return;
-      const parsed = getArchiveFiltersFromUrl();
+      const parsed = toFilterState(getArchiveFiltersFromUrl());
       startTransition(() => {
-        setQ(parsed.q || "");
-        setCommittedQ(parsed.committedQ || "");
-        setTagMode(parsed.tagMode);
-        setTagState(parsed.tagState || {});
-        setSelectedChannels(parsed.selectedChannels || []);
-        setSelectedAuthors(parsed.selectedAuthors || []);
-        setSortKey(parsed.sortKey || "newest");
+        applyFilterState(parsed);
       });
     };
     window.addEventListener("popstate", handlePopState);
@@ -114,7 +140,7 @@ export function useArchiveFilters({
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
     if (isPostOpen) return;
-    setArchiveFiltersToUrl(router, {
+    setArchiveFiltersToUrl(router, buildPersistedState({
       q,
       committedQ,
       tagMode,
@@ -122,13 +148,13 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    }, pathname);
+    }), pathname);
   }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname, isPostOpen]);
 
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
     if (typeof window === "undefined") return;
-    writeArchiveSession({
+    writeArchiveSession(buildPersistedState({
       q,
       committedQ,
       tagMode,
@@ -136,7 +162,7 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    });
+    }));
   }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey]);
 
   useEffect(() => {
@@ -150,7 +176,9 @@ export function useArchiveFilters({
   const normalizedSelectedAuthors = useMemo(() => selectedAuthors.map(normalize), [selectedAuthors]);
 
   const allTags = useMemo<Tag[]>(() => {
-    const channelPool = selectedChannels.length ? channels.filter((ch) => selectedChannels.includes(ch.code) || selectedChannels.includes(ch.name)) : channels;
+    const channelPool = selectedChannels.length
+      ? channels.filter((ch) => selectedChannels.includes(ch.code) || selectedChannels.includes(ch.name))
+      : channels;
     const fromChannels = channelPool.flatMap((ch) => ch.availableTags || []);
     const authorSet = normalizedSelectedAuthors.length ? new Set(normalizedSelectedAuthors) : null;
     const postsPool = posts.filter((p) => {

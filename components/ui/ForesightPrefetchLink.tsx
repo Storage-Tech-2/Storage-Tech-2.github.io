@@ -8,21 +8,24 @@ import { ComponentPropsWithoutRef } from "react"
 interface ForesightLinkProps
   extends Omit<ComponentPropsWithoutRef<typeof Link>, "prefetch">, Omit<ForesightRegisterOptions, "element" | "callback"> {
   children: React.ReactNode,
-  onPrefetch?: () => void,
-  shouldPrefetch?: () => boolean,
+  beforePrefetch?: (event: { cancel: () => void }) => void,
   className?: string
 }
 
-export function ForesightPrefetchLink({ children, className, onPrefetch, shouldPrefetch, ...props }: ForesightLinkProps) {
+export function ForesightPrefetchLink({ children, className, beforePrefetch, ...props }: ForesightLinkProps) {
   const router = useRouter() // import from "next/navigation" not "next/router"
   const { elementRef } = useForesight<HTMLAnchorElement>({
     callback: () => {
-      if (onPrefetch) {
-        onPrefetch();
+      let cancelled = false;
+      const event = {
+        cancel: () => {
+          cancelled = true;
+        }
       }
-      if (shouldPrefetch && !shouldPrefetch()) {
-        return;
+      if (beforePrefetch) {
+        beforePrefetch(event);
       }
+      if (cancelled) return;
       router.prefetch(props.href.toString())
     },
     hitSlop: props.hitSlop,

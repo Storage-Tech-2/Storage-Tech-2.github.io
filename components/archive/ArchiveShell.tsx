@@ -104,7 +104,7 @@ export function ArchiveShell({
           onArchiveNavigate={handleArchiveUrlNavigate}
         />
       ) : (
-        <div>
+        <>
           <HeaderBar
             siteName={siteConfig.siteName}
             view="archive"
@@ -126,7 +126,7 @@ export function ArchiveShell({
           />
 
           <Footer />
-        </div>
+        </>
       )}
     </div>
   );
