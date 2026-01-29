@@ -130,15 +130,27 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                       }
                       const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
                       return (
-                        <ForesightPrefetchLink
-                          key={code}
-                          href={`/archives/${post.slug}`}
-                          className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
-                          onPrefetch={() => {
-                            void import("@/components/not-found/NotFoundResolver");
-                            prefetchArchiveEntryData(post);
-                          }}
-                        >
+                    <ForesightPrefetchLink
+                      key={code}
+                      href={`/archives/${post.slug}`}
+                      className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
+                      onClick={(event) => {
+                        if (!onInternalLink) return;
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+                        try {
+                          const url = new URL(`/archives/${post.slug}`, window.location.href);
+                          if (onInternalLink(url)) {
+                            event.preventDefault();
+                          }
+                        } catch {
+                          // fall back to default navigation
+                        }
+                      }}
+                      onPrefetch={() => {
+                        void import("@/components/not-found/NotFoundResolver");
+                        prefetchArchiveEntryData(post);
+                      }}
+                    >
                           <div className="space-y-1">
                             <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">

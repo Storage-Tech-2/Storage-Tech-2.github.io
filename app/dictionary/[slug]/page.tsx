@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DictionaryPageClient } from "@/components/dictionary/DictionaryPageClient";
+import { DictionaryShell } from "@/components/dictionary/DictionaryShell";
 import { fetchDictionaryEntry, fetchDictionaryIndex } from "@/lib/archive";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { disableDictionaryPrerender } from "@/lib/runtimeFlags";
@@ -57,11 +57,11 @@ export default async function DictionaryEntryPage({ params }: Params) {
   const dictionary = await fetchDictionaryIndex();
   const slug = decodeURIComponent((await params).slug);
   const match = findDictionaryEntryBySlug(dictionary.config.entries, slug);
-  if (!match) return <DictionaryPageClient entries={dictionary.entries} />;
+  if (!match) return <DictionaryShell entries={dictionary.entries} />;
 
   const data = await fetchDictionaryEntry(match.id);
   return (
-    <DictionaryPageClient
+    <DictionaryShell
       entries={dictionary.entries}
       initialActiveEntry={{ index: match, data }}
     />

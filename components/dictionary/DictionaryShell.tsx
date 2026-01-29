@@ -18,7 +18,7 @@ import { DICTIONARY_CACHE_TTL_MS } from "@/lib/cacheConstants";
 import { buildDictionarySlug, findDictionaryEntryBySlug } from "@/lib/dictionary";
 import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { type IndexedDictionaryEntry, type SortKey } from "@/lib/types";
+import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
@@ -30,7 +30,7 @@ type Props = {
 const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
   list.reduce((max, entry) => Math.max(max, entry.index.updatedAt ?? 0), 0);
 
-export function DictionaryPageClient({ entries, initialActiveEntry = null }: Props) {
+export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const basePath = siteConfig.basePath || "";
@@ -270,16 +270,17 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
         view="dictionary"
         logoSrc={siteConfig.logoSrc}
         discordInviteUrl={siteConfig.discordInviteUrl}
-        q={query}
-        onSearchChange={setQuery}
-        onSearchCommit={() => { }}
-        sortKey={"newest" as SortKey}
-        onSortChange={() => { }}
-        dictionaryQuery={query}
-        onDictionarySearchChange={setQuery}
-        onDictionarySearchCommit={commitSearch}
-        dictionarySort={sort}
-        onDictionarySortChange={updateSort}
+        filters={{
+          search: {
+            q: query,
+            setQ: setQuery,
+            commitSearch,
+          },
+          sort: {
+            key: sort,
+            setKey: updateSort,
+          },
+        }}
       />
 
       <main className="mx-auto max-w-7xl px-4 pb-12 pt-6">

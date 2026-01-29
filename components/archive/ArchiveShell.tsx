@@ -1,28 +1,17 @@
 'use client';
 
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { ArchiveFilters } from "./ArchiveFilters";
-import { TagChip } from "./ui";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HeaderBar } from "./HeaderBar";
-import { PostCard } from "./PostCard";
-import { VirtualizedGrid } from "./VirtualizedGrid";
+import { ArchivePostView } from "./ArchivePostView";
+import { ArchiveListView } from "./ArchiveListView";
 import { useArchiveData } from "@/hooks/useArchiveData";
-import { type ArchiveIndex, type ArchiveListItem } from "@/lib/archive";
-import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
-import { DEFAULT_GLOBAL_TAGS, type GlobalTag, type SortKey } from "@/lib/types";
-import { normalize } from "@/lib/utils/strings";
-import { getSpecialTagMeta, sortTagObjectsForDisplay } from "@/lib/utils/tagDisplay";
+import { useArchiveFilters } from "@/hooks/useArchiveFilters";
+import { useArchivePostShell } from "@/hooks/useArchivePostShell";
+import { useArchiveScrollRestore } from "@/hooks/useArchiveScrollRestore";
+import { type ArchiveIndex } from "@/lib/archive";
+import { DEFAULT_GLOBAL_TAGS, type GlobalTag } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
-import {
-  getArchiveFiltersFromUrl,
-  readArchiveSession,
-  setArchiveFiltersToUrl,
-  writeArchiveSession,
-} from "@/lib/urlState";
-import { disablePagination } from "@/lib/runtimeFlags";
-import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -39,79 +28,15 @@ export function ArchiveShell({
   pageSize,
   pageCount,
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { posts, channels, error } = useArchiveData({ initial: initialArchive });
+  const { posts, channels, error, config } = useArchiveData({ initial: initialArchive });
+  const archiveConfig = config ?? initialArchive.config;
   const globalTags = useMemo<GlobalTag[]>(
-    () => initialArchive.config.globalTags?.length ? initialArchive.config.globalTags : DEFAULT_GLOBAL_TAGS,
-    [initialArchive.config.globalTags],
+    () => archiveConfig.globalTags?.length ? archiveConfig.globalTags : DEFAULT_GLOBAL_TAGS,
+    [archiveConfig.globalTags],
   );
-  const [q, setQ] = useState("");
-  const [committedQ, setCommittedQ] = useState("");
-  const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
-  const [tagState, setTagState] = useState<Record<string, -1 | 0 | 1>>({});
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
-  const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
-  const [authorQuery, setAuthorQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("newest");
-  const [dictionaryQuery, setDictionaryQuery] = useState("");
-  const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const sidebarShellRef = useRef<HTMLElement | null>(null);
-  const skipUrlSyncRef = useRef(true);
-  useEffect(() => {
-    const hasUrlState = (state: ReturnType<typeof getArchiveFiltersFromUrl>) =>
-      state.committedQ ||
-      state.sortKey !== "newest" ||
-      state.tagMode !== "AND" ||
-      Object.keys(state.tagState).length > 0 ||
-      state.selectedChannels.length > 0 ||
-      state.selectedAuthors.length > 0;
-    const fromUrl = getArchiveFiltersFromUrl();
-    const fromSession = hasUrlState(fromUrl) ? null : readArchiveSession();
-    const next = fromSession
-      ? {
-        q: fromSession.q || "",
-        committedQ: fromSession.committedQ ?? fromSession.q ?? "",
-        tagMode: (fromSession.tagMode === "OR" ? "OR" : "AND") as "OR" | "AND",
-        tagState: fromSession.tagState || {},
-        selectedChannels: fromSession.selectedChannels || [],
-        selectedAuthors: fromSession.selectedAuthors || [],
-        sortKey: fromSession.sortKey || "newest",
-      }
-      : fromUrl;
-    startTransition(() => {
-      setQ(next.q || "");
-      setCommittedQ(next.committedQ || "");
-      setTagMode(next.tagMode);
-      setTagState(next.tagState || {});
-      setSelectedChannels(next.selectedChannels || []);
-      setSelectedAuthors(next.selectedAuthors || []);
-      setSortKey(next.sortKey || "newest");
-    });
-    setInternalNavigationFlag();
-  }, []);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (typeof window === "undefined") return;
-      const parsed = getArchiveFiltersFromUrl();
-      startTransition(() => {
-        setQ(parsed.q || "");
-        setCommittedQ(parsed.committedQ || "");
-        setTagMode(parsed.tagMode);
-        setTagState(parsed.tagState || {});
-        setSelectedChannels(parsed.selectedChannels || []);
-        setSelectedAuthors(parsed.selectedAuthors || []);
-        setSortKey(parsed.sortKey || "newest");
-      });
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
-
   const pendingScrollRef = useRef<number | null>(null);
+  const archiveRootHref = `${siteConfig.basePath || ""}/archives`;
 
   const [clientReady, setClientReady] = useState(hasHydratedArchiveShell);
   useEffect(() => {
@@ -120,367 +45,75 @@ export function ArchiveShell({
     const id = requestAnimationFrame(() => setClientReady(true));
     return () => cancelAnimationFrame(id);
   }, [clientReady]);
-  const commitSearch = () => setCommittedQ(q);
- 
-  useEffect(() => {
-    const captureScroll = () => {
-      const savedScroll = sessionStorage.getItem("archive-scroll");
-      if (!savedScroll) return;
-      const y = parseInt(savedScroll, 10);
-      if (!Number.isNaN(y)) pendingScrollRef.current = y;
-    };
-    const restoreScroll = () => {
-      if (!clientReady) return;
-      const y = pendingScrollRef.current;
-      if (y === null) return;
-      requestAnimationFrame(() => window.scrollTo(0, y));
-      pendingScrollRef.current = null;
-      sessionStorage.removeItem("archive-scroll");
-    };
-    captureScroll();
-    restoreScroll();
-    window.addEventListener("popstate", captureScroll);
-    window.addEventListener("popstate", restoreScroll);
-    window.addEventListener("pageshow", captureScroll);
-    window.addEventListener("pageshow", restoreScroll);
-    return () => {
-      window.removeEventListener("popstate", captureScroll);
-      window.removeEventListener("popstate", restoreScroll);
-      window.removeEventListener("pageshow", captureScroll);
-      window.removeEventListener("pageshow", restoreScroll);
-    };
-  }, [clientReady]);
 
-  useEffect(() => {
-    if (skipUrlSyncRef.current) return;
-    setArchiveFiltersToUrl(router, {
-      q,
-      committedQ,
-      tagMode,
-      tagState,
-      selectedChannels,
-      selectedAuthors,
-      sortKey,
-    }, pathname);
-  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname]);
+  const {
+    openPost,
+    openData,
+    openDictionaryTooltips,
+    openLoading,
+    openError,
+    isPostOpen,
+    openPostFromList,
+    closePost,
+    handleArchiveUrlNavigate,
+  } = useArchivePostShell({ posts, archiveRootHref, pendingScrollRef });
 
-  useEffect(() => {
-    if (skipUrlSyncRef.current) return;
-    if (typeof window === "undefined") return;
-    writeArchiveSession({
-      q,
-      committedQ,
-      tagMode,
-      tagState,
-      selectedChannels,
-      selectedAuthors,
-      sortKey,
-    });
-  }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey]);
+  const filters = useArchiveFilters({
+    posts,
+    channels,
+    globalTags,
+    pageNumber,
+    pageSize,
+    pageCount,
+    clientReady,
+    isPostOpen,
+    sidebarRef: sidebarShellRef,
+  });
 
-  useEffect(() => {
-    skipUrlSyncRef.current = false;
-  }, []);
-
-  const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
-  const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);
-  const normalizedSelectedAuthors = useMemo(() => selectedAuthors.map(normalize), [selectedAuthors]);
-
-  const allTags = useMemo(() => {
-    const channelPool = selectedChannels.length ? channels.filter((ch) => selectedChannels.includes(ch.code) || selectedChannels.includes(ch.name)) : channels;
-    const fromChannels = channelPool.flatMap((ch) => ch.availableTags || []);
-    const authorSet = normalizedSelectedAuthors.length ? new Set(normalizedSelectedAuthors) : null;
-    const postsPool = posts.filter((p) => {
-      const matchesChannel =
-        !selectedChannels.length || selectedChannels.includes(p.channel.code) || selectedChannels.includes(p.channel.name);
-      if (!matchesChannel) return false;
-      if (!authorSet) return true;
-      const authors = getPostAuthorsNormalized(p);
-      return authors.some((a) => authorSet.has(a));
-    });
-    const fromEntryRefs = postsPool.flatMap((p) => p.entry.tags || []);
-    const fromGlobals = globalTags.map((tag) => tag.name);
-    const names = Array.from(new Set([...fromGlobals, ...fromChannels, ...fromEntryRefs]));
-    let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })), globalTags);
-    if (!selectedChannels.length && !selectedAuthors.length) {
-      tags = tags.filter((tag) => !!getSpecialTagMeta(tag.name, globalTags));
-    }
-    return tags;
-  }, [channels, posts, selectedAuthors.length, selectedChannels, normalizedSelectedAuthors, globalTags]);
-
-  const availableAuthors = useMemo(() => {
-    const map = new Map<string, string>();
-    posts.forEach((p) => {
-      (p.entry.authors || []).forEach((name) => {
-        const norm = normalize(name);
-        if (!map.has(norm)) map.set(norm, name);
-      });
-    });
-    selectedAuthors.forEach((name) => {
-      const norm = normalize(name);
-      if (!map.has(norm)) map.set(norm, name);
-    });
-    return Array.from(map.values());
-  }, [posts, selectedAuthors]);
-
-  const authorCounts = useMemo(
-    () => computeAuthorCounts(posts, selectedChannels, includeTags, excludeTags, tagMode, q),
-    [posts, selectedChannels, includeTags, excludeTags, tagMode, q],
-  );
-
-  const authorSearchTerm = useMemo(() => authorQuery.trim().toLowerCase(), [authorQuery]);
-  const authorOptions = useMemo(() => {
-    const selectedSet = new Set(normalizedSelectedAuthors);
-    return availableAuthors
-      .map((name) => {
-        const norm = normalize(name);
-        return { name, norm, count: authorCounts[norm] || 0, selected: selectedSet.has(norm) };
-      })
-      .filter((opt) => {
-        if (opt.selected) return true;
-        const hasMatches = (opt.count || 0) > 0;
-        if (!hasMatches) return false;
-        if (!authorSearchTerm) return true;
-        return opt.norm.includes(authorSearchTerm);
-      })
-      .sort((a, b) => {
-        if (a.selected !== b.selected) return a.selected ? -1 : 1;
-        if ((b.count || 0) !== (a.count || 0)) return (b.count || 0) - (a.count || 0);
-        return a.name.localeCompare(b.name);
-      });
-  }, [availableAuthors, authorCounts, normalizedSelectedAuthors, authorSearchTerm]);
-
-  const filteredPosts = useMemo(
-    () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode }),
-    [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode],
-  );
-
-  const showPagination = !disablePagination && pageCount && pageCount > 1 && (pageNumber > 0 || !clientReady);
-
-  const pagedPosts = useMemo(() => {
-    const start = Math.max(0, Math.max(pageNumber - 1, 0) * pageSize);
-    return filteredPosts.slice(start, start + pageSize);
-  }, [filteredPosts, pageNumber, pageSize]);
-
-  const pagination = showPagination ? (
-    <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-      {pageNumber > 1 ? (
-        <a
-          className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-          href={`/archives/page/${pageNumber - 1}`}
-        >
-          ← Previous
-        </a>
-      ) : (
-        <span className="rounded-full border border-transparent px-3 py-1 text-sm font-semibold text-gray-400">← Previous</span>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        {Array.from({ length: pageCount }, (_, i) => {
-          const page = i + 1;
-          const href = `/archives/page/${page}`;
-          return (page === pageNumber || (page === 1 && pageNumber === 0)) ? (
-            <span
-              key={page}
-              className="rounded-full border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-sm"
-              aria-current="page"
-            >
-              {page}
-            </span>
-          ) : (
-            <a
-              key={page}
-              className="rounded-full border border-transparent px-3 py-1 text-xs font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800"
-              href={href}
-            >
-              {page}
-            </a>
-          );
-        })}
-      </div>
-      {pageNumber < pageCount ? (
-        <a
-          className="rounded-full border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-          href={`/archives/page/${pageNumber + 1}`}
-        >
-          Next →
-        </a>
-      ) : (
-        <span className="rounded-full border border-transparent px-3 py-1 text-sm font-semibold text-gray-400">Next →</span>
-      )}
-    </div>
-  ) : null;
-
-  const channelCounts = useMemo(
-    () => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q, selectedAuthors),
-    [posts, includeTags, excludeTags, selectedAuthors, tagMode, q],
-  );
-  const tagCounts = useMemo(
-    () => computeTagCounts(posts, selectedChannels, excludeTags, q, selectedAuthors),
-    [posts, selectedChannels, excludeTags, q, selectedAuthors],
-  );
-
-  const handleOpenPost = (p: ArchiveListItem) => {
-    sessionStorage.setItem("archive-scroll", `${window.scrollY}`);
-    router.push(`/archives/${p.slug}`);
-  };
-
-  const toggleAuthor = (name: string) => {
-    setSelectedAuthors((prev) => {
-      const norm = normalize(name);
-      const exists = prev.some((a) => normalize(a) === norm);
-      if (exists) return prev.filter((a) => normalize(a) !== norm);
-      return [...prev, name];
-    });
-  };
-
-  const clearAuthors = () => {
-    setSelectedAuthors([]);
-    setAuthorQuery("");
-  };
-
-  const resetFilters = () => {
-    setSelectedChannels([]);
-    setSelectedAuthors([]);
-    setAuthorQuery("");
-    setTagState({});
-    setTagMode("AND");
-    setQ("");
-    setCommittedQ("");
-    setSortKey("newest");
-  };
-
-  useEffect(() => {
-    const el = sidebarShellRef.current;
-    if (el && el.scrollTop !== 0) el.scrollTop = 0;
-  }, [selectedAuthors, selectedChannels, tagState, tagMode, filteredPosts.length]);
-
-  useEffect(() => {
-    if (!clientReady) return;
-    if (pendingScrollRef.current === null) return;
-    requestAnimationFrame(() => {
-      const y = pendingScrollRef.current;
-      if (y === null) return;
-      window.scrollTo(0, y);
-      pendingScrollRef.current = null;
-    });
-  }, [clientReady, filteredPosts.length]);
+  useArchiveScrollRestore({
+    pendingScrollRef,
+    clientReady,
+    isPostOpen,
+    restoreKey: filters.results.filtered.length,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <HeaderBar
-        siteName={siteConfig.siteName}
-        view="archive"
-        logoSrc={siteConfig.logoSrc}
-        discordInviteUrl={siteConfig.discordInviteUrl}
-        q={q}
-        onSearchChange={setQ}
-        onSearchCommit={commitSearch}
-        sortKey={sortKey}
-        onSortChange={(val) => setSortKey(val)}
-        dictionaryQuery={dictionaryQuery}
-        onDictionarySearchChange={setDictionaryQuery}
-        dictionarySort={dictionarySort}
-        onDictionarySortChange={setDictionarySort}
-      />
-
-      <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
-          <aside ref={sidebarShellRef} className="lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-24 pr-1 sidebar-scroll">
-            <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
-              <ArchiveFilters
-                channels={channels}
-                selectedChannels={selectedChannels}
-                channelCounts={channelCounts}
-                authorOptions={authorOptions}
-                authorQuery={authorQuery}
-                onToggleChannel={(code) =>
-                  setSelectedChannels((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
-                }
-                onResetFilters={resetFilters}
-                onToggleAuthor={toggleAuthor}
-                onAuthorQueryChange={setAuthorQuery}
-                onClearAuthors={clearAuthors}
-              />
-            </div>
-          </aside>
-
-          <div className="flex-1 lg:pt-1.5">
-            {error ? <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
-            {/* {loading ? <div className="rounded-lg border bg-white p-3 text-sm dark:bg-gray-900">Updating repository index…</div> : null} */}
-
-            <div role="navigation">
-              <div className="mb-3 flex flex-wrap items-center gap-3">
-                <span className="text-sm font-medium">Tags</span>
-                <div className="inline-flex items-center gap-2 text-xs">
-                  <label className="inline-flex items-center gap-1">
-                    <input type="radio" name="tagMode" value="AND" checked={tagMode === "AND"} onChange={() => setTagMode("AND")} />
-                    <span>Match all</span>
-                  </label>
-                  <label className="inline-flex items-center gap-1">
-                    <input type="radio" name="tagMode" value="OR" checked={tagMode === "OR"} onChange={() => setTagMode("OR")} />
-                    <span>Match any</span>
-                  </label>
-                  <span className="text-gray-500">Tip: right-click on tag to exclude</span>
-                </div>
-              </div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                {allTags.map((tag) => (
-                  <TagChip
-                    key={tag.id}
-                    tag={tag}
-                    state={tagState[tag.name] || 0}
-                    count={tagCounts[normalize(tag.name)] || 0}
-                    globalTags={globalTags}
-                    onToggle={(rightClick) => {
-                      setTagState((prev) => {
-                        const cur = prev[tag.name] || 0;
-                        const next = rightClick ? (cur === -1 ? 0 : -1) : cur === 1 ? 0 : 1;
-                        return { ...prev, [tag.name]: next };
-                      });
-                    }}
-                  />
-                ))}
-              </div>
-              <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                {(pageSize && showPagination) ? (
-                  <span>
-                    Showing {Math.min(filteredPosts.length, Math.max(0, Math.max(pageNumber - 1, 0) * pageSize + 1))}-
-                    {Math.min(filteredPosts.length, Math.max(pageNumber, 1) * pageSize)} of {filteredPosts.length}/{posts.length} posts
-                  </span>
-                ) : (
-                  <span>
-                    Showing 1-{filteredPosts.length} of {filteredPosts.length}/{posts.length} posts
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div role="main">
-              {(clientReady && pageNumber === 0) ? (
-                <>
-                  <VirtualizedGrid posts={filteredPosts} sortKey={sortKey} globalTags={globalTags} onNavigate={handleOpenPost} />
-                  {pagination}
-                </>
-              ) : (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {pagedPosts.map((post) => (
-                      <PostCard
-                        key={`${post.channel.path}/${post.entry.path}`}
-                        post={post}
-                        sortKey={sortKey}
-                        globalTags={globalTags}
-                        onNavigate={handleOpenPost}
-                      />
-                    ))}
-                  </div>
-                  {pagination}
-                </>
-              )}
-            </div>
-          </div>
+      {isPostOpen ? (
+        <ArchivePostView
+          post={openPost}
+          data={openData}
+          dictionaryTooltips={openDictionaryTooltips}
+          loading={openLoading}
+          error={openError}
+          globalTags={globalTags}
+          archiveConfig={archiveConfig}
+          onClose={closePost}
+          onArchiveNavigate={handleArchiveUrlNavigate}
+        />
+      ) : (
+        <div>
+          <HeaderBar
+            siteName={siteConfig.siteName}
+            view="archive"
+            logoSrc={siteConfig.logoSrc}
+            discordInviteUrl={siteConfig.discordInviteUrl}
+            filters={filters}
+          />
+          <ArchiveListView
+            sidebarRef={sidebarShellRef}
+            channelsList={channels}
+            filters={filters}
+            error={error}
+            globalTags={globalTags}
+            pageSize={pageSize}
+            pageNumber={pageNumber}
+            clientReady={clientReady}
+            totalPosts={posts.length}
+            onNavigate={openPostFromList}
+          />
         </div>
-      </div>
+      )}
       <Footer />
     </div>
   );

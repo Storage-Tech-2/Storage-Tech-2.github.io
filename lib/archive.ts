@@ -456,3 +456,4 @@ export function findPostBySlug(posts: ArchiveListItem[], slug: string): ArchiveL
   const lower = slug.toLowerCase();
   return posts.find((p) => p.slug.toLowerCase() === lower || slugMatchesEntry(lower, p.entry));
 }
+

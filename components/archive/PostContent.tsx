@@ -23,13 +23,14 @@ type Props = {
   schemaStyles?: Record<string, StyleInfo>;
   dictionaryTooltips?: Record<string, string>;
   globalTags?: GlobalTag[];
+  onArchiveNavigate?(url: URL): boolean;
 };
 
 const LazyPdfViewer = dynamic(() => import("./PdfViewer").then((mod) => ({ default: mod.PdfViewer })),{
   ssr: false,
 });
 
-export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags }: Props) {
+export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags, onArchiveNavigate }: Props) {
   const pathname = usePathname();
   const [liveState, setLiveState] = useState<ArchiveEntryData|null>(null);
   const baseData = data;
@@ -171,9 +172,14 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       const slug = url.pathname.replace("/dictionary/", "").replace(/\/+$/, "");
       did = getDictionaryIdFromSlug(decodeURIComponent(slug));
     }
-    if (!did) return false;
-    return openDictionaryEntry(did);
-  }, [openDictionaryEntry]);
+    if (did) {
+      return openDictionaryEntry(did);
+    }
+    if (onArchiveNavigate) {
+      return onArchiveNavigate(url);
+    }
+    return false;
+  }, [onArchiveNavigate, openDictionaryEntry]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

@@ -6,49 +6,51 @@ import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib
 import { prefetchArchiveIndex, prefetchDictionaryIndex } from "@/lib/archive";
 import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
 
-type Props = {
+type HeaderSearchFilters = {
+  q: string;
+  setQ(val: string): void;
+  commitSearch(): void;
+};
+
+type HeaderSortFilters<TSort extends string> = {
+  key: TSort;
+  setKey(val: TSort): void;
+};
+
+type HeaderFilters<TSort extends string> = {
+  search: HeaderSearchFilters;
+  sort: HeaderSortFilters<TSort>;
+};
+
+type ArchiveHeaderFilters = HeaderFilters<SortKey>;
+type DictionaryHeaderFilters = HeaderFilters<"az" | "updated">;
+
+type BaseProps = {
   siteName: string;
   view: "home" | "archive" | "dictionary";
   logoSrc: string;
   discordInviteUrl?: string;
-  q?: string;
-  onSearchChange?(val: string): void;
-  onSearchCommit?(): void;
-  sortKey?: SortKey;
-  onSortChange?(val: SortKey): void;
-  dictionaryQuery?: string;
-  onDictionarySearchChange?(val: string): void;
-  onDictionarySearchCommit?(): void;
-  dictionarySort?: "az" | "updated";
-  onDictionarySortChange?(val: "az" | "updated"): void;
 };
 
-export function HeaderBar({
-  siteName,
-  view,
-  logoSrc,
-  discordInviteUrl,
-  q,
-  onSearchChange,
-  onSearchCommit,
-  sortKey,
-  onSortChange,
-  dictionaryQuery,
-  onDictionarySearchChange,
-  onDictionarySearchCommit,
-  dictionarySort,
-  onDictionarySortChange,
-}: Props) {
-  const archiveSortKey = sortKey ?? "newest";
-  const dictionarySortValue = dictionarySort ?? "az";
-  const searchValue = q ?? "";
-  const dictionarySearchValue = dictionaryQuery ?? "";
-  const handleSearchChange = onSearchChange ?? (() => {});
-  const handleSearchCommit = onSearchCommit ?? (() => {});
-  const handleSortChange = onSortChange ?? (() => {});
-  const handleDictionarySearchChange = onDictionarySearchChange ?? (() => {});
-  const handleDictionarySearchCommit = onDictionarySearchCommit ?? (() => {});
-  const handleDictionarySortChange = onDictionarySortChange ?? (() => {});
+type Props =
+  | (BaseProps & { view: "home"; filters?: undefined })
+  | (BaseProps & { view: "archive"; filters?: ArchiveHeaderFilters })
+  | (BaseProps & { view: "dictionary"; filters?: DictionaryHeaderFilters });
+
+export function HeaderBar(props: Props) {
+  const { siteName, view, logoSrc, discordInviteUrl } = props;
+  const archiveFilters = view === "archive" ? props.filters : undefined;
+  const dictionaryFilters = view === "dictionary" ? props.filters : undefined;
+  const archiveSortKey = archiveFilters?.sort.key ?? "newest";
+  const dictionarySortValue = dictionaryFilters?.sort.key ?? "az";
+  const searchValue = archiveFilters?.search.q ?? "";
+  const dictionarySearchValue = dictionaryFilters?.search.q ?? "";
+  const handleSearchChange = archiveFilters?.search.setQ ?? (() => {});
+  const handleSearchCommit = archiveFilters?.search.commitSearch ?? (() => {});
+  const handleSortChange = archiveFilters?.sort.setKey ?? (() => {});
+  const handleDictionarySearchChange = dictionaryFilters?.search.setQ ?? (() => {});
+  const handleDictionarySearchCommit = dictionaryFilters?.search.commitSearch ?? (() => {});
+  const handleDictionarySortChange = dictionaryFilters?.sort.setKey ?? (() => {});
 
   return (
     <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "./PostCard";
 import { type ArchiveListItem } from "@/lib/archive";
@@ -15,7 +16,7 @@ type Props = {
   posts: ArchiveListItem[];
   sortKey: SortKey;
   globalTags?: GlobalTag[];
-  onNavigate?(post: ArchiveListItem): void;
+  onNavigate?(post: ArchiveListItem, event: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
 
 function getColumnCount(width: number) {

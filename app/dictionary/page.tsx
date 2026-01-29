@@ -1,4 +1,4 @@
-import { DictionaryPageClient } from "@/components/dictionary/DictionaryPageClient";
+import { DictionaryShell } from "@/components/dictionary/DictionaryShell";
 import { fetchDictionaryIndex } from "@/lib/archive";
 import { siteConfig } from "@/lib/siteConfig";
 import { Metadata } from "next";
@@ -26,5 +26,5 @@ export const metadata: Metadata = {
 
 export default async function DictionaryPage() {
   const dictionary = await fetchDictionaryIndex();
-  return <DictionaryPageClient entries={dictionary.entries}/>;
+  return <DictionaryShell entries={dictionary.entries}/>;
 }

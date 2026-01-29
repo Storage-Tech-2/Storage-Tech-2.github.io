@@ -1,6 +1,7 @@
 'use client';
 
 import Image from "next/image";
+import type { MouseEvent } from "react";
 import { ChannelBadge, TagList } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
@@ -13,7 +14,7 @@ type Props = {
   post: ArchiveListItem;
   sortKey: SortKey;
   globalTags?: GlobalTag[];
-  onNavigate?(post: ArchiveListItem): void;
+  onNavigate?(post: ArchiveListItem, event: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
 
 export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
@@ -40,12 +41,17 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
       <ForesightPrefetchLink
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
-        onClick={() => {
-          onNavigate?.(post);
+        onClick={(event) => {
+          const handled = onNavigate?.(post, event);
+          if (handled) {
+            event.preventDefault();
+          }
         }}
         onPrefetch={() => {
-          void import("@/components/not-found/NotFoundResolver");
           prefetchArchiveEntryData(post);
+        }}
+        shouldPrefetch={() =>{
+          return false;
         }}
       >
         <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
