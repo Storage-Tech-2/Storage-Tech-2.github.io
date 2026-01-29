@@ -105,7 +105,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   }, []);
 
   const setDidQueryParam = useCallback((did: string | null) => {
-    if (!pathname || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
     if (did) {
       sp.set("did", did);
@@ -113,9 +113,10 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       sp.delete("did");
     }
     const hash = window.location.hash;
+    const path = window.location.pathname || pathname || "";
     const query = sp.toString();
-    const next = query ? `${pathname}?${query}${hash}` : `${pathname}${hash}`;
-    const current = `${pathname}${window.location.search}${hash}`;
+    const next = query ? `${path}?${query}${hash}` : `${path}${hash}`;
+    const current = `${window.location.pathname}${window.location.search}${hash}`;
     if (next === current) return;
     router.replace(next, { scroll: false });
   }, [pathname, router]);
@@ -181,7 +182,9 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     if (did) {
       queueMicrotask(() => openDictionaryEntry(did));
     }
+    const normalizePath = (value: string) => (value === "/" ? "/" : value.replace(/\/+$/, ""));
     const handlePopState = () => {
+      if (!pathname || normalizePath(window.location.pathname) !== normalizePath(pathname)) return;
       const nextParams = new URLSearchParams(window.location.search);
       const nextDid = nextParams.get("did");
       if (nextDid) {
@@ -195,7 +198,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     return () => {
       window.removeEventListener("popstate", handlePopState);
       // Make sure we don't leave a lingering did= in history for this page.
-      if (typeof window !== "undefined" && window.location.search.includes("did=")) {
+      if (typeof window !== "undefined" && normalizePath(window.location.pathname) === normalizePath(pathname) && window.location.search.includes("did=")) {
         setDidQueryParam(null);
       }
     };
