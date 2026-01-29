@@ -8,6 +8,7 @@ import { getCachedArchiveIndex, prefetchArchiveEntryData, prefetchArchiveIndex, 
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import Link from "next/link";
+import { HoverPrefetchLink } from "../HoverPrefetchLink";
 
 type Props = {
   entry: IndexedDictionaryEntry;
@@ -55,7 +56,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
           items: referencedCodes.map((code) => ({ code, post: byCode.get(code) })),
         });
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -129,9 +130,8 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                       }
                       const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
                       return (
-                        <Link
+                        <HoverPrefetchLink
                           key={code}
-                          prefetch={false}
                           href={`/archives/${post.slug}`}
                           className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
                           onMouseEnter={() => prefetchArchiveEntryData(post)}
@@ -148,7 +148,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                             </div>
                           </div>
                           <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Open</span>
-                        </Link>
+                        </HoverPrefetchLink>
                       );
                     })}
                   </div>
@@ -173,7 +173,11 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                       Open the archives to search by code.
                     </div>
                     <div className="mt-2">
-                      <Link href="/archives" className="text-xs text-blue-600 hover:underline dark:text-blue-400">
+                      <Link
+                        prefetch={false}
+                        href="/archives"
+                        className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                      >
                         Go to archives
                       </Link>
                     </div>

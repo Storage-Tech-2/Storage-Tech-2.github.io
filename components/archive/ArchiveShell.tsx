@@ -381,8 +381,6 @@ export function ArchiveShell({
         onDictionarySearchChange={setDictionaryQuery}
         dictionarySort={dictionarySort}
         onDictionarySortChange={setDictionarySort}
-        onArchiveClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        onDictionaryClick={() => { }}
       />
 
       <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">

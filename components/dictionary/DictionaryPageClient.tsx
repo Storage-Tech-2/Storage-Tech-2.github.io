@@ -229,8 +229,6 @@ export function DictionaryPageClient({ entries, initialActiveEntry = null }: Pro
         onDictionarySearchCommit={commitSearch}
         dictionarySort={sort}
         onDictionarySortChange={updateSort}
-        onArchiveClick={() => router.push("/archives")}
-        onDictionaryClick={() => { }}
       />
 
       <main className="mx-auto max-w-7xl px-4 pb-12 pt-6">

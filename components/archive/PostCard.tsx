@@ -1,13 +1,13 @@
 'use client';
 
 import Image from "next/image";
-import Link from "next/link";
 import { ChannelBadge, TagList } from "./ui";
 import { RelativeTime } from "./RelativeTime";
 import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
+import { HoverPrefetchLink } from "../HoverPrefetchLink";
 
 type Props = {
   post: ArchiveListItem;
@@ -37,7 +37,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
 
   return (
     <article className="group flex h-full min-h-95 flex-col rounded-2xl bg-white transition hover:shadow-md dark:bg-gray-900">
-      <Link
+      <HoverPrefetchLink
         href={`/archives/${post.slug}`}
         className="flex h-full w-full flex-col text-left"
         onClick={() => {
@@ -77,7 +77,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
             <TagList tags={post.entry.tags || []} globalTags={globalTags} />
           </div>
         </div>
-      </Link>
+      </HoverPrefetchLink>
     </article>
   );
 }

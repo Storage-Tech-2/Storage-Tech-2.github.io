@@ -4,6 +4,7 @@ import { HeaderBar } from "@/components/archive/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { LegacyRedirect } from "@/components/home/LegacyRedirect";
 import { siteConfig } from "@/lib/siteConfig";
+import { HoverPrefetchLink } from "@/components/HoverPrefetchLink";
 
 export default function Home() {
   const pillars = [
@@ -96,9 +97,9 @@ export default function Home() {
                   {card}
                 </a>
               ) : (
-                <Link key={pillar.title} href={pillar.href} className="h-full">
+                <HoverPrefetchLink key={pillar.title} href={pillar.href} className="h-full">
                   {card}
-                </Link>
+                </HoverPrefetchLink>
               );
             })}
           </div>

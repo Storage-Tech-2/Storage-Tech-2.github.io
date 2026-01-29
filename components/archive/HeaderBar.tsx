@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { clsx } from "@/lib/utils/classNames";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib/types";
-import Link from "next/link";
 import { prefetchArchiveIndex, prefetchDictionaryIndex } from "@/lib/archive";
+import { HoverPrefetchLink } from "../HoverPrefetchLink";
 
 type Props = {
   siteName: string;
@@ -21,9 +21,6 @@ type Props = {
   onDictionarySearchCommit?: () => void;
   dictionarySort?: "az" | "updated";
   onDictionarySortChange?: (val: "az" | "updated") => void;
-  onHomeClick?: () => void;
-  onArchiveClick?: () => void;
-  onDictionaryClick?: () => void;
 };
 
 export function HeaderBar({
@@ -41,9 +38,6 @@ export function HeaderBar({
   onDictionarySearchCommit,
   dictionarySort,
   onDictionarySortChange,
-  onHomeClick,
-  onArchiveClick,
-  onDictionaryClick,
 }: Props) {
   const archiveSortKey = sortKey ?? "newest";
   const dictionarySortValue = dictionarySort ?? "az";
@@ -61,10 +55,10 @@ export function HeaderBar({
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
         <div className="flex w-full flex-wrap items-center gap-2 pb-1 sm:gap-3">
           <div className="flex shrink-0 items-center gap-3">
-            <Link href="/" className="h-10 w-10">
+            <HoverPrefetchLink href="/" className="h-10 w-10">
               <Image src={logoSrc} alt="Logo" width={40} height={40} className="h-10 w-10" />
-            </Link>
-            <Link href="/">
+            </HoverPrefetchLink>
+            <HoverPrefetchLink href="/">
             <div>
               <div className="text-xl font-bold">
                 {siteName}
@@ -75,11 +69,11 @@ export function HeaderBar({
                 
               </div>
             </div>
-            </Link>
+            </HoverPrefetchLink>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Link
+            <HoverPrefetchLink
               href="/"
               className={clsx(
                 "rounded-xl border px-3 py-2 text-sm transition",
@@ -87,11 +81,10 @@ export function HeaderBar({
                   ? "bg-blue-600 text-white dark:bg-blue-500"
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
-              onClick={onHomeClick}
             >
               Home
-            </Link>
-            <Link
+            </HoverPrefetchLink>
+            <HoverPrefetchLink
               href="/archives"
               className={clsx(
                 "rounded-xl border px-3 py-2 text-sm transition",
@@ -99,13 +92,12 @@ export function HeaderBar({
                   ? "bg-blue-600 text-white dark:bg-blue-500"
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
-              onClick={onArchiveClick}
               onMouseEnter={() => prefetchArchiveIndex()}
               onFocus={() => prefetchArchiveIndex()}
             >
               Archive
-            </Link>
-            <Link
+            </HoverPrefetchLink>
+            <HoverPrefetchLink
               href="/dictionary"
               className={clsx(
                 "rounded-xl border px-3 py-2 text-sm transition",
@@ -113,12 +105,11 @@ export function HeaderBar({
                   ? "bg-blue-600 text-white dark:bg-blue-500"
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
-              onClick={onDictionaryClick}
               onMouseEnter={() => prefetchDictionaryIndex()}
               onFocus={() => prefetchDictionaryIndex()}
             >
               Dictionary
-            </Link>
+            </HoverPrefetchLink>
           </div>
 
           <div className="flex flex-1 flex-wrap items-center gap-2">

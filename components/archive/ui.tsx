@@ -25,6 +25,7 @@ import {
   type GlobalTag,
   type Tag,
 } from "@/lib/types";
+import { HoverPrefetchLink } from "../HoverPrefetchLink";
 
 export function ChannelBadge({ ch }: { ch: { code: string; name: string; description?: string } }) {
   return (
@@ -414,9 +415,8 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
   return (
     <span className="group relative inline-block">
       {href && isArchivePostHref(href) ? (
-        <Link
+        <HoverPrefetchLink
           href={href}
-          prefetch={false}
           onClick={handleClick}
           onMouseEnter={handleMouseEnter}
           onFocus={handleFocus}
@@ -424,7 +424,7 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
           {...rest}
         >
           {children}
-        </Link>
+        </HoverPrefetchLink>
       ) : (
         <a
           {...rest}

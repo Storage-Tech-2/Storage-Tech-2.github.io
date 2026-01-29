@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { prefetchArchiveIndex } from "@/lib/archive";
+import { HoverPrefetchLink } from "../HoverPrefetchLink";
 
 export function PostNav() {
   const handleBack = useBackNavigation("/archives");
@@ -13,7 +13,7 @@ export function PostNav() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
-      <Link
+      <HoverPrefetchLink
         href="/archives"
         className="rounded-full border px-3 py-1 text-sm transition hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-900"
         onClick={(event) => {
@@ -24,8 +24,8 @@ export function PostNav() {
         onFocus={() => prefetchArchiveIndex()}
       >
         ← Back
-      </Link>
-      <Link
+      </HoverPrefetchLink>
+      <HoverPrefetchLink
         href="/archives"
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
         prefetch={false}
@@ -33,7 +33,7 @@ export function PostNav() {
         onFocus={() => prefetchArchiveIndex()}
       >
         Archive home
-      </Link>
+      </HoverPrefetchLink>
     </div>
   );
 }
