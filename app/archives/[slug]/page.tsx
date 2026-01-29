@@ -24,7 +24,10 @@ export async function generateStaticParams() {
     { slug: "example-entry" },
   ];
   const archive = await fetchArchiveIndex();
-  return archive.posts.map((post) => ({ slug: post.slug }));
+  return archive
+    .posts
+    .filter((post) => post.entry.codes[0] !== "US001") // debug
+    .map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
