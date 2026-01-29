@@ -18,7 +18,7 @@ type Props = {
   globalTags: GlobalTag[];
   pageSize: number;
   pageNumber: number;
-  clientReady: boolean;
+  hydrated: boolean;
   totalPosts: number;
   onNavigate(post: ArchiveListItem, event?: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
@@ -31,7 +31,7 @@ export function ArchiveListView({
   globalTags,
   pageSize,
   pageNumber,
-  clientReady,
+  hydrated,
   totalPosts,
   onNavigate,
 }: Props) {
@@ -114,7 +114,7 @@ export function ArchiveListView({
           </div>
 
           <div role="main">
-            {(clientReady && pageNumber === 0) ? (
+            {(hydrated && pageNumber === 0) ? (
               <>
                 <VirtualizedGrid posts={filteredPosts} sortKey={sort.key} globalTags={globalTags} onNavigate={onNavigate} />
                 {pagination.node}

@@ -30,8 +30,8 @@ type Options = {
   pageNumber: number;
   pageSize: number;
   pageCount?: number;
-  clientReady: boolean;
   isPostOpen: boolean;
+  hydrated: boolean;
 };
 
 export function useArchiveFilters({
@@ -41,8 +41,8 @@ export function useArchiveFilters({
   pageNumber,
   pageSize,
   pageCount,
-  clientReady,
   isPostOpen,
+  hydrated,
 }: Options) {
   const router = useRouter();
   const pathname = usePathname();
@@ -219,7 +219,7 @@ export function useArchiveFilters({
   );
 
   const pageTotal = pageCount ?? 0;
-  const showPagination = !disablePagination && pageTotal > 1 && (pageNumber > 0 || !clientReady);
+  const showPagination = !disablePagination && pageTotal > 1 && (pageNumber > 0 || !hydrated);
 
   const pagedPosts = useMemo(() => {
     const start = Math.max(0, Math.max(pageNumber - 1, 0) * pageSize);

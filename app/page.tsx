@@ -4,7 +4,7 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { LegacyRedirect } from "@/components/home/LegacyRedirect";
 import { siteConfig } from "@/lib/siteConfig";
-import { ForesightPrefetchLink } from "@/components/ForesightPrefetchLink";
+import { ForesightPrefetchLink } from "@/components/ui/ForesightPrefetchLink";
 
 export default function Home() {
   const pillars = [

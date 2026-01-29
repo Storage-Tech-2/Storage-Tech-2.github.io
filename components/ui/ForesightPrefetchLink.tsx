@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { type ForesightRegisterOptions } from "js.foresight"
-import useForesight from "../hooks/useForesight"
+import useForesight from "../../hooks/useForesight"
 import { useRouter } from "next/navigation"
 import { ComponentPropsWithoutRef } from "react"
 

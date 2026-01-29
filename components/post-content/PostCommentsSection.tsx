@@ -4,7 +4,7 @@ import { replaceAttachmentsInText } from "@/lib/utils/attachments";
 import { AttachmentCard } from "../ui/Attachments";
 import { AuthorInline } from "../ui/Authors";
 import { MarkdownText } from "../ui/LinkHelpers";
-import { RelativeTime } from "../archive/RelativeTime";
+import { RelativeTime } from "../ui/RelativeTime";
 import type { LightboxState, PdfViewerState } from "./types";
 
 type Props = {

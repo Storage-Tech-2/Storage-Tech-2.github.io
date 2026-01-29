@@ -5,14 +5,14 @@ import type { RefObject } from "react";
 
 type Options = {
   pendingScrollRef: RefObject<number | null>;
-  clientReady: boolean;
   isPostOpen: boolean;
   restoreKey?: number;
+  hydrated: boolean;
 };
 
 export function useArchiveScrollRestore({
   pendingScrollRef,
-  clientReady,
+  hydrated,
   isPostOpen,
   restoreKey,
 }: Options) {
@@ -24,7 +24,7 @@ export function useArchiveScrollRestore({
       if (!Number.isNaN(y)) pendingScrollRef.current = y;
     };
     const restoreScroll = () => {
-      if (!clientReady || isPostOpen) return;
+      if (!hydrated || isPostOpen) return;
       const y = pendingScrollRef.current;
       if (y === null) return;
       requestAnimationFrame(() => window.scrollTo(0, y));
@@ -43,10 +43,10 @@ export function useArchiveScrollRestore({
       window.removeEventListener("pageshow", captureScroll);
       window.removeEventListener("pageshow", restoreScroll);
     };
-  }, [clientReady, isPostOpen, pendingScrollRef]);
+  }, [hydrated, isPostOpen, pendingScrollRef]);
 
   useEffect(() => {
-    if (!clientReady || isPostOpen) return;
+    if (!hydrated || isPostOpen) return;
     if (pendingScrollRef.current === null) return;
     requestAnimationFrame(() => {
       const y = pendingScrollRef.current;
@@ -54,5 +54,5 @@ export function useArchiveScrollRestore({
       window.scrollTo(0, y);
       pendingScrollRef.current = null;
     });
-  }, [clientReady, isPostOpen, pendingScrollRef, restoreKey]);
+  }, [hydrated, isPostOpen, pendingScrollRef, restoreKey]);
 }

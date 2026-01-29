@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { prefetchArchiveIndex } from "@/lib/archive";
-import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
+import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 
 type Props = {
   onBack?(): void;

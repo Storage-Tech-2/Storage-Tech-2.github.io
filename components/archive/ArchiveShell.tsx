@@ -28,6 +28,16 @@ export function ArchiveShell({
   pageSize,
   pageCount,
 }: Props) {
+
+  const [hydrated, setHydrated] = useState(hasHydratedArchiveShell);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(true);
+    hasHydratedArchiveShell = true;
+  }, []);
+
+
   const { posts, channels, error, config } = useArchiveData({ initial: initialArchive });
   const archiveConfig = config ?? initialArchive.config;
   const globalTags = useMemo<GlobalTag[]>(
@@ -38,13 +48,6 @@ export function ArchiveShell({
   const pendingScrollRef = useRef<number | null>(null);
   const archiveRootHref = `${siteConfig.basePath || ""}/archives`;
 
-  const [clientReady, setClientReady] = useState(hasHydratedArchiveShell);
-  useEffect(() => {
-    hasHydratedArchiveShell = true;
-    if (clientReady) return;
-    const id = requestAnimationFrame(() => setClientReady(true));
-    return () => cancelAnimationFrame(id);
-  }, [clientReady]);
 
   const {
     openPost,
@@ -64,8 +67,8 @@ export function ArchiveShell({
     pageNumber,
     pageSize,
     pageCount,
-    clientReady,
     isPostOpen,
+    hydrated,
   });
 
   useEffect(() => {
@@ -82,7 +85,7 @@ export function ArchiveShell({
 
   useArchiveScrollRestore({
     pendingScrollRef,
-    clientReady,
+    hydrated,
     isPostOpen,
     restoreKey: filters.results.filtered.length,
   });
@@ -117,13 +120,14 @@ export function ArchiveShell({
             globalTags={globalTags}
             pageSize={pageSize}
             pageNumber={pageNumber}
-            clientReady={clientReady}
+            hydrated={hydrated}
             totalPosts={posts.length}
             onNavigate={openPostFromList}
           />
+
+          <Footer />
         </div>
       )}
-      <Footer />
     </div>
   );
 }

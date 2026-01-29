@@ -10,7 +10,7 @@ import { getDictionaryIdFromSlug, buildDictionarySlug } from "@/lib/dictionary";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import { postToMarkdown } from "@/lib/utils/markdown";
 import type { IndexedDictionaryEntry, Reference, StyleInfo, SubmissionRecords } from "@/lib/types";
-import { ForesightPrefetchLink } from "@/components/ForesightPrefetchLink";
+import { ForesightPrefetchLink } from "@/components/ui/ForesightPrefetchLink";
 
 const isArchivePostHref = (href?: string) => typeof href === "string" && /^\/archives\//.test(href);
 

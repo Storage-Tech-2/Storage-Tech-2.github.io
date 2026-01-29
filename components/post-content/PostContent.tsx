@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DictionaryModal } from "../archive/DictionaryModal";
-import { RelativeTime } from "../archive/RelativeTime";
+import { RelativeTime } from "../ui/RelativeTime";
 import { fetchCommentsData, fetchDictionaryEntry, prefetchArchiveEntryData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { assetURL, attachmentURL } from "@/lib/github";

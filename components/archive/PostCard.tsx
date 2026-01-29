@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import type { MouseEvent } from "react";
-import { RelativeTime } from "./RelativeTime";
+import { RelativeTime } from "../ui/RelativeTime";
 import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
-import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
+import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 import { ChannelBadge } from "../ui/ChannelBadge";
 import { TagList } from "../ui/Tags";
 

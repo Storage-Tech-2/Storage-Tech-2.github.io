@@ -4,7 +4,7 @@ import Image from "next/image";
 import { clsx } from "@/lib/utils/classNames";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib/types";
 import { prefetchArchiveIndex, prefetchDictionaryIndex } from "@/lib/archive";
-import { ForesightPrefetchLink } from "../ForesightPrefetchLink";
+import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 
 type HeaderSearchFilters = {
   q: string;
