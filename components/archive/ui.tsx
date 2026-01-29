@@ -13,7 +13,7 @@ import { getYouTubeEmbedURL } from "@/lib/utils/media";
 import { postToMarkdown } from "@/lib/utils/markdown";
 import { getSpecialTagMeta, sortTagsForDisplay } from "@/lib/utils/tagDisplay";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
-import { getDictionaryIdFromSlug } from "@/lib/dictionary";
+import { buildDictionarySlug, getDictionaryIdFromSlug } from "@/lib/dictionary";
 import {
   type Attachment,
   type Author,
@@ -516,10 +516,17 @@ export function RecordRenderer({
 export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry; onOpen: (entry: IndexedDictionaryEntry) => void }) {
   const primary = entry.index.terms[0] || entry.index.id;
   const extraCount = Math.max(0, (entry.index.terms?.length || 0) - 1);
+  const slug = buildDictionarySlug(entry.index);
+  const href = `/dictionary/${encodeURIComponent(slug)}`;
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(entry)}
+    <Link
+      href={href}
+      prefetch={false}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        onOpen(entry);
+      }}
       onMouseEnter={() => prefetchDictionaryEntryData(entry.index.id)}
       onFocus={() => prefetchDictionaryEntryData(entry.index.id)}
       onPointerEnter={() => prefetchArchiveIndex()}
@@ -532,7 +539,7 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
           {entry.index.summary && <div className="text-xs text-gray-600 line-clamp-3 dark:text-gray-300">{entry.index.summary}</div>}
         </div>
       </div>
-    </button>
+    </Link>
   );
 }
 
