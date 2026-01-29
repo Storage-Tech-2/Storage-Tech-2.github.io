@@ -13,14 +13,18 @@ export function PostNav() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
-      <button
+      <Link
+        href="/archives"
         className="rounded-full border px-3 py-1 text-sm transition hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-900"
-        onClick={handleBack}
+        onClick={(event) => {
+          event.preventDefault();
+          handleBack();
+        }}
         onMouseEnter={() => prefetchArchiveIndex()}
         onFocus={() => prefetchArchiveIndex()}
       >
         ← Back
-      </button>
+      </Link>
       <Link
         href="/archives"
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
