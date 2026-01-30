@@ -11,7 +11,6 @@ import { type ArchiveIndex } from "@/lib/archive";
 import { DEFAULT_GLOBAL_TAGS, type GlobalTag } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
-import { getHistoryState } from "@/lib/urlState";
 import { getArchiveSlugInfo } from "@/lib/utils/urls";
 
 type Props = {
@@ -78,6 +77,7 @@ export function ArchiveShell({
     isPostOpen,
     isArchivePostURL,
     hydrated,
+    pendingScrollRef,
   });
 
   const handleArchiveHomeClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
@@ -103,46 +103,6 @@ export function ArchiveShell({
     filters.tags.mode,
     filters.results.filtered.length,
   ]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const captureScroll = () => {
-      const state = getHistoryState();
-      const y = state.archiveListScrollY;
-      if (typeof y !== "number" || Number.isNaN(y)) return;
-      pendingScrollRef.current = y;
-    };
-    const restoreScroll = () => {
-      if (!hydrated || isPostOpen) return;
-      const y = pendingScrollRef.current;
-      if (y === null) return;
-      requestAnimationFrame(() => window.scrollTo(0, y));
-      pendingScrollRef.current = null;
-    };
-    captureScroll();
-    restoreScroll();
-    window.addEventListener("popstate", captureScroll);
-    window.addEventListener("popstate", restoreScroll);
-    window.addEventListener("pageshow", captureScroll);
-    window.addEventListener("pageshow", restoreScroll);
-    return () => {
-      window.removeEventListener("popstate", captureScroll);
-      window.removeEventListener("popstate", restoreScroll);
-      window.removeEventListener("pageshow", captureScroll);
-      window.removeEventListener("pageshow", restoreScroll);
-    };
-  }, [hydrated, isPostOpen, pendingScrollRef]);
-
-  useEffect(() => {
-    if (!hydrated || isPostOpen) return;
-    if (pendingScrollRef.current === null) return;
-    requestAnimationFrame(() => {
-      const y = pendingScrollRef.current;
-      if (y === null) return;
-      window.scrollTo(0, y);
-      pendingScrollRef.current = null;
-    });
-  }, [hydrated, isPostOpen, pendingScrollRef, filters.results.filtered.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">

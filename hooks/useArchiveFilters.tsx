@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
 import { type ArchiveListItem } from "@/lib/archive";
@@ -33,6 +33,7 @@ type Options = {
   isPostOpen: boolean;
   isArchivePostURL: boolean;
   hydrated: boolean;
+  pendingScrollRef?: RefObject<number | null>;
 };
 
 type FilterState = {
@@ -67,12 +68,14 @@ const toFilterState = (state: Partial<FilterState>): FilterState => ({
 
 const buildInitialState = () => {
   const fromUrl = getArchiveFiltersFromUrl();
-  if (isUrlStateActive(fromUrl)) return toFilterState(fromUrl);
+  if (isUrlStateActive(fromUrl)) return { filters: toFilterState(fromUrl), scrollY: null as number | null };
   const fromSession = readArchiveSession();
-  return fromSession ? toFilterState(fromSession) : toFilterState(fromUrl);
+  return fromSession
+    ? { filters: toFilterState(fromSession), scrollY: typeof fromSession.scrollY === "number" ? fromSession.scrollY : null }
+    : { filters: toFilterState(fromUrl), scrollY: null as number | null };
 };
 
-const buildPersistedState = (state: FilterState) => ({
+const buildPersistedState = (state: FilterState, scrollY?: number) => ({
   q: state.q,
   committedQ: state.committedQ,
   tagMode: state.tagMode,
@@ -80,6 +83,7 @@ const buildPersistedState = (state: FilterState) => ({
   selectedChannels: state.selectedChannels,
   selectedAuthors: state.selectedAuthors,
   sortKey: state.sortKey,
+  scrollY,
 });
 
 export function useArchiveFilters({
@@ -92,9 +96,13 @@ export function useArchiveFilters({
   isPostOpen,
   isArchivePostURL,
   hydrated,
+  pendingScrollRef: externalPendingScrollRef,
 }: Options) {
   const router = useRouter();
   const pathname = usePathname();
+  const internalPendingScrollRef = useRef<number | null>(null);
+  const pendingScrollRef = externalPendingScrollRef ?? internalPendingScrollRef;
+  const scrollYRef = useRef(0);
   const [q, setQ] = useState("");
   const [committedQ, setCommittedQ] = useState("");
   const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
@@ -121,9 +129,10 @@ export function useArchiveFilters({
     if (isArchivePostURL) return;
     const next = buildInitialState();
     startTransition(() => {
-      applyFilterState(next);
+      applyFilterState(next.filters);
     });
-  }, [isArchivePostURL]);
+    pendingScrollRef.current = next.scrollY ?? null;
+  }, [isArchivePostURL, pendingScrollRef]);
 
   useEffect(() => {
     if (isArchivePostURL) return;
@@ -133,13 +142,14 @@ export function useArchiveFilters({
         startTransition(() => {
           applyFilterState(parsed);
         });
+        pendingScrollRef.current = null;
       }, 1);
     };
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [isArchivePostURL]);
+  }, [isArchivePostURL, pendingScrollRef]);
 
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
@@ -157,7 +167,7 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    }), pathname);
+    }, scrollYRef.current), pathname);
   }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname, isPostOpen, isArchivePostURL]);
 
   useEffect(() => {
@@ -171,11 +181,23 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    }));
+    }, scrollYRef.current));
   }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey, isArchivePostURL]);
 
   useEffect(() => {
     skipUrlSyncRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleScroll = () => {
+      scrollYRef.current = window.scrollY;
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const commitSearch = () => {
@@ -192,7 +214,7 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    });
+    }, scrollYRef.current);
     replaceArchiveFiltersInHistory(nextState, pathname);
     if (typeof window !== "undefined") {
       writeArchiveSession(nextState);
@@ -297,6 +319,18 @@ export function useArchiveFilters({
     const start = Math.max(0, Math.max(pageNumber - 1, 0) * pageSize);
     return filteredPosts.slice(start, start + pageSize);
   }, [filteredPosts, pageNumber, pageSize, isArchivePostURL]);
+
+  useEffect(() => {
+    if (!hydrated || isPostOpen) return;
+    const y = pendingScrollRef.current;
+    if (y === null || Number.isNaN(y)) return;
+    requestAnimationFrame(() => {
+      const nextY = pendingScrollRef.current;
+      if (nextY === null || Number.isNaN(nextY)) return;
+      window.scrollTo(0, nextY);
+      pendingScrollRef.current = null;
+    });
+  }, [filteredPosts.length, hydrated, isPostOpen, pendingScrollRef]);
 
   const pagination = showPagination ? (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">

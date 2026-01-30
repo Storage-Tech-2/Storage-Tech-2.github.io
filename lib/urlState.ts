@@ -9,6 +9,7 @@ type ArchiveFilters = {
   selectedChannels: string[];
   selectedAuthors: string[];
   sortKey: SortKey;
+  scrollY?: number;
 };
 
 type DictionaryState = {
