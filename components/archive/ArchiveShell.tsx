@@ -12,6 +12,7 @@ import { DEFAULT_GLOBAL_TAGS, type GlobalTag } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
 import { getHistoryState } from "@/lib/urlState";
+import { getArchiveSlugInfo } from "@/lib/utils/urls";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -30,11 +31,19 @@ export function ArchiveShell({
 }: Props) {
 
   const [hydrated, setHydrated] = useState(hasHydratedArchiveShell);
+  const [isArchivePostURL, setIsArchivePostURL] = useState(false);
+  
   useEffect(() => {
     hasHydratedArchiveShell = true;
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+
+    const url = new URL(window.location.href);
+    const slug = getArchiveSlugInfo(url)?.slug;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsArchivePostURL(!!slug);
+
     setHydrated(true);
   }, []);
+
 
 
   const { posts, channels, error, config } = useArchiveData({ initial: initialArchive });
@@ -57,7 +66,7 @@ export function ArchiveShell({
     openPostFromList,
     onLinkClick,
     goHome,
-  } = useArchivePostShell({ posts, archiveRootHref, pendingScrollRef });
+  } = useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, setIsArchivePostURL });
 
   const filters = useArchiveFilters({
     posts,
@@ -67,6 +76,7 @@ export function ArchiveShell({
     pageSize,
     pageCount,
     isPostOpen,
+    isArchivePostURL,
     hydrated,
   });
 
@@ -125,7 +135,7 @@ export function ArchiveShell({
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
 
-      {!isPostOpen ? (
+      {(!isPostOpen && !isArchivePostURL) ? (
         <HeaderBar
           siteName={siteConfig.siteName}
           view="archive"
@@ -149,7 +159,7 @@ export function ArchiveShell({
       ) : null}
 
       <ArchiveListView
-        visible={!isPostOpen}
+        visible={!isPostOpen && !isArchivePostURL}
         sidebarRef={sidebarShellRef}
         channelsList={channels}
         filters={filters}

@@ -27,10 +27,6 @@ export type ArchiveHistoryState = {
   lastBackCount?: number;
 };
 
-type RouterLike = {
-  replace: (href: string, options?: { scroll?: boolean }) => void;
-};
-
 const ARCHIVE_SORTS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"];
 
 const TEMP_STATE_STORE_KEY = "temp-archive-history-state";
@@ -84,6 +80,7 @@ export function applyTempHistoryState() {
     });
     window.history.replaceState(nextState, "", window.location.href);
     sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
+    console.log("Applied temp history state:", nextState); // --- IGNORE ---
   }
 }
 

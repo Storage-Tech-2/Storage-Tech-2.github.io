@@ -31,6 +31,7 @@ type Options = {
   pageSize: number;
   pageCount?: number;
   isPostOpen: boolean;
+  isArchivePostURL: boolean;
   hydrated: boolean;
 };
 
@@ -89,6 +90,7 @@ export function useArchiveFilters({
   pageSize,
   pageCount,
   isPostOpen,
+  isArchivePostURL,
   hydrated,
 }: Options) {
   const router = useRouter();
@@ -116,13 +118,15 @@ export function useArchiveFilters({
   };
 
   useEffect(() => {
+    if (isArchivePostURL) return;
     const next = buildInitialState();
     startTransition(() => {
       applyFilterState(next);
     });
-  }, []);
+  }, [isArchivePostURL]);
 
   useEffect(() => {
+    if (isArchivePostURL) return;
     const handlePopState = () => {
       setTimeout(() => {
         const parsed = toFilterState(getArchiveFiltersFromUrl());
@@ -135,11 +139,11 @@ export function useArchiveFilters({
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, []);
+  }, [isArchivePostURL]);
 
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
-    if (isPostOpen) return;
+    if (isPostOpen || isArchivePostURL) return;
 
     // check if we have post slug in url - if so, skip updating url state
     const url = new URL(window.location.href);
@@ -154,11 +158,11 @@ export function useArchiveFilters({
       selectedAuthors,
       sortKey,
     }), pathname);
-  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname, isPostOpen]);
+  }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname, isPostOpen, isArchivePostURL]);
 
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || isArchivePostURL) return;
     writeArchiveSession(buildPersistedState({
       q,
       committedQ,
@@ -168,13 +172,14 @@ export function useArchiveFilters({
       selectedAuthors,
       sortKey,
     }));
-  }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey]);
+  }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey, isArchivePostURL]);
 
   useEffect(() => {
     skipUrlSyncRef.current = false;
   }, []);
 
   const commitSearch = () => {
+    if (isArchivePostURL) return;
     const nextQ = q;
     setCommittedQ(nextQ);
     if (skipUrlSyncRef.current) return;
@@ -194,11 +199,21 @@ export function useArchiveFilters({
     }
   };
 
-  const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
-  const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);
-  const normalizedSelectedAuthors = useMemo(() => selectedAuthors.map(normalize), [selectedAuthors]);
+  const includeTags = useMemo(
+    () => (isArchivePostURL ? [] : Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize)),
+    [isArchivePostURL, tagState],
+  );
+  const excludeTags = useMemo(
+    () => (isArchivePostURL ? [] : Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize)),
+    [isArchivePostURL, tagState],
+  );
+  const normalizedSelectedAuthors = useMemo(
+    () => (isArchivePostURL ? [] : selectedAuthors.map(normalize)),
+    [isArchivePostURL, selectedAuthors],
+  );
 
   const allTags = useMemo<Tag[]>(() => {
+    if (isArchivePostURL) return [];
     const channelPool = selectedChannels.length
       ? channels.filter((ch) => selectedChannels.includes(ch.code) || selectedChannels.includes(ch.name))
       : channels;
@@ -220,9 +235,10 @@ export function useArchiveFilters({
       tags = tags.filter((tag) => !!getSpecialTagMeta(tag.name, globalTags));
     }
     return tags;
-  }, [channels, posts, selectedAuthors.length, selectedChannels, normalizedSelectedAuthors, globalTags]);
+  }, [channels, posts, selectedAuthors.length, selectedChannels, normalizedSelectedAuthors, globalTags, isArchivePostURL]);
 
   const availableAuthors = useMemo(() => {
+    if (isArchivePostURL) return [] as string[];
     const map = new Map<string, string>();
     posts.forEach((p) => {
       (p.entry.authors || []).forEach((name) => {
@@ -235,15 +251,19 @@ export function useArchiveFilters({
       if (!map.has(norm)) map.set(norm, name);
     });
     return Array.from(map.values());
-  }, [posts, selectedAuthors]);
+  }, [posts, selectedAuthors, isArchivePostURL]);
 
   const authorCounts = useMemo(
-    () => computeAuthorCounts(posts, selectedChannels, includeTags, excludeTags, tagMode, q),
-    [posts, selectedChannels, includeTags, excludeTags, tagMode, q],
+    () => (isArchivePostURL ? {} : computeAuthorCounts(posts, selectedChannels, includeTags, excludeTags, tagMode, q)),
+    [posts, selectedChannels, includeTags, excludeTags, tagMode, q, isArchivePostURL],
   );
 
-  const authorSearchTerm = useMemo(() => authorQuery.trim().toLowerCase(), [authorQuery]);
+  const authorSearchTerm = useMemo(
+    () => (isArchivePostURL ? "" : authorQuery.trim().toLowerCase()),
+    [authorQuery, isArchivePostURL],
+  );
   const authorOptions = useMemo<AuthorOption[]>(() => {
+    if (isArchivePostURL) return [];
     const selectedSet = new Set(normalizedSelectedAuthors);
     return availableAuthors
       .map((name) => {
@@ -262,20 +282,21 @@ export function useArchiveFilters({
         if ((b.count || 0) !== (a.count || 0)) return (b.count || 0) - (a.count || 0);
         return a.name.localeCompare(b.name);
       });
-  }, [availableAuthors, authorCounts, normalizedSelectedAuthors, authorSearchTerm]);
+  }, [availableAuthors, authorCounts, normalizedSelectedAuthors, authorSearchTerm, isArchivePostURL]);
 
   const filteredPosts = useMemo(
-    () => filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode }),
-    [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode],
+    () => (isArchivePostURL ? [] : filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode })),
+    [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode, isArchivePostURL],
   );
 
-  const pageTotal = pageCount ?? 0;
-  const showPagination = !disablePagination && pageTotal > 1 && (pageNumber > 0 || !hydrated);
+  const pageTotal = isArchivePostURL ? 0 : (pageCount ?? 0);
+  const showPagination = !isArchivePostURL && !disablePagination && pageTotal > 1 && (pageNumber > 0 || !hydrated);
 
   const pagedPosts = useMemo(() => {
+    if (isArchivePostURL) return [] as ArchiveListItem[];
     const start = Math.max(0, Math.max(pageNumber - 1, 0) * pageSize);
     return filteredPosts.slice(start, start + pageSize);
-  }, [filteredPosts, pageNumber, pageSize]);
+  }, [filteredPosts, pageNumber, pageSize, isArchivePostURL]);
 
   const pagination = showPagination ? (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600 dark:text-gray-300">
@@ -326,12 +347,12 @@ export function useArchiveFilters({
   ) : null;
 
   const channelCounts = useMemo(
-    () => computeChannelCounts(posts, includeTags, excludeTags, tagMode, q, selectedAuthors),
-    [posts, includeTags, excludeTags, selectedAuthors, tagMode, q],
+    () => (isArchivePostURL ? {} : computeChannelCounts(posts, includeTags, excludeTags, tagMode, q, selectedAuthors)),
+    [posts, includeTags, excludeTags, selectedAuthors, tagMode, q, isArchivePostURL],
   );
   const tagCounts = useMemo(
-    () => computeTagCounts(posts, selectedChannels, excludeTags, q, selectedAuthors),
-    [posts, selectedChannels, excludeTags, q, selectedAuthors],
+    () => (isArchivePostURL ? {} : computeTagCounts(posts, selectedChannels, excludeTags, q, selectedAuthors)),
+    [posts, selectedChannels, excludeTags, q, selectedAuthors, isArchivePostURL],
   );
 
   const handleToggleTag = (tagName: string, rightClick: boolean) => {

@@ -18,6 +18,7 @@ type Options = {
   posts: ArchiveListItem[];
   archiveRootHref: string;
   pendingScrollRef: RefObject<number | null>;
+  setIsArchivePostURL(value: boolean): void;
 };
 
 const buildDictionaryTooltips = (entries: IndexedDictionaryEntry[] | null) => {
@@ -57,7 +58,7 @@ const syncDocumentTitle = (post: ArchiveListItem | null, titleRef: React.Mutable
   document.title = `${post.entry.name} | ${siteConfig.siteName}`;
 };
 
-export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }: Options) {
+export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, setIsArchivePostURL }: Options) {
   const [openPost, setOpenPost] = useState<ArchiveListItem | null>(null);
   const [openData, setOpenData] = useState<ArchiveEntryData | null>(null);
   const [openDictionaryTooltips, setOpenDictionaryTooltips] = useState<Record<string, string>>({});
@@ -72,6 +73,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
   }, [openPost]);
 
   const resetOpenState = useCallback((restoreScroll: boolean) => {
+    setIsArchivePostURL(false);
     setOpenPost(null);
     setOpenData(null);
     setOpenError(null);
@@ -81,7 +83,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
       pendingScrollRef.current = openScrollRef.current;
     }
     openScrollRef.current = null;
-  }, [pendingScrollRef]);
+  }, [pendingScrollRef, setIsArchivePostURL]);
 
   const loadPost = useCallback((post: ArchiveListItem) => {
     setOpenPost(post);

@@ -243,9 +243,6 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     };
   }, [currentData, post.slug]);
 
-
-
-
   useEffect(() => {
     if (typeof window === "undefined" || onLinkClick) return;
     applyTempHistoryState();

@@ -38,11 +38,6 @@ export function PostNav({ doRealPrefetch, goHome, resync }: Props) {
       return;
     }
 
-    // if (!state.lastPostCode && state.archiveListHref) {
-    //   router.push(state.archiveListHref);
-    //   return;
-    // }
-
     const backCount = state.backCount || 1;
     const lastBackCount = state.lastBackCount ? state.lastBackCount - 1 : 0;
     const total = backCount + lastBackCount;
