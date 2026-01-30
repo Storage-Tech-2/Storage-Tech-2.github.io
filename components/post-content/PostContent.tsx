@@ -216,7 +216,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       const nextState = buildHistoryState({
         ...currentState,
         lastPostCode: currentData?.code,
-        backCount: undefined,
+        backCount: currentState.lastDictionaryId ? (currentState.backCount ? currentState.backCount + 1 : 2) : undefined,
         lastDictionaryId: undefined,
       });
 

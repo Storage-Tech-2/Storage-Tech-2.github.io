@@ -12,7 +12,7 @@ import {
 import { siteConfig } from "@/lib/siteConfig";
 import { getArchiveSlugInfo, getURLFromMouseEvent } from "@/lib/utils/urls";
 import type { ArchiveEntryData, IndexedDictionaryEntry } from "@/lib/types";
-import { buildHistoryState } from "@/lib/urlState";
+import { buildHistoryState, getHistoryState } from "@/lib/urlState";
 
 type Options = {
   posts: ArchiveListItem[];
@@ -123,9 +123,12 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     }
     pendingScrollRef.current = null;
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
+    const currentState = getHistoryState();
     const nextState = buildHistoryState({
       archiveListHref: listUrlRef.current || currentHref,
       lastPostCode: openPost?.entry.codes[0] || undefined,
+      backCount: currentState.lastDictionaryId ? (currentState.backCount ? currentState.backCount + 1 : 2) : undefined,
+      lastDictionaryId: undefined,
     });
     window.history.pushState(nextState, "", nextHref);
     requestAnimationFrame(() => window.scrollTo(0, 0));
