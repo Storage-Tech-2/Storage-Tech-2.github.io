@@ -3,7 +3,7 @@
 import Image from "next/image";
 import type { MouseEvent } from "react";
 import { RelativeTime } from "../ui/RelativeTime";
-import { prefetchArchiveEntryData, prefetchArchiveEntryMainImage, type ArchiveListItem } from "@/lib/archive";
+import { prefetchArchiveEntryWithMainImage, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
@@ -50,9 +50,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
           }
         }}
         beforePrefetch={(e) => {
-          prefetchArchiveEntryData(post).then((data) => {
-            prefetchArchiveEntryMainImage(post, data);
-          });
+          prefetchArchiveEntryWithMainImage(post);
           if (onNavigate) e.cancel()
         }}
       >

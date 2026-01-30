@@ -1,7 +1,7 @@
 "use client";
 
 import { ForesightPrefetchLink } from "@/components/ui/ForesightPrefetchLink";
-import { prefetchArchiveIndex, prefetchPostCardImages } from "@/lib/archive";
+import { prefetchIndexAndLatestPosts } from "@/lib/archive";
 
 type Pillar = {
   title: string;
@@ -45,12 +45,7 @@ export function PillarCard({ pillar }: PillarCardProps) {
       className="h-full"
       beforePrefetch={() => {
         if (pillar.href === "/archives") {
-          prefetchArchiveIndex().then((index) => {
-            if (!index) return;
-            index.posts.sort((a, b) => b.entry.updatedAt - a.entry.updatedAt);
-            const postsToPrefetch = index.posts.slice(0, 12);
-            prefetchPostCardImages(postsToPrefetch);
-          });
+          prefetchIndexAndLatestPosts();
         }
       }}
     >

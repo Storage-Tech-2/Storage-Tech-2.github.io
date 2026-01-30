@@ -152,6 +152,22 @@ export async function prefetchPostCardImages(posts: ArchiveListItem[]): Promise<
   });
 }
 
+
+export async function prefetchIndexAndLatestPosts(): Promise<void> {
+  const index = await prefetchArchiveIndex();
+  if (!index) return;
+  // sort posts by newest updated
+  index.posts.sort((a, b) => {
+    const aUpdated = a.entry.updatedAt;
+    const bUpdated = b.entry.updatedAt;
+    return bUpdated - aUpdated;
+  });
+  
+  // prefetch post card images for first 12 posts
+  const postsToPrefetch = index.posts.slice(0, 12);
+  await prefetchPostCardImages(postsToPrefetch);
+}
+
 export async function prefetchDictionaryIndex(ttlMs = DICTIONARY_CACHE_TTL_MS): Promise<DictionaryIndex | null> {
   const cached = getCachedDictionaryIndex();
   if (cached && Date.now() - cached.fetchedAt < ttlMs) return cached.index;
@@ -346,6 +362,17 @@ export function prefetchArchiveEntryMainImage(
   // make a dummy image element to preload
   const img = new Image();
   img.src = imageUrl;
+}
+
+export function prefetchArchiveEntryWithMainImage(
+  post: ArchiveListItem,
+) {
+  return prefetchArchiveEntryData(post).then((data) => {
+    if (data) {
+      prefetchArchiveEntryMainImage(post, data);
+    }
+    return data;
+  });
 }
 
 export async function fetchPostWithArchive(

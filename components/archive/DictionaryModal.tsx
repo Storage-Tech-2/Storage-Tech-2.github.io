@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RelativeTime } from "../ui/RelativeTime";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { getCachedArchiveIndex, prefetchArchiveEntryData, prefetchArchiveEntryMainImage, prefetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
+import { getCachedArchiveIndex, prefetchArchiveEntryWithMainImage, prefetchArchiveIndex, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type IndexedDictionaryEntry } from "@/lib/types";
 import { transformOutputWithReferencesForWebsite } from "@/lib/utils/references";
 import Link from "next/link";
@@ -161,9 +161,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                           className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
                           onClick={onLinkClick}
                           beforePrefetch={() => {
-                            prefetchArchiveEntryData(post).then((data) => {
-                              prefetchArchiveEntryMainImage(post, data);
-                            });
+                           prefetchArchiveEntryWithMainImage(post);
                           }}
                         >
                           <div className="space-y-1">

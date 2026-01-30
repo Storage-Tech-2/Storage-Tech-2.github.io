@@ -1,6 +1,6 @@
 'use client';
 
-import { prefetchArchiveEntryData, prefetchArchiveEntryMainImage, prefetchArchiveIndex } from "@/lib/archive";
+import { prefetchArchiveEntryWithMainImage, prefetchArchiveIndex, prefetchIndexAndLatestPosts } from "@/lib/archive";
 import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 import { useEffect, useState } from "react";
 import { getHistoryState } from "@/lib/urlState";
@@ -71,7 +71,7 @@ export function PostNav({ prefetch, goHome, resync }: Props) {
             if (!prefetch) {
               e.cancel();
             } else {
-              prefetchArchiveIndex();
+              prefetchIndexAndLatestPosts();
             }
             return;
           }
@@ -82,8 +82,7 @@ export function PostNav({ prefetch, goHome, resync }: Props) {
             if (!index) return;
             const post = index.posts.find((p) => p.entry.codes.includes(state.lastPostCode!));
             if (post) {
-              const data = await prefetchArchiveEntryData(post);
-              prefetchArchiveEntryMainImage(post, data);
+              prefetchArchiveEntryWithMainImage(post);
             }
           })();
 
@@ -113,7 +112,7 @@ export function PostNav({ prefetch, goHome, resync }: Props) {
             if (!prefetch) {
               e.cancel();
             } else {
-              prefetchArchiveIndex();
+              prefetchIndexAndLatestPosts();
             }
           }
         }

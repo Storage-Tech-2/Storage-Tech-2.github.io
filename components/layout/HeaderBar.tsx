@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { clsx } from "@/lib/utils/classNames";
 import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib/types";
-import { prefetchArchiveIndex, prefetchDictionaryIndex, prefetchPostCardImages } from "@/lib/archive";
+import { prefetchDictionaryIndex, prefetchIndexAndLatestPosts } from "@/lib/archive";
 import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 
 type HeaderSearchFilters = {
@@ -97,19 +97,7 @@ export function HeaderBar(props: Props) {
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
               beforePrefetch={() => {
-                prefetchArchiveIndex().then((index) => {
-                  // sort posts by newest updated
-                  if (!index) return;
-                  index.posts.sort((a, b) => {
-                    const aUpdated = a.entry.updatedAt;
-                    const bUpdated = b.entry.updatedAt;
-                    return bUpdated - aUpdated;
-                  });
-
-                  // prefetch post card images for first 12 posts
-                  const postsToPrefetch = index.posts.slice(0, 12);
-                  prefetchPostCardImages(postsToPrefetch);
-                });
+                prefetchIndexAndLatestPosts();
               }}
               onClick={onArchiveClick}
             >
