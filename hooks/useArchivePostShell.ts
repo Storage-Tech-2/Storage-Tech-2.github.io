@@ -191,6 +191,20 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     };
   }, [closePostFromUrl, openPostFromUrl, posts, syncFromLocation]);
 
+  const goHome = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const nextState = buildHistoryState({
+      archiveListHref: listUrlRef.current || undefined,
+      lastPostCode: openPost?.entry.codes[0] || undefined,
+      lastBackCount: undefined,
+      backCount: undefined,
+      lastDictionaryId: undefined,
+    });
+    window.history.pushState(nextState, "", archiveRootHref);
+    resetOpenState(true);
+  }, [archiveRootHref, openPost, resetOpenState]);
+
   return {
     openPost,
     openData,
@@ -198,6 +212,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     openError,
     isPostOpen: Boolean(openPost),
     openPostFromList,
-    onLinkClick
+    onLinkClick,
+    goHome
   };
 }

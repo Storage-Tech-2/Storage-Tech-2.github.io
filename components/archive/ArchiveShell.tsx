@@ -56,7 +56,8 @@ export function ArchiveShell({
     openError,
     isPostOpen,
     openPostFromList,
-    onLinkClick
+    onLinkClick,
+    goHome,
   } = useArchivePostShell({ posts, archiveRootHref, pendingScrollRef });
 
   const filters = useArchiveFilters({
@@ -111,6 +112,7 @@ export function ArchiveShell({
           globalTags={globalTags}
           archiveConfig={archiveConfig}
           onLinkClick={onLinkClick}
+          goHome={goHome}
         />
       ) : null}
 

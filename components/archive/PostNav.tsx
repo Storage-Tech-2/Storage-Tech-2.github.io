@@ -8,10 +8,11 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   doRealPrefetch: boolean;
+  goHome?(): void;
   resync?(): void;
 }
 
-export function PostNav({ doRealPrefetch, resync }: Props) {
+export function PostNav({ doRealPrefetch, goHome, resync }: Props) {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
@@ -101,7 +102,11 @@ export function PostNav({ doRealPrefetch, resync }: Props) {
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
         onClick={(event) => {
           event.preventDefault();
-          handleHomeClick();
+          if (goHome) {
+            goHome();
+          } else {
+            handleHomeClick();
+          }
           if (resync) {
             resync();
           }

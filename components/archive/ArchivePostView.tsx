@@ -14,6 +14,7 @@ type Props = {
   archiveConfig: ArchiveConfig;
   onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
   resync?(): void;
+  goHome?(): void;
 };
 
 export function ArchivePostView({
@@ -24,6 +25,7 @@ export function ArchivePostView({
   globalTags,
   archiveConfig,
   onLinkClick,
+  goHome,
   resync,
 }: Props) {
   if (!post) return null;
@@ -34,6 +36,7 @@ export function ArchivePostView({
         <PostNav
           doRealPrefetch={false}
           resync={resync}
+          goHome={goHome}
         />
 
 
