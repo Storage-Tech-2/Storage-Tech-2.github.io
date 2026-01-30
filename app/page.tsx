@@ -4,7 +4,7 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { LegacyRedirect } from "@/components/home/LegacyRedirect";
 import { siteConfig } from "@/lib/siteConfig";
-import { ForesightPrefetchLink } from "@/components/ui/ForesightPrefetchLink";
+import { PillarCard } from "@/components/home/PillarCard";
 
 export default function Home() {
   const pillars = [
@@ -76,50 +76,26 @@ export default function Home() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {pillars.map((pillar) => {
-              const isExternal = pillar.href.startsWith("http");
-              const card = (
-                <div className="flex h-full flex-col justify-between rounded-lg border border-gray-200 bg-white p-5 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-                      {pillar.title}
-                    </div>
-                    <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-200">{pillar.body}</p>
-                  </div>
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-sky-700 transition dark:text-sky-300">
-                    {pillar.cta}
-                    <span aria-hidden="true">→</span>
-                  </span>
-                </div>
-              );
-
-              return isExternal ? (
-                <a key={pillar.title} href={pillar.href} target="_blank" rel="noreferrer" className="h-full">
-                  {card}
-                </a>
-              ) : (
-                <ForesightPrefetchLink key={pillar.title} href={pillar.href} className="h-full">
-                  {card}
-                </ForesightPrefetchLink>
-              );
-            })}
+            {pillars.map((pillar) => (
+              <PillarCard key={pillar.title} pillar={pillar} />
+            ))}
           </div>
         </section>
 
         <section className="mt-12 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
-           <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-semibold sm:text-3xl">Built by the community, for the community</h2>
             </div>
           </div>
 
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-         
+
             <p className="text-base leading-relaxed text-gray-900 dark:text-gray-200">
               We organize Storage Tech 2 to be a community-first platform where we care about your learning and growth.
-              
-              We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels. 
-              
+
+              We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels.
+
               You can read our founding principles and governance model on our <Link href="/about" className="font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">About page</Link>.
             </p>
           </div>

@@ -1,4 +1,4 @@
-import { assetURL, fetchArrayBufferRaw, fetchJSONRaw, getLastFetchTimestampForPath, joinAssetPath } from "./github";
+import { assetURL, fetchArrayBufferRaw, fetchJSONRaw, getLastFetchTimestampForPath } from "./github";
 import {
   ArchiveComment,
   ArchiveConfig,
@@ -23,6 +23,7 @@ import {
   ENTRY_PREFETCH_MAX,
   ENTRY_PREFETCH_TTL_MS,
 } from "./cacheConstants";
+import { getPreviewByCode } from "./previews";
 
 export type ArchiveListItem = IndexedPost & { slug: string };
 
@@ -132,6 +133,22 @@ export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promis
     }
   })();
   return archiveIndexPrefetchPromise;
+}
+
+export function prefetchPostCardImages(posts: ArchiveListItem[]): void {
+  posts.forEach((post) => {
+    const preview = getPreviewByCode(post.entry.codes[0]);
+    const heroSrc = post.entry.mainImagePath
+        ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
+        : null;
+    
+    const isUsingOptimizedPreview = preview && heroSrc === preview.sourceUrl;
+    const displaySrc = isUsingOptimizedPreview ? preview.localPath : heroSrc;
+    if (displaySrc) {
+      const img = new Image();
+      img.src = displaySrc;
+    }
+  });
 }
 
 export async function prefetchDictionaryIndex(ttlMs = DICTIONARY_CACHE_TTL_MS): Promise<DictionaryIndex | null> {
@@ -319,10 +336,10 @@ export function prefetchArchiveEntryData(
 
 export function prefetchArchiveEntryMainImage(
   post: ArchiveListItem,
-  data: ArchiveEntryData,
+  data: ArchiveEntryData | null,
 ) {
   // return null; // skip for now.
-  if (!data.images.length || !data.images[0].path) return;
+  if (!data || !data.images.length || !data.images[0].path) return;
   const imageUrl = assetURL(post.channel.path, post.entry.path, data.images[0].path);
   
   // make a dummy image element to preload

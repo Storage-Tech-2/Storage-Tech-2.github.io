@@ -162,9 +162,7 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                           onClick={onLinkClick}
                           beforePrefetch={() => {
                             prefetchArchiveEntryData(post).then((data) => {
-                              if (data) {
-                                prefetchArchiveEntryMainImage(post, data);
-                              }
+                              prefetchArchiveEntryMainImage(post, data);
                             });
                           }}
                         >

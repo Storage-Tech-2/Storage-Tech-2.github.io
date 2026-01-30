@@ -6,7 +6,6 @@ import {
   findPostBySlug,
   getCachedDictionaryIndex,
   prefetchArchiveEntryData,
-  prefetchArchiveEntryMainImage,
   prefetchDictionaryIndex,
   type ArchiveListItem,
 } from "@/lib/archive";

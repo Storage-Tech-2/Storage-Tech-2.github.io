@@ -51,9 +51,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
         }}
         beforePrefetch={(e) => {
           prefetchArchiveEntryData(post).then((data) => {
-            if (data) {
-              prefetchArchiveEntryMainImage(post, data);
-            }
+            prefetchArchiveEntryMainImage(post, data);
           });
           if (onNavigate) e.cancel()
         }}

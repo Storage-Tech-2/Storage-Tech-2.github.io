@@ -83,9 +83,7 @@ export function PostNav({ prefetch, goHome, resync }: Props) {
             const post = index.posts.find((p) => p.entry.codes.includes(state.lastPostCode!));
             if (post) {
               const data = await prefetchArchiveEntryData(post);
-              if (data) {
-                prefetchArchiveEntryMainImage(post, data);
-              }
+              prefetchArchiveEntryMainImage(post, data);
             }
           })();
 
