@@ -1,4 +1,4 @@
-import { fetchArrayBufferRaw, fetchJSONRaw, getLastFetchTimestampForPath } from "./github";
+import { assetURL, fetchArrayBufferRaw, fetchJSONRaw, getLastFetchTimestampForPath, joinAssetPath } from "./github";
 import {
   ArchiveComment,
   ArchiveConfig,
@@ -315,6 +315,19 @@ export function prefetchArchiveEntryData(
     .catch(() => null);
   entryPrefetchCache.set(path, { promise, fetchedAt: Date.now() });
   return promise;
+}
+
+export function prefetchArchiveEntryMainImage(
+  post: ArchiveListItem,
+  data: ArchiveEntryData,
+) {
+  // return null; // skip for now.
+  if (!data.images.length || !data.images[0].path) return;
+  const imageUrl = assetURL(post.channel.path, post.entry.path, data.images[0].path);
+  
+  // make a dummy image element to preload
+  const img = new Image();
+  img.src = imageUrl;
 }
 
 export async function fetchPostWithArchive(

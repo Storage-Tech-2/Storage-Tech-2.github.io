@@ -54,6 +54,7 @@ export default function Home() {
               height={480}
               className="h-auto w-full object-cover"
               preload={true}
+              fetchPriority="high"
             />
           </div>
           <div className="px-6 py-8">

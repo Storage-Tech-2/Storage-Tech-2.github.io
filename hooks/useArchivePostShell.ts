@@ -6,6 +6,7 @@ import {
   findPostBySlug,
   getCachedDictionaryIndex,
   prefetchArchiveEntryData,
+  prefetchArchiveEntryMainImage,
   prefetchDictionaryIndex,
   type ArchiveListItem,
 } from "@/lib/archive";
@@ -89,6 +90,7 @@ export function useArchivePostShell({ posts, archiveRootHref, setIsArchivePostUR
     if (cachedDictionary) {
       setOpenDictionaryTooltips(buildDictionaryTooltips(cachedDictionary.entries));
     }
+
     Promise.all([prefetchArchiveEntryData(post), prefetchDictionaryIndex()])
       .then(([postData, dictionary]) => {
         if (openRequestRef.current !== requestToken) return;

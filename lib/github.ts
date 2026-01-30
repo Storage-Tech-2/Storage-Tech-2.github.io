@@ -12,7 +12,7 @@ export function getMediaURL(owner: string, repo: string, branch: string, path: s
 
 const lastFetchTimestamps = new Map<string, number>();
 
-function joinAssetPath(channelPath: string, entryPath: string, rel: string) {
+export function joinAssetPath(channelPath: string, entryPath: string, rel: string) {
   return [channelPath, entryPath, rel].join("/").replace(/\/{2,}/g, "/").replace(/^\/+/, "");
 }
 

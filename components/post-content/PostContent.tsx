@@ -26,6 +26,7 @@ import { applyTempHistoryState, buildHistoryState, getHistoryState, getTempHisto
 
 type Props = {
   post: ArchiveListItem;
+  preloadImage?: boolean;
   data?: ArchiveEntryData;
   schemaStyles?: Record<string, StyleInfo>;
   dictionaryTooltips?: Record<string, string>;
@@ -33,7 +34,7 @@ type Props = {
   onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
 };
 
-export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags, onLinkClick }: Props) {
+export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags, onLinkClick, preloadImage }: Props) {
   const [liveState, setLiveState] = useState<ArchiveEntryData | null>(null);
   const baseData = data;
   const currentData = liveState ? liveState : baseData;
@@ -325,6 +326,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       </header>
 
       <PostGallery
+        preloadImage={preloadImage}
         images={images}
         activeImageIndex={activeImageIndex}
         setActiveImageIndex={setActiveImageIndex}

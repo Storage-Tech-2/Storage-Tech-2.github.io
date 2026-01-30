@@ -3,7 +3,7 @@
 import Image from "next/image";
 import type { MouseEvent } from "react";
 import { RelativeTime } from "../ui/RelativeTime";
-import { prefetchArchiveEntryData, type ArchiveListItem } from "@/lib/archive";
+import { prefetchArchiveEntryData, prefetchArchiveEntryMainImage, type ArchiveListItem } from "@/lib/archive";
 import { getEntryArchivedAt, getEntryUpdatedAt, type GlobalTag, type SortKey } from "@/lib/types";
 import { assetURL } from "@/lib/github";
 import { getPreviewByCode } from "@/lib/previews";
@@ -23,8 +23,9 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
   const heroSrc = post.entry.mainImagePath
     ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
     : null;
-  const displaySrc =
-    preview && (!heroSrc || heroSrc === preview.sourceUrl) ? preview.localPath : heroSrc;
+
+  const isUsingOptimizedPreview = preview && heroSrc === preview.sourceUrl;
+  const displaySrc = isUsingOptimizedPreview ? preview.localPath : heroSrc;
 
   const updatedAt = getEntryUpdatedAt(post.entry);
   const archivedAt = getEntryArchivedAt(post.entry);
@@ -49,7 +50,11 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
           }
         }}
         beforePrefetch={(e) => {
-          prefetchArchiveEntryData(post);
+          prefetchArchiveEntryData(post).then((data) => {
+            if (data) {
+              prefetchArchiveEntryMainImage(post, data);
+            }
+          });
           if (onNavigate) e.cancel()
         }}
       >
@@ -62,7 +67,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain"
               unoptimized
-              priority={false}
+              preload={false}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-sm text-gray-700 dark:text-gray-200">{post.entry ? "No image" : "Loading..."}</div>

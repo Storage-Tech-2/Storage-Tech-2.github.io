@@ -12,6 +12,8 @@ import { getEffectiveStyle } from "@/lib/utils/styles";
 import { truncateStringWithEllipsis } from "@/lib/utils/strings";
 import { transformOutputWithReferencesForSocials } from "@/lib/utils/references";
 import { getPreviewByCode } from "@/lib/previews";
+import Head from "next/head";
+import { assetURL } from "@/lib/github";
 
 export const dynamic = "force-static";
 
@@ -52,13 +54,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       url: `/archives/${match.slug}`,
       images: ogImage
         ? [
-            {
-              url: ogImage,
-              width: preview?.width,
-              height: preview?.height,
-              alt: match.entry.name,
-            },
-          ]
+          {
+            url: ogImage,
+            width: preview?.width,
+            height: preview?.height,
+            alt: match.entry.name,
+          },
+        ]
         : undefined,
     },
     twitter: {
@@ -87,6 +89,7 @@ export default async function PostPage({ params }: Params) {
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-8 lg:px-6">
         <PostNav prefetch={true} />
         <PostContent
+          preloadImage={true}
           key={match.entry.id}
           post={match}
           data={data}

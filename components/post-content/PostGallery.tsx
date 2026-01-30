@@ -2,10 +2,12 @@ import Image from "next/image";
 import { useRef } from "react";
 import type { Image as ArchiveImage } from "@/lib/types";
 import type { LightboxState } from "./types";
+import { preload } from "react-dom";
 
 const DEFAULT_ASPECT = "16/9";
 
 type Props = {
+  preloadImage?: boolean;
   images: Array<ArchiveImage & { path?: string }>;
   activeImageIndex: number;
   setActiveImageIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -14,6 +16,7 @@ type Props = {
 };
 
 export function PostGallery({
+  preloadImage,
   images,
   activeImageIndex,
   setActiveImageIndex,
@@ -64,6 +67,8 @@ export function PostGallery({
             className="object-contain"
             sizes="100vw"
             unoptimized
+            preload={preloadImage}
+            fetchPriority={preloadImage ? "high" : "auto"}
           />
         ) : null}
         {images.length > 1 ? (
