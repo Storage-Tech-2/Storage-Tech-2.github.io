@@ -35,12 +35,23 @@ export function ArchiveShell({
   useEffect(() => {
     hasHydratedArchiveShell = true;
 
+    const canSetScroll = typeof window !== "undefined" && "scrollRestoration" in window.history;
+    const previousScrollRestoration = canSetScroll ? window.history.scrollRestoration : null;
+    if (canSetScroll) {
+      window.history.scrollRestoration = "manual";
+    }
+
     const url = new URL(window.location.href);
     const slug = getArchiveSlugInfo(url)?.slug;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsArchivePostURL(!!slug);
 
     setHydrated(true);
+    return () => {
+      if (canSetScroll && previousScrollRestoration) {
+        window.history.scrollRestoration = previousScrollRestoration;
+      }
+    };
   }, []);
 
 
