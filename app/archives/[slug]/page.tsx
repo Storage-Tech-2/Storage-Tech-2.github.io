@@ -26,7 +26,7 @@ export async function generateStaticParams() {
   const archive = await fetchArchiveIndex();
   return archive
     .posts
-    .filter((post) => post.entry.codes[0] !== "US001") // debug
+    // .filter((post) => post.entry.codes[0] !== "US001") // debug
     .map((post) => ({ slug: post.slug }));
 }
 

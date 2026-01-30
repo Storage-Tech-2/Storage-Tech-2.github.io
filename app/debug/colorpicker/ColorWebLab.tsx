@@ -1,9 +1,9 @@
 "use client";
 
 import { type CSSProperties, useMemo, useState } from "react";
-import { TagChip, TagPill } from "@/components/archive/ui";
 import { clsx } from "@/lib/utils/classNames";
 import type { GlobalTag, Tag } from "@/lib/types";
+import { TagPill, TagChip } from "@/components/ui/Tags";
 
 type ThemeMode = "light" | "dark";
 

@@ -29,7 +29,7 @@ export function PostNav({ doRealPrefetch, resync }: Props) {
     backText = `← Back to ${state.lastPostCode}`;
   }
 
-  const handleBackClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+  const handleBackClick = () => {
     const state = hydrated ? getHistoryState() : null;
 
     if (!state || (!state.lastPostCode && !state.archiveListHref)) {
@@ -50,7 +50,7 @@ export function PostNav({ doRealPrefetch, resync }: Props) {
     }
   }
 
-  const handleHomeClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+  const handleHomeClick = () => {
     router.push("/archives");
   };
 
@@ -61,7 +61,7 @@ export function PostNav({ doRealPrefetch, resync }: Props) {
         className="rounded-full border px-3 py-1 text-sm transition hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-900"
         onClick={(event) => {
           event.preventDefault();
-          handleBackClick(event);
+          handleBackClick();
           if (resync) {
             resync();
           }
@@ -99,7 +99,7 @@ export function PostNav({ doRealPrefetch, resync }: Props) {
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
         onClick={(event) => {
           event.preventDefault();
-          handleHomeClick(event);
+          handleHomeClick();
           if (resync) {
             resync();
           }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DictionaryModal } from "../archive/DictionaryModal";
 import { RelativeTime } from "../ui/RelativeTime";
-import { fetchCommentsData, fetchDictionaryEntry, getPostCodeFromSlug, prefetchArchiveEntryData } from "@/lib/archive";
+import { fetchCommentsData, fetchDictionaryEntry, prefetchArchiveEntryData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { getArchiveSlugInfo, getDictionarySlugInfo } from "@/lib/utils/urls";
 import { assetURL, attachmentURL } from "@/lib/github";
@@ -241,7 +241,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       }
       sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
     }
-  },[]);
+  },[onLinkClick]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
