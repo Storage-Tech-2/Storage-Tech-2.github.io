@@ -85,43 +85,23 @@ export function ArchiveShell({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const captureScroll = () => {
+    const syncScroll = () => {
       const state = getHistoryState();
       const y = state.archiveListScrollY;
       if (typeof y !== "number" || Number.isNaN(y)) return;
       pendingScrollRef.current = y;
-    };
-    const restoreScroll = () => {
       if (!hydrated || isPostOpen) return;
-      const y = pendingScrollRef.current;
-      if (y === null) return;
       requestAnimationFrame(() => window.scrollTo(0, y));
       pendingScrollRef.current = null;
     };
-    captureScroll();
-    restoreScroll();
-    window.addEventListener("popstate", captureScroll);
-    window.addEventListener("popstate", restoreScroll);
-    window.addEventListener("pageshow", captureScroll);
-    window.addEventListener("pageshow", restoreScroll);
+    syncScroll();
+    window.addEventListener("popstate", syncScroll);
+    window.addEventListener("pageshow", syncScroll);
     return () => {
-      window.removeEventListener("popstate", captureScroll);
-      window.removeEventListener("popstate", restoreScroll);
-      window.removeEventListener("pageshow", captureScroll);
-      window.removeEventListener("pageshow", restoreScroll);
+      window.removeEventListener("popstate", syncScroll);
+      window.removeEventListener("pageshow", syncScroll);
     };
   }, [hydrated, isPostOpen, pendingScrollRef]);
-
-  useEffect(() => {
-    if (!hydrated || isPostOpen) return;
-    if (pendingScrollRef.current === null) return;
-    requestAnimationFrame(() => {
-      const y = pendingScrollRef.current;
-      if (y === null) return;
-      window.scrollTo(0, y);
-      pendingScrollRef.current = null;
-    });
-  }, [hydrated, isPostOpen, pendingScrollRef, filters.results.filtered.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
