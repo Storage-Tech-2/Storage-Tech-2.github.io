@@ -9,9 +9,8 @@ type Props = {
 };
 
 export function RelativeTime({ ts, prefix, className }: Props) {
-
   const formatted = formatDate(ts);
-  const isClient = typeof window !== "undefined";
+  const isClient =typeof window !== "undefined";
   const text = isClient ? timeAgo(ts) : formatted;
   const content = prefix ? `${prefix} ${text}` : text;
 

@@ -197,7 +197,7 @@ export function slugMatchesEntry(slug: string, entry: IndexEntry) {
   const lowerSlug = slug.toLowerCase();
   const entrySlug = buildEntrySlug(entry).toLowerCase();
   if (lowerSlug === entrySlug) return true;
-  const slugCode = lowerSlug.split("-")[0];
+  const slugCode = getPostCodeFromSlug(lowerSlug);
   if (!slugCode) return false;
   return entry.codes.some((code) => code.toLowerCase() === slugCode);
 }
@@ -457,3 +457,8 @@ export function findPostBySlug(posts: ArchiveListItem[], slug: string): ArchiveL
   return posts.find((p) => p.slug.toLowerCase() === lower || slugMatchesEntry(lower, p.entry));
 }
 
+export function getPostCodeFromSlug(slug: string): string | null {
+  const parts = slug.split("-");
+  if (parts.length === 0) return null;
+  return parts[0];
+}

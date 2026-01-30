@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DictionaryModal } from "../archive/DictionaryModal";
 import { RelativeTime } from "../ui/RelativeTime";
-import { fetchCommentsData, fetchDictionaryEntry, prefetchArchiveEntryData } from "@/lib/archive";
+import { fetchCommentsData, fetchDictionaryEntry, getPostCodeFromSlug, prefetchArchiveEntryData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
-import { getDictionarySlugInfo } from "@/lib/utils/urls";
+import { getArchiveSlugInfo, getDictionarySlugInfo } from "@/lib/utils/urls";
 import { assetURL, attachmentURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
@@ -22,7 +22,7 @@ import { PostCommentsSection } from "./PostCommentsSection";
 import { PostPdfModal } from "./PostPdfModal";
 import { PostLightbox } from "./PostLightbox";
 import type { LightboxState, PdfPageInfo, PdfViewerState } from "./types";
-import { buildHistoryState, getHistoryState } from "@/lib/urlState";
+import { buildHistoryState, getHistoryState, TEMP_STATE_STORE_KEY } from "@/lib/urlState";
 
 type Props = {
   post: ArchiveListItem;
@@ -205,8 +205,43 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     }
     if (onLinkClick) {
       onLinkClick(e);
+    } else {
+      // check if archive link and handle internally
+      const archiveSlug = getArchiveSlugInfo(url).slug;
+      if (!archiveSlug) return;
+     
+
+      // set state and prevent default
+      const currentState = getHistoryState();
+      const nextState = buildHistoryState({
+        ...currentState,
+        lastPostCode: currentData?.code,
+        backCount: undefined,
+        lastDictionaryId: undefined,
+      });
+
+      sessionStorage.setItem(TEMP_STATE_STORE_KEY, JSON.stringify(nextState));
     }
-  }, [onLinkClick, openDictionaryEntry]);
+  }, [currentData, onLinkClick, openDictionaryEntry]);
+
+
+  useEffect(() => {
+    if (typeof window === "undefined" || onLinkClick) return;
+    const tempState = sessionStorage.getItem(TEMP_STATE_STORE_KEY);
+    if (tempState) {
+      try {
+        const parsed = JSON.parse(tempState);
+        const nextState = buildHistoryState({
+          ...getHistoryState(),
+          ...parsed,
+        });
+        window.history.replaceState(nextState, "", window.location.href);
+      } catch {
+        // ignore
+      }
+      sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
+    }
+  },[]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -218,21 +253,22 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     const normalizePath = (value: string) => (value === "/" ? "/" : value.replace(/\/+$/, ""));
 
     const handleURLState = () => {
-      if (normalizePath(window.location.pathname) !== normalizePath(expectedPathname)) return;
-      const nextParams = new URLSearchParams(window.location.search);
-      const nextDid = nextParams.get("did");
-      if (nextDid) {
-        openDictionaryEntry(nextDid);
-      } else {
-        dictionaryRequestRef.current = null;
-        setActiveDictionary(null);
-      }
+      setTimeout(() => {
+        if (normalizePath(window.location.pathname) !== normalizePath(expectedPathname)) return;
+        const nextParams = new URLSearchParams(window.location.search);
+        const nextDid = nextParams.get("did");
+        if (nextDid) {
+          openDictionaryEntry(nextDid);
+        } else {
+          dictionaryRequestRef.current = null;
+          setActiveDictionary(null);
+        }
+      }, 1)
+      console.log("handleURLState called"); // DEBUG
     };
     window.addEventListener("popstate", handleURLState);
-    window.addEventListener("pushstate", handleURLState);
     return () => {
       window.removeEventListener("popstate", handleURLState);
-      window.removeEventListener("pushstate", handleURLState);
     };
   }, [expectedPathname, openDictionaryEntry, setDidQueryParam]);
 
@@ -266,7 +302,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <ChannelBadge ch={post.channel} />
               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono dark:bg-gray-800">{post.entry.codes[0]}</span>
-              {updatedAt !== undefined ? (
+              {(updatedAt !== undefined && updatedAt !== archivedAt) ? (
                 <RelativeTime className="text-gray-700 dark:text-gray-200" prefix="Updated" ts={updatedAt} />
               ) : null}
               {archivedAt !== undefined ? (

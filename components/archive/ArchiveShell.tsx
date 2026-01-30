@@ -31,11 +31,11 @@ export function ArchiveShell({
 
   const [hydrated, setHydrated] = useState(hasHydratedArchiveShell);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHydrated(true);
     hasHydratedArchiveShell = true;
-  }, []);
+    if (hydrated) return;
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setHydrated(true);
+  }, [hydrated]);
 
 
   const { posts, channels, error, config } = useArchiveData({ initial: initialArchive });
@@ -56,7 +56,7 @@ export function ArchiveShell({
     openError,
     isPostOpen,
     openPostFromList,
-    onLinkClick,
+    onLinkClick
   } = useArchivePostShell({ posts, archiveRootHref, pendingScrollRef });
 
   const filters = useArchiveFilters({
@@ -91,6 +91,17 @@ export function ArchiveShell({
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+
+      {!isPostOpen ? (
+        <HeaderBar
+          siteName={siteConfig.siteName}
+          view="archive"
+          logoSrc={siteConfig.logoSrc}
+          discordInviteUrl={siteConfig.discordInviteUrl}
+          filters={filters}
+        />
+      ) : null}
+
       {isPostOpen ? (
         <ArchivePostView
           post={openPost}
@@ -101,31 +112,24 @@ export function ArchiveShell({
           archiveConfig={archiveConfig}
           onLinkClick={onLinkClick}
         />
-      ) : (
-        <>
-          <HeaderBar
-            siteName={siteConfig.siteName}
-            view="archive"
-            logoSrc={siteConfig.logoSrc}
-            discordInviteUrl={siteConfig.discordInviteUrl}
-            filters={filters}
-          />
-          <ArchiveListView
-            sidebarRef={sidebarShellRef}
-            channelsList={channels}
-            filters={filters}
-            error={error}
-            globalTags={globalTags}
-            pageSize={pageSize}
-            pageNumber={pageNumber}
-            hydrated={hydrated}
-            totalPosts={posts.length}
-            onNavigate={openPostFromList}
-          />
+      ) : null}
 
-          <Footer />
-        </>
-      )}
+      <ArchiveListView
+        visible={!isPostOpen}
+        sidebarRef={sidebarShellRef}
+        channelsList={channels}
+        filters={filters}
+        error={error}
+        globalTags={globalTags}
+        pageSize={pageSize}
+        pageNumber={pageNumber}
+        hydrated={hydrated}
+        totalPosts={posts.length}
+        onNavigate={openPostFromList}
+      />
+
+
+      <Footer />
     </div>
   );
 }

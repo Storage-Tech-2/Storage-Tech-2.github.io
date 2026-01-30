@@ -124,7 +124,8 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     pendingScrollRef.current = null;
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
     const nextState = buildHistoryState({
-      archiveListHref: listUrlRef.current || currentHref
+      archiveListHref: listUrlRef.current || currentHref,
+      lastPostCode: openPost?.entry.codes[0] || undefined,
     });
     window.history.pushState(nextState, "", nextHref);
     requestAnimationFrame(() => window.scrollTo(0, 0));
@@ -158,26 +159,33 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     resetOpenState(true);
   }, [openPost, resetOpenState]);
 
+  const syncFromLocation = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const slug = extractArchiveSlugFromUrl(new URL(window.location.href));
+    if (!slug) {
+      closePostFromUrl();
+      return;
+    }
+    const match = findPostBySlug(posts, slug);
+    if (!match) return;
+    openPostFromUrl(match);
+  }, [closePostFromUrl, openPostFromUrl, posts]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const syncFromLocation = () => {
-      const slug = extractArchiveSlugFromUrl(new URL(window.location.href));
-      if (!slug) {
-        closePostFromUrl();
-        return;
-      }
-      const match = findPostBySlug(posts, slug);
-      if (!match) return;
-      openPostFromUrl(match);
+    const syncFromLocationAsync = () => {
+      setTimeout(() => {
+        syncFromLocation();
+      }, 1);
     };
-    syncFromLocation();
-    window.addEventListener("popstate", syncFromLocation);
-    window.addEventListener("pageshow", syncFromLocation);
+    syncFromLocationAsync();
+    window.addEventListener("popstate", syncFromLocationAsync);
+    window.addEventListener("pageshow", syncFromLocationAsync);
     return () => {
-      window.removeEventListener("popstate", syncFromLocation);
-      window.removeEventListener("pageshow", syncFromLocation);
+      window.removeEventListener("popstate", syncFromLocationAsync);
+      window.removeEventListener("pageshow", syncFromLocationAsync);
     };
-  }, [closePostFromUrl, openPostFromUrl, posts]);
+  }, [closePostFromUrl, openPostFromUrl, posts, syncFromLocation]);
 
   return {
     openPost,
@@ -186,6 +194,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     openError,
     isPostOpen: Boolean(openPost),
     openPostFromList,
-    onLinkClick,
+    onLinkClick
   };
 }

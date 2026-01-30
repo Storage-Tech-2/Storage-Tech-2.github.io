@@ -8,15 +8,18 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   doRealPrefetch: boolean;
+  resync?(): void;
 }
 
-export function PostNav({ doRealPrefetch }: Props) {
+export function PostNav({ doRealPrefetch, resync }: Props) {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHydrated(true);
+    const id = requestAnimationFrame(() => {
+      setHydrated(true);
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
 
@@ -26,6 +29,31 @@ export function PostNav({ doRealPrefetch }: Props) {
     backText = `← Back to ${state.lastPostCode}`;
   }
 
+  const handleBackClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    const state = hydrated ? getHistoryState() : null;
+
+    if (!state || (!state.lastPostCode && !state.archiveListHref)) {
+      router.push("/archives");
+      return;
+    }
+
+    // if (!state.lastPostCode && state.archiveListHref) {
+    //   router.push(state.archiveListHref);
+    //   return;
+    // }
+
+    const backCount = state.backCount || 1;
+    if (backCount > 1) {
+      window.history.go(-backCount);
+    } else {
+      window.history.back();
+    }
+  }
+
+  const handleHomeClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    router.push("/archives");
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
       <ForesightPrefetchLink
@@ -33,21 +61,19 @@ export function PostNav({ doRealPrefetch }: Props) {
         className="rounded-full border px-3 py-1 text-sm transition hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-900"
         onClick={(event) => {
           event.preventDefault();
-          if (!state) {
-            router.push("/archives");
-            return;
-          }
-
-          const backCount = state.backCount || 1;
-          if (backCount > 1) {
-            window.history.go(-backCount);
-          } else {
-            window.history.back();
+          handleBackClick(event);
+          if (resync) {
+            resync();
           }
         }}
         beforePrefetch={(e) => {
-          if (!state || !state.lastPostCode) {
+          const state = hydrated ? getHistoryState() : null;
+
+          if (!state || (!state.lastPostCode && !state.archiveListHref)) {
             prefetchArchiveIndex();
+            if (!doRealPrefetch) {
+              e.cancel();
+            }
             return;
           }
 
@@ -73,9 +99,22 @@ export function PostNav({ doRealPrefetch }: Props) {
         className="text-sm text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
         onClick={(event) => {
           event.preventDefault();
-          router.push("/archives");
+          handleHomeClick(event);
+          if (resync) {
+            resync();
+          }
         }}
-        beforePrefetch={() => prefetchArchiveIndex()}
+        beforePrefetch={
+          (e) => {
+
+            prefetchArchiveIndex()
+
+            if (!doRealPrefetch) {
+              e.cancel();
+              return;
+            }
+          }
+        }
       >
         Archive home
       </ForesightPrefetchLink>

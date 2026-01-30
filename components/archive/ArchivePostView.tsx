@@ -14,6 +14,7 @@ type Props = {
   globalTags: GlobalTag[];
   archiveConfig: ArchiveConfig;
   onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
+  resync?(): void;
 };
 
 export function ArchivePostView({
@@ -24,14 +25,19 @@ export function ArchivePostView({
   globalTags,
   archiveConfig,
   onLinkClick,
+  resync,
 }: Props) {
   if (!post) return null;
 
   return (
     <>
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-8 lg:px-6">
-        <PostNav doRealPrefetch={false} />
-     
+        <PostNav
+          doRealPrefetch={false}
+          resync={resync}
+        />
+
+
         {error ? (
           <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
             {error}
@@ -47,7 +53,6 @@ export function ArchivePostView({
           onLinkClick={onLinkClick}
         />
       </main>
-      <Footer />
     </>
   );
 }

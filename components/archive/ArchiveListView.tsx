@@ -11,6 +11,7 @@ import { normalize } from "@/lib/utils/strings";
 import { TagChip } from "../ui/Tags";
 
 type Props = {
+  visible: boolean;
   sidebarRef: RefObject<HTMLElement | null>;
   channelsList: ChannelRef[];
   filters: ArchiveFiltersModel;
@@ -24,6 +25,7 @@ type Props = {
 };
 
 export function ArchiveListView({
+  visible,
   sidebarRef,
   channelsList,
   filters,
@@ -51,7 +53,7 @@ export function ArchiveListView({
   const rangeEnd = Math.min(filteredPosts.length, Math.max(pageNumber, 1) * pageSize);
 
   return (
-    <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6">
+    <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6" style={{ contentVisibility: visible ? "visible" : "hidden" }}>
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8 lg:min-h-screen">
         <aside ref={sidebarRef} className="lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-24 pr-1 sidebar-scroll">
           <div className="sidebar-scroll-inner lg:max-h-[calc(100vh-80px)]">
@@ -116,7 +118,7 @@ export function ArchiveListView({
           <div role="main">
             {(hydrated && pageNumber === 0) ? (
               <>
-                <VirtualizedGrid posts={filteredPosts} sortKey={sort.key} globalTags={globalTags} onNavigate={onNavigate} />
+                <VirtualizedGrid enabled={visible} posts={filteredPosts} sortKey={sort.key} globalTags={globalTags} onNavigate={onNavigate} />
                 {pagination.node}
               </>
             ) : (

@@ -123,11 +123,12 @@ export function useArchiveFilters({
 
   useEffect(() => {
     const handlePopState = () => {
-      if (typeof window === "undefined") return;
-      const parsed = toFilterState(getArchiveFiltersFromUrl());
-      startTransition(() => {
-        applyFilterState(parsed);
-      });
+      setTimeout(() => {
+        const parsed = toFilterState(getArchiveFiltersFromUrl());
+        startTransition(() => {
+          applyFilterState(parsed);
+        });
+      }, 1);
     };
     window.addEventListener("popstate", handlePopState);
     return () => {

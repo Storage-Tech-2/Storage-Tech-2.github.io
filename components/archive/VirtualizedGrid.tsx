@@ -13,6 +13,7 @@ const SCROLLBAR_FUDGE = 20;
 const ROW_HEIGHT = CARD_HEIGHT + GRID_GAP;
 
 type Props = {
+  enabled: boolean;
   posts: ArchiveListItem[];
   sortKey: SortKey;
   globalTags?: GlobalTag[];
@@ -55,7 +56,7 @@ function useElementWidth<T extends HTMLElement>() {
   return { ref, width };
 }
 
-export function VirtualizedGrid({ posts, sortKey, onNavigate, globalTags }: Props) {
+export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTags }: Props) {
   const { ref: containerRef, width } = useElementWidth<HTMLDivElement>();
   const [scrollMargin, setScrollMargin] = useState(0);
 
@@ -81,6 +82,7 @@ export function VirtualizedGrid({ posts, sortKey, onNavigate, globalTags }: Prop
     overscan: 2,
     scrollMargin,
     useFlushSync: false,
+    enabled
   });
 
   if (!posts.length) return null;

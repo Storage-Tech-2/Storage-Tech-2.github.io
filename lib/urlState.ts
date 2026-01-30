@@ -31,6 +31,8 @@ type RouterLike = {
 
 const ARCHIVE_SORTS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"];
 
+export const TEMP_STATE_STORE_KEY = "temp-archive-history-state";
+
 export function buildHistoryState({
   archiveListHref, lastPostCode, lastDictionaryId, backCount
 }: ArchiveHistoryState): ArchiveHistoryState {

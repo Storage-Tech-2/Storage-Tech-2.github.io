@@ -84,7 +84,7 @@ export default async function PostPage({ params }: Params) {
   });
   return (
     <>
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
+      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-8 lg:px-6">
         <PostNav doRealPrefetch={true} />
         <PostContent
           key={match.entry.id}
