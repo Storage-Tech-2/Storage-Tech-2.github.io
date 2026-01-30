@@ -411,6 +411,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           onClose={closeDictionaryEntry}
           dictionaryTooltips={dictionaryTooltips}
           onLinkClick={onLinkClickWrapper}
+          currentPost={post}
         />
       ) : null}
     </article>

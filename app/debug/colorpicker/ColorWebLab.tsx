@@ -268,7 +268,7 @@ export function TagColorLab() {
                     setEmoji(preset.emoji ?? "");
                     setRawColor(preset.color);
                   }}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 shadow-sm transition hover:-translate-y-px hover:shadow-md dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
                 >
                   {preset.emoji ? `${preset.emoji} ` : ""}
                   {preset.name}

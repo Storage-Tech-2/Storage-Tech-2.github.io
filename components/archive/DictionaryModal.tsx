@@ -18,9 +18,10 @@ type Props = {
   dictionaryTooltips?: Record<string, string>;
   onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
   variant?: "modal" | "inline";
+  currentPost?: ArchiveListItem | null;
 };
 
-export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips, onLinkClick, variant = "modal" }: Props) {
+export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips, onLinkClick, variant = "modal", currentPost }: Props) {
   const decorated = entry.data
     ? transformOutputWithReferencesForWebsite(entry.data.definition, entry.data.references || [], (id) => dictionaryTooltips?.[id])
     : "";
@@ -130,16 +131,39 @@ export function DictionaryModal({ entry, onClose, closeHref, dictionaryTooltips,
                         );
                       }
                       const updated = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
+
+                      if (currentPost && post.slug === currentPost.slug) {
+                        return (
+                          <div
+                            key={code}
+                            className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
+
+                          >
+                            <div className="space-y-1">
+                              <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                <ChannelBadge ch={post.channel} />
+                                <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                  {post.entry.codes[0]}
+                                </span>
+                                {updated !== undefined ? <RelativeTime ts={updated} /> : null}
+                              </div>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Viewing</span>
+                          </div>
+                        );
+                      }
+
                       return (
-                    <ForesightPrefetchLink
-                      key={code}
-                      href={`/archives/${post.slug}`}
-                      className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
-                      onClick={onLinkClick}
-                      beforePrefetch={() => {
-                        prefetchArchiveEntryData(post);
-                      }}
-                    >
+                        <ForesightPrefetchLink
+                          key={code}
+                          href={`/archives/${post.slug}`}
+                          className="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/60"
+                          onClick={onLinkClick}
+                          beforePrefetch={() => {
+                            prefetchArchiveEntryData(post);
+                          }}
+                        >
                           <div className="space-y-1">
                             <div className="text-sm font-semibold leading-tight">{post.entry.name}</div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
