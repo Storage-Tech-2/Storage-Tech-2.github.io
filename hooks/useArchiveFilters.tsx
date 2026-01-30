@@ -114,7 +114,6 @@ export function useArchiveFilters({
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const skipUrlSyncRef = useRef(true);
-  const sessionRef = useRef<ReturnType<typeof readArchiveSession> | null>(null);
 
   const applyFilterState = (state: FilterState) => {
     setQ(state.q);
@@ -129,13 +128,10 @@ export function useArchiveFilters({
   useEffect(() => {
     if (isArchivePostURL || isPostOpen) return;
 
-    if (sessionRef.current === null) {
-      sessionRef.current = readArchiveSession();
-    }
     startTransition(() => {
-      const next = buildInitialState(sessionRef.current);
+      const next = buildInitialState(readArchiveSession());
       applyFilterState(next.filters);
-      pendingScrollRef.current = next.scrollY ?? null;
+      if (next.scrollY) pendingScrollRef.current = next.scrollY;
     });
   }, [isArchivePostURL, isPostOpen]);
 
