@@ -168,7 +168,25 @@ export function useArchiveFilters({
     skipUrlSyncRef.current = false;
   }, []);
 
-  const commitSearch = () => setCommittedQ(q);
+  const commitSearch = () => {
+    const nextQ = q;
+    setCommittedQ(nextQ);
+    if (skipUrlSyncRef.current) return;
+    if (isPostOpen) return;
+    const nextState = buildPersistedState({
+      q,
+      committedQ: nextQ,
+      tagMode,
+      tagState,
+      selectedChannels,
+      selectedAuthors,
+      sortKey,
+    });
+    setArchiveFiltersToUrl(router, nextState, pathname);
+    if (typeof window !== "undefined") {
+      writeArchiveSession(nextState);
+    }
+  };
 
   const includeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === 1).map(normalize), [tagState]);
   const excludeTags = useMemo(() => Object.keys(tagState).filter((k) => tagState[k] === -1).map(normalize), [tagState]);

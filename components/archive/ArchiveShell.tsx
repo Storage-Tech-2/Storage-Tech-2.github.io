@@ -127,7 +127,10 @@ export function ArchiveShell({
         pageNumber={pageNumber}
         hydrated={hydrated}
         totalPosts={posts.length}
-        onNavigate={openPostFromList}
+        onNavigate={(post, event) => {
+          filters.search.commitSearch();
+          return openPostFromList(post, event);
+        }}
       />
 
 
