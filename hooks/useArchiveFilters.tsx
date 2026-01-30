@@ -65,10 +65,14 @@ const toFilterState = (state: Partial<FilterState>): FilterState => ({
   sortKey: state.sortKey || "newest",
 });
 
-const buildInitialState = () => {
+const buildInitialState = (fromSession: ReturnType<typeof readArchiveSession>) => {
   const fromUrl = getArchiveFiltersFromUrl();
-  const fromSession = readArchiveSession();
-  if (isUrlStateActive(fromUrl)) return { filters: toFilterState(fromUrl), scrollY: typeof fromSession?.scrollY === "number" ? fromSession.scrollY : null };
+  if (isUrlStateActive(fromUrl)) {
+    return {
+      filters: toFilterState(fromUrl),
+      scrollY: typeof fromSession?.scrollY === "number" ? fromSession.scrollY : null,
+    };
+  }
   return fromSession
     ? { filters: toFilterState(fromSession), scrollY: typeof fromSession.scrollY === "number" ? fromSession.scrollY : null }
     : { filters: toFilterState(fromUrl), scrollY: null as number | null };
@@ -110,6 +114,7 @@ export function useArchiveFilters({
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const skipUrlSyncRef = useRef(true);
+  const sessionRef = useRef<ReturnType<typeof readArchiveSession> | null>(null);
 
   const applyFilterState = (state: FilterState) => {
     setQ(state.q);
@@ -124,9 +129,11 @@ export function useArchiveFilters({
   useEffect(() => {
     if (isArchivePostURL || isPostOpen) return;
 
+    if (sessionRef.current === null) {
+      sessionRef.current = readArchiveSession();
+    }
     startTransition(() => {
-      const next = buildInitialState();
-      console.log("Restoring archive filters from url/session:", next);
+      const next = buildInitialState(sessionRef.current);
       applyFilterState(next.filters);
       pendingScrollRef.current = next.scrollY ?? null;
     });
