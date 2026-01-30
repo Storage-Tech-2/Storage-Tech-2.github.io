@@ -43,8 +43,10 @@ export function PostNav({ doRealPrefetch, resync }: Props) {
     // }
 
     const backCount = state.backCount || 1;
-    if (backCount > 1) {
-      window.history.go(-backCount);
+    const lastBackCount = state.lastBackCount ? state.lastBackCount - 1 : 0;
+    const total = backCount + lastBackCount;
+    if (total > 1) {
+      window.history.go(-total);
     } else {
       window.history.back();
     }

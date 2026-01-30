@@ -214,10 +214,11 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       // set state and prevent default
       const currentState = getHistoryState();
       const nextState = buildHistoryState({
-        ...currentState,
+        archiveListHref: currentState.archiveListHref,
         lastPostCode: currentData?.code,
-        backCount: currentState.lastDictionaryId ? (currentState.backCount ? currentState.backCount + 1 : 2) : undefined,
         lastDictionaryId: undefined,
+        lastBackCount: currentState.backCount,
+        backCount: undefined,
       });
 
       sessionStorage.setItem(TEMP_STATE_STORE_KEY, JSON.stringify(nextState));
@@ -264,7 +265,6 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           setActiveDictionary(null);
         }
       }, 1)
-      console.log("handleURLState called"); // DEBUG
     };
     window.addEventListener("popstate", handleURLState);
     return () => {

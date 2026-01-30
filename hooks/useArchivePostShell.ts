@@ -127,7 +127,8 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     const nextState = buildHistoryState({
       archiveListHref: listUrlRef.current || currentHref,
       lastPostCode: openPost?.entry.codes[0] || undefined,
-      backCount: currentState.lastDictionaryId ? (currentState.backCount ? currentState.backCount + 1 : 2) : undefined,
+      lastBackCount: currentState.backCount,
+      backCount: undefined,
       lastDictionaryId: undefined,
     });
     window.history.pushState(nextState, "", nextHref);
