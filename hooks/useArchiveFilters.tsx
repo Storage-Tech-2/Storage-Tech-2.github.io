@@ -114,6 +114,7 @@ export function useArchiveFilters({
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const skipUrlSyncRef = useRef(true);
+  const scrollSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const applyFilterState = (state: FilterState) => {
     setQ(state.q);
@@ -187,6 +188,38 @@ export function useArchiveFilters({
   useEffect(() => {
     skipUrlSyncRef.current = false;
   }, []);
+
+  useEffect(() => {
+    if (isArchivePostURL || isPostOpen || typeof window === "undefined") return;
+    if (skipUrlSyncRef.current) return;
+
+    const handleScroll = () => {
+      if (scrollSaveTimeoutRef.current) {
+        clearTimeout(scrollSaveTimeoutRef.current);
+      }
+      scrollSaveTimeoutRef.current = setTimeout(() => {
+        if (isArchivePostURL || isPostOpen) return;
+        writeArchiveSession(buildPersistedState({
+          q,
+          committedQ,
+          tagMode,
+          tagState,
+          selectedChannels,
+          selectedAuthors,
+          sortKey,
+        }, window.scrollY));
+      }, 250);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollSaveTimeoutRef.current) {
+        clearTimeout(scrollSaveTimeoutRef.current);
+        scrollSaveTimeoutRef.current = null;
+      }
+    };
+  }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey, isArchivePostURL, isPostOpen]);
 
   const commitSearch = () => {
     if (isArchivePostURL) return;
