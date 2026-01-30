@@ -175,8 +175,6 @@ export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryS
 
 export function readArchiveSession(): ArchiveFilters | null {
   if (typeof window === "undefined") return null;
-  const nav = performance?.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
-  if (nav?.type === "reload") return null;
   const saved = sessionStorage.getItem("archive-filters");
   if (!saved) return null;
   try {

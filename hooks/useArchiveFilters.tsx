@@ -67,8 +67,8 @@ const toFilterState = (state: Partial<FilterState>): FilterState => ({
 
 const buildInitialState = () => {
   const fromUrl = getArchiveFiltersFromUrl();
-  if (isUrlStateActive(fromUrl)) return { filters: toFilterState(fromUrl), scrollY: null as number | null };
   const fromSession = readArchiveSession();
+  if (isUrlStateActive(fromUrl)) return { filters: toFilterState(fromUrl), scrollY: typeof fromSession?.scrollY === "number" ? fromSession.scrollY : null };
   return fromSession
     ? { filters: toFilterState(fromSession), scrollY: typeof fromSession.scrollY === "number" ? fromSession.scrollY : null }
     : { filters: toFilterState(fromUrl), scrollY: null as number | null };
@@ -122,13 +122,15 @@ export function useArchiveFilters({
   };
 
   useEffect(() => {
-    if (isArchivePostURL) return;
-    const next = buildInitialState();
+    if (isArchivePostURL || isPostOpen) return;
+
     startTransition(() => {
+      const next = buildInitialState();
+      console.log("Restoring archive filters from url/session:", next);
       applyFilterState(next.filters);
+      pendingScrollRef.current = next.scrollY ?? null;
     });
-    pendingScrollRef.current = next.scrollY ?? null;
-  }, [isArchivePostURL, pendingScrollRef]);
+  }, [isArchivePostURL, isPostOpen]);
 
   useEffect(() => {
     if (isArchivePostURL) return;
@@ -138,7 +140,6 @@ export function useArchiveFilters({
         startTransition(() => {
           applyFilterState(parsed);
         });
-        pendingScrollRef.current = null;
       }, 1);
     };
     window.addEventListener("popstate", handlePopState);
