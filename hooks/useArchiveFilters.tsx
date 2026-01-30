@@ -11,6 +11,7 @@ import { disablePagination } from "@/lib/runtimeFlags";
 import {
   getArchiveFiltersFromUrl,
   readArchiveSession,
+  replaceArchiveFiltersInHistory,
   setArchiveFiltersToUrl,
   writeArchiveSession,
 } from "@/lib/urlState";
@@ -182,7 +183,7 @@ export function useArchiveFilters({
       selectedAuthors,
       sortKey,
     });
-    setArchiveFiltersToUrl(router, nextState, pathname);
+    replaceArchiveFiltersInHistory(nextState, pathname);
     if (typeof window !== "undefined") {
       writeArchiveSession(nextState);
     }

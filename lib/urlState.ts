@@ -81,8 +81,8 @@ export function getArchiveFiltersFromUrl(): ArchiveFilters {
   };
 }
 
-export function setArchiveFiltersToUrl(router: RouterLike, filters: ArchiveFilters, pathname?: string) {
-  if (typeof window === "undefined") return;
+const buildArchiveFiltersHref = (filters: ArchiveFilters, pathname?: string) => {
+  if (typeof window === "undefined") return null;
   const include = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === 1);
   const exclude = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === -1);
   const sp = new URLSearchParams();
@@ -98,8 +98,22 @@ export function setArchiveFiltersToUrl(router: RouterLike, filters: ArchiveFilte
   const currentPathname = pathname ?? window.location.pathname;
   const next = query ? `${currentPathname}?${query}` : currentPathname;
   const current = `${currentPathname}${window.location.search}`;
-  if (next === current) return;
-  router.replace(next, { scroll: false });
+  return { next, current };
+};
+
+export function setArchiveFiltersToUrl(router: RouterLike, filters: ArchiveFilters, pathname?: string) {
+  const nextHref = buildArchiveFiltersHref(filters, pathname);
+  if (!nextHref) return;
+  if (nextHref.next === nextHref.current) return;
+  router.replace(nextHref.next, { scroll: false });
+}
+
+export function replaceArchiveFiltersInHistory(filters: ArchiveFilters, pathname?: string) {
+  const nextHref = buildArchiveFiltersHref(filters, pathname);
+  if (!nextHref) return;
+  if (nextHref.next === nextHref.current) return;
+  const currentState = window.history.state;
+  window.history.replaceState(currentState, "", nextHref.next);
 }
 
 export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryState {
