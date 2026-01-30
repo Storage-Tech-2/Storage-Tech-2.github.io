@@ -33,7 +33,59 @@ type RouterLike = {
 
 const ARCHIVE_SORTS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"];
 
-export const TEMP_STATE_STORE_KEY = "temp-archive-history-state";
+const TEMP_STATE_STORE_KEY = "temp-archive-history-state";
+const TEMP_STATE_TTL_MS = 5 * 1000; // 5 seconds
+
+type TempHistoryStateEntry = {
+  timestamp: number;
+  state: ArchiveHistoryState;
+  href: string;
+}
+
+export function saveTempHistoryState(state: ArchiveHistoryState, href: string) {
+  const entry: TempHistoryStateEntry = {
+    timestamp: Date.now(),
+    state,
+    href,
+  };
+  sessionStorage.setItem(TEMP_STATE_STORE_KEY, JSON.stringify(entry));
+}
+
+export function getTempHistoryState(): ArchiveHistoryState | null {
+  const tempState = sessionStorage.getItem(TEMP_STATE_STORE_KEY);
+  if (tempState) {
+    try {
+      const parsed = JSON.parse(tempState) as TempHistoryStateEntry;
+      const href = window.location.href;
+      if (href !== parsed.href) {
+        sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
+        return null;
+      }
+
+      if (Date.now() - parsed.timestamp > TEMP_STATE_TTL_MS) {
+        sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
+        return null;
+      }
+      return parsed.state;
+    } catch {
+      // ignore
+    }
+    sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
+  }
+  return null;
+}
+
+export function applyTempHistoryState() {
+  const tempState = getTempHistoryState();
+  if (tempState) {
+    const nextState = buildHistoryState({
+      ...getHistoryState(),
+      ...tempState,
+    });
+    window.history.replaceState(nextState, "", window.location.href);
+    sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
+  }
+}
 
 export function buildHistoryState({
   archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY
@@ -44,6 +96,7 @@ export function buildHistoryState({
     ? { ...(currentState as Record<string, unknown>), archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY }
     : { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY };
 };
+
 
 export function getHistoryState(): ArchiveHistoryState {
   if (typeof window === "undefined") {
@@ -101,12 +154,6 @@ const buildArchiveFiltersHref = (filters: ArchiveFilters, pathname?: string) => 
   return { next, current };
 };
 
-export function setArchiveFiltersToUrl(router: RouterLike, filters: ArchiveFilters, pathname?: string) {
-  const nextHref = buildArchiveFiltersHref(filters, pathname);
-  if (!nextHref) return;
-  if (nextHref.next === nextHref.current) return;
-  router.replace(nextHref.next, { scroll: false });
-}
 
 export function replaceArchiveFiltersInHistory(filters: ArchiveFilters, pathname?: string) {
   const nextHref = buildArchiveFiltersHref(filters, pathname);
@@ -127,20 +174,6 @@ export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryS
   const match = pathname ? pathname.match(/^\/dictionary\/(.+)$/) : null;
   const slug = match ? decodeURIComponent(match[1].replace(/\/+$/, "")) : null;
   return { query: q, committedQuery: q, sort, slug };
-}
-
-export function setDictionaryStateToUrl(router: RouterLike, state: DictionaryState, pathname?: string) {
-  if (typeof window === "undefined") return;
-  const sp = new URLSearchParams();
-  if (state.committedQuery.trim()) sp.set("q", state.committedQuery.trim());
-  if (state.sort !== "az") sp.set("sort", state.sort);
-  const queryString = sp.toString();
-  const path = state.slug ? `/dictionary/${encodeURIComponent(state.slug)}` : "/dictionary";
-  const next = queryString ? `${path}?${queryString}` : path;
-  const currentPathname = pathname ?? window.location.pathname;
-  const current = `${currentPathname}${window.location.search}`;
-  if (next === current) return;
-  router.replace(next, { scroll: false });
 }
 
 export function readArchiveSession(): ArchiveFilters | null {

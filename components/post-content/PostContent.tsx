@@ -22,7 +22,7 @@ import { PostCommentsSection } from "./PostCommentsSection";
 import { PostPdfModal } from "./PostPdfModal";
 import { PostLightbox } from "./PostLightbox";
 import type { LightboxState, PdfPageInfo, PdfViewerState } from "./types";
-import { buildHistoryState, getHistoryState, TEMP_STATE_STORE_KEY } from "@/lib/urlState";
+import { applyTempHistoryState, buildHistoryState, getHistoryState, getTempHistoryState, saveTempHistoryState } from "@/lib/urlState";
 
 type Props = {
   post: ArchiveListItem;
@@ -211,7 +211,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       if (!archiveSlug) return;
      
 
-      // set state and prevent default
+      // set state for temp history
       const currentState = getHistoryState();
       const nextState = buildHistoryState({
         ...currentState,
@@ -221,27 +221,34 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         backCount: undefined,
       });
 
-      sessionStorage.setItem(TEMP_STATE_STORE_KEY, JSON.stringify(nextState));
+      saveTempHistoryState(nextState, url.href);
     }
   }, [currentData, onLinkClick, openDictionaryEntry]);
+
+  // also set session storage on beforeunload to handle hard reloads
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleBeforeUnload = () => {
+      const currentTempHistoryState = getTempHistoryState();
+      if (currentTempHistoryState) return;
+      // check to make sure post matches current url
+      const url = new URL(window.location.href);
+      const slug = getArchiveSlugInfo(url).slug;
+      if (slug !== post.slug) return;
+      saveTempHistoryState(getHistoryState(), url.href);
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [currentData, post.slug]);
+
+
 
 
   useEffect(() => {
     if (typeof window === "undefined" || onLinkClick) return;
-    const tempState = sessionStorage.getItem(TEMP_STATE_STORE_KEY);
-    if (tempState) {
-      try {
-        const parsed = JSON.parse(tempState);
-        const nextState = buildHistoryState({
-          ...getHistoryState(),
-          ...parsed,
-        });
-        window.history.replaceState(nextState, "", window.location.href);
-      } catch {
-        // ignore
-      }
-      sessionStorage.removeItem(TEMP_STATE_STORE_KEY);
-    }
+    applyTempHistoryState();
   },[onLinkClick]);
 
   useEffect(() => {

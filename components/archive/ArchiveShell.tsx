@@ -11,7 +11,7 @@ import { type ArchiveIndex } from "@/lib/archive";
 import { DEFAULT_GLOBAL_TAGS, type GlobalTag } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
-import { buildHistoryState, getHistoryState } from "@/lib/urlState";
+import { getHistoryState } from "@/lib/urlState";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -32,10 +32,9 @@ export function ArchiveShell({
   const [hydrated, setHydrated] = useState(hasHydratedArchiveShell);
   useEffect(() => {
     hasHydratedArchiveShell = true;
-    if (hydrated) return;
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setHydrated(true);
-  }, [hydrated]);
+  }, []);
 
 
   const { posts, channels, error, config } = useArchiveData({ initial: initialArchive });

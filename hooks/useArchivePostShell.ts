@@ -122,7 +122,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
       openScrollRef.current = window.scrollY;
     }
     pendingScrollRef.current = null;
-    const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
+    const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}/`;
     const currentState = getHistoryState();
     const nextState = buildHistoryState({
       archiveListScrollY: openScrollRef.current || 0,
@@ -151,8 +151,8 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
   const openPostFromUrl = useCallback((post: ArchiveListItem) => {
     if (openPost?.slug === post.slug) return;
     if (typeof window !== "undefined" && !listUrlRef.current) {
-      const historyState = window.history.state as { archiveListHref?: string } | null;
-      listUrlRef.current = historyState?.archiveListHref || archiveRootHref;
+      const historyState = getHistoryState();
+      listUrlRef.current = historyState.archiveListHref || archiveRootHref;
     }
     pendingScrollRef.current = null;
     loadPost(post);

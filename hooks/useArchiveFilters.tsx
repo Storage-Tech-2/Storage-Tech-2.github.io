@@ -12,9 +12,9 @@ import {
   getArchiveFiltersFromUrl,
   readArchiveSession,
   replaceArchiveFiltersInHistory,
-  setArchiveFiltersToUrl,
   writeArchiveSession,
 } from "@/lib/urlState";
+import { getArchiveSlugInfo } from "@/lib/utils/urls";
 
 type AuthorOption = {
   name: string;
@@ -140,7 +140,12 @@ export function useArchiveFilters({
   useEffect(() => {
     if (skipUrlSyncRef.current) return;
     if (isPostOpen) return;
-    setArchiveFiltersToUrl(router, buildPersistedState({
+
+    // check if we have post slug in url - if so, skip updating url state
+    const url = new URL(window.location.href);
+    const slug = getArchiveSlugInfo(url)?.slug;
+    if (slug) return;
+    replaceArchiveFiltersInHistory(buildPersistedState({
       q,
       committedQ,
       tagMode,
