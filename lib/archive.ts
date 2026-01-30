@@ -23,7 +23,6 @@ import {
   ENTRY_PREFETCH_MAX,
   ENTRY_PREFETCH_TTL_MS,
 } from "./cacheConstants";
-import { getPreviewByCode } from "./previews";
 
 export type ArchiveListItem = IndexedPost & { slug: string };
 
@@ -135,7 +134,9 @@ export async function prefetchArchiveIndex(ttlMs = ARCHIVE_CACHE_TTL_MS): Promis
   return archiveIndexPrefetchPromise;
 }
 
-export function prefetchPostCardImages(posts: ArchiveListItem[]): void {
+export async function prefetchPostCardImages(posts: ArchiveListItem[]): Promise<void> {
+  // dynamic import getPreviewByCode to avoid circular dependency
+  const { getPreviewByCode } = await import("./previews");
   posts.forEach((post) => {
     const preview = getPreviewByCode(post.entry.codes[0]);
     const heroSrc = post.entry.mainImagePath
