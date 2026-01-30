@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { computeAuthorCounts, computeChannelCounts, computeTagCounts, filterPosts, getPostAuthorsNormalized } from "@/lib/filtering";
 import { type ArchiveListItem } from "@/lib/archive";
@@ -33,7 +33,6 @@ type Options = {
   isPostOpen: boolean;
   isArchivePostURL: boolean;
   hydrated: boolean;
-  pendingScrollRef?: RefObject<number | null>;
 };
 
 type FilterState = {
@@ -96,13 +95,10 @@ export function useArchiveFilters({
   isPostOpen,
   isArchivePostURL,
   hydrated,
-  pendingScrollRef: externalPendingScrollRef,
 }: Options) {
   const router = useRouter();
   const pathname = usePathname();
-  const internalPendingScrollRef = useRef<number | null>(null);
-  const pendingScrollRef = externalPendingScrollRef ?? internalPendingScrollRef;
-  const scrollYRef = useRef(0);
+  const pendingScrollRef = useRef<number | null>(null);
   const [q, setQ] = useState("");
   const [committedQ, setCommittedQ] = useState("");
   const [tagMode, setTagMode] = useState<"OR" | "AND">("AND");
@@ -167,7 +163,7 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    }, scrollYRef.current), pathname);
+    }, typeof window === "undefined" ? undefined : window.scrollY), pathname);
   }, [committedQ, sortKey, tagMode, tagState, selectedChannels, selectedAuthors, q, router, pathname, isPostOpen, isArchivePostURL]);
 
   useEffect(() => {
@@ -181,23 +177,11 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    }, scrollYRef.current));
+    }, typeof window === "undefined" ? undefined : window.scrollY));
   }, [q, committedQ, tagMode, tagState, selectedChannels, selectedAuthors, sortKey, isArchivePostURL]);
 
   useEffect(() => {
     skipUrlSyncRef.current = false;
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handleScroll = () => {
-      scrollYRef.current = window.scrollY;
-    };
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
   }, []);
 
   const commitSearch = () => {
@@ -214,7 +198,7 @@ export function useArchiveFilters({
       selectedChannels,
       selectedAuthors,
       sortKey,
-    }, scrollYRef.current);
+    }, typeof window === "undefined" ? undefined : window.scrollY);
     replaceArchiveFiltersInHistory(nextState, pathname);
     if (typeof window !== "undefined") {
       writeArchiveSession(nextState);

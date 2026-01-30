@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MouseEvent, RefObject } from "react";
+import type { MouseEvent } from "react";
 import {
   findPostBySlug,
   getCachedDictionaryIndex,
@@ -17,7 +17,6 @@ import { buildHistoryState, getHistoryState } from "@/lib/urlState";
 type Options = {
   posts: ArchiveListItem[];
   archiveRootHref: string;
-  pendingScrollRef: RefObject<number | null>;
   setIsArchivePostURL(value: boolean): void;
 };
 
@@ -58,32 +57,27 @@ const syncDocumentTitle = (post: ArchiveListItem | null, titleRef: React.Mutable
   document.title = `${post.entry.name} | ${siteConfig.siteName}`;
 };
 
-export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, setIsArchivePostURL }: Options) {
+export function useArchivePostShell({ posts, archiveRootHref, setIsArchivePostURL }: Options) {
   const [openPost, setOpenPost] = useState<ArchiveListItem | null>(null);
   const [openData, setOpenData] = useState<ArchiveEntryData | null>(null);
   const [openDictionaryTooltips, setOpenDictionaryTooltips] = useState<Record<string, string>>({});
   const [openError, setOpenError] = useState<string | null>(null);
   const openRequestRef = useRef<symbol | null>(null);
   const listUrlRef = useRef<string | null>(null);
-  const openScrollRef = useRef<number | null>(null);
   const titleRef = useRef<string | null>(null);
 
   useEffect(() => {
     syncDocumentTitle(openPost, titleRef);
   }, [openPost]);
 
-  const resetOpenState = useCallback((restoreScroll: boolean) => {
+  const resetOpenState = useCallback(() => {
     setIsArchivePostURL(false);
     setOpenPost(null);
     setOpenData(null);
     setOpenError(null);
     openRequestRef.current = null;
     setOpenDictionaryTooltips({});
-    if (openScrollRef.current !== null && restoreScroll) {
-      pendingScrollRef.current = openScrollRef.current;
-    }
-    openScrollRef.current = null;
-  }, [pendingScrollRef, setIsArchivePostURL]);
+  }, [setIsArchivePostURL]);
 
   const loadPost = useCallback((post: ArchiveListItem) => {
     setOpenPost(post);
@@ -121,9 +115,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, 
     const currentHref = getCurrentHref();
     if (!openPost) {
       listUrlRef.current = currentHref;
-      openScrollRef.current = window.scrollY;
     }
-    pendingScrollRef.current = null;
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}/`;
     const currentState = getHistoryState();
     const nextState = buildHistoryState({
@@ -136,7 +128,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, 
     window.history.pushState(nextState, "", nextHref);
     loadPost(post);
     return true;
-  }, [archiveRootHref, loadPost, openPost, pendingScrollRef]);
+  }, [archiveRootHref, loadPost, openPost]);
 
   const onLinkClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
     const url = getURLFromMouseEvent(event);
@@ -155,13 +147,12 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, 
       const historyState = getHistoryState();
       listUrlRef.current = historyState.archiveListHref || archiveRootHref;
     }
-    pendingScrollRef.current = null;
     loadPost(post);
-  }, [archiveRootHref, loadPost, openPost, pendingScrollRef]);
+  }, [archiveRootHref, loadPost, openPost]);
 
   const closePostFromUrl = useCallback(() => {
     if (!openPost) return;
-    resetOpenState(true);
+    resetOpenState();
   }, [openPost, resetOpenState]);
 
   const syncFromLocation = useCallback(() => {
@@ -203,7 +194,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, 
       lastDictionaryId: undefined,
     });
     window.history.pushState(nextState, "", archiveRootHref);
-    resetOpenState(true);
+    resetOpenState();
   }, [archiveRootHref, openPost, resetOpenState]);
 
   return {

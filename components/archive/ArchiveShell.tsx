@@ -52,7 +52,6 @@ export function ArchiveShell({
     [archiveConfig.globalTags],
   );
   const sidebarShellRef = useRef<HTMLElement | null>(null);
-  const pendingScrollRef = useRef<number | null>(null);
   const archiveRootHref = `${siteConfig.basePath || ""}/archives`;
 
 
@@ -65,7 +64,7 @@ export function ArchiveShell({
     openPostFromList,
     onLinkClick,
     goHome,
-  } = useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, setIsArchivePostURL });
+  } = useArchivePostShell({ posts, archiveRootHref, setIsArchivePostURL });
 
   const filters = useArchiveFilters({
     posts,
@@ -77,14 +76,12 @@ export function ArchiveShell({
     isPostOpen,
     isArchivePostURL,
     hydrated,
-    pendingScrollRef,
   });
 
   const handleArchiveHomeClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.preventDefault();
     filters.reset();
     refreshArchiveIndex();
-    pendingScrollRef.current = null;
     const sidebar = sidebarShellRef.current;
     if (sidebar) sidebar.scrollTo({ top: 0 });
     if (typeof window !== "undefined") {
