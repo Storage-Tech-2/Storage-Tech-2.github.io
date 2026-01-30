@@ -19,7 +19,6 @@ import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
-import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 import { DictionaryCard } from "../ui/LinkHelpers";
 import { buildDictionaryUrl, getDictionarySlugInfo } from "@/lib/utils/urls";
 
@@ -78,10 +77,6 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     return liveEntries.find((entry) => entry.index.id === slugEntryIndex.id) || { index: slugEntryIndex };
   }, [slugEntryIndex, liveEntries]);
   const modalEntry = activeMatchesSlug && active ? active : slugEntry;
-
-  useEffect(() => {
-    setInternalNavigationFlag();
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

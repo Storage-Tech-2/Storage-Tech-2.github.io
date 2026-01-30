@@ -22,6 +22,7 @@ import { PostCommentsSection } from "./PostCommentsSection";
 import { PostPdfModal } from "./PostPdfModal";
 import { PostLightbox } from "./PostLightbox";
 import type { LightboxState, PdfPageInfo, PdfViewerState } from "./types";
+import { buildHistoryState, getHistoryState } from "@/lib/urlState";
 
 type Props = {
   post: ArchiveListItem;
@@ -29,10 +30,10 @@ type Props = {
   schemaStyles?: Record<string, StyleInfo>;
   dictionaryTooltips?: Record<string, string>;
   globalTags?: GlobalTag[];
-  onArchiveNavigate?(url: URL): boolean;
+  onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
 };
 
-export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags, onArchiveNavigate }: Props) {
+export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags, onLinkClick }: Props) {
   const [liveState, setLiveState] = useState<ArchiveEntryData | null>(null);
   const baseData = data;
   const currentData = liveState ? liveState : baseData;
@@ -56,7 +57,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       .then((fresh) => {
         if (!cancelled) setLiveState(fresh);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -105,14 +106,18 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     setPdfPageInfo({ page: 1, total: 0 });
   }, []);
 
-  const setDidQueryParam = useCallback((did: string | null, mode: "replace" | "push" = "replace") => {
+  const setDidQueryParam = useCallback((did: string | null) => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
+    const currentDid = sp.get("did");
+    if (currentDid === did) return;
+
     if (did) {
       sp.set("did", did);
     } else {
       sp.delete("did");
     }
+
     const hash = window.location.hash;
     const path = window.location.pathname || expectedPathname;
     const query = sp.toString();
@@ -120,28 +125,32 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     const current = `${window.location.pathname}${window.location.search}${hash}`;
     if (next === current) return;
     // Avoid triggering Next.js navigation on non-prerendered archive pages.
-    if (mode === "push") {
-      window.history.pushState(window.history.state, "", next);
-    } else {
-      window.history.replaceState(window.history.state, "", next);
-    }
+    const currentState = getHistoryState();
+    const nextState = buildHistoryState({
+      ...currentState,
+      lastDictionaryId: currentDid || undefined,
+      backCount: currentState.backCount ? currentState.backCount + 1 : 2,
+    });
+    window.history.pushState(nextState, "", next);
   }, [expectedPathname]);
+
+  const closeDictionaryEntry = useCallback(() => {
+    dictionaryRequestRef.current = null;
+    setActiveDictionary(null);
+    setDidQueryParam(null);
+  }, [setDidQueryParam]);
 
   const openDictionaryEntry = useCallback((did: string) => {
     const trimmed = did.trim();
     if (!trimmed) return false;
-    const currentDid = typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("did")
-      : null;
-    const shouldPush = currentDid !== trimmed;
     if (activeDictionaryRef.current?.index.id === trimmed && activeDictionaryRef.current.data) {
-      setDidQueryParam(trimmed, "replace");
+      setDidQueryParam(trimmed);
       return true;
     }
 
     const requestToken = Symbol("dictionary-request");
     dictionaryRequestRef.current = requestToken;
-    setDidQueryParam(trimmed, shouldPush ? "push" : "replace");
+    setDidQueryParam(trimmed);
 
     if (disableLiveFetch) {
       setActiveDictionary({
@@ -174,7 +183,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     return true;
   }, [setDidQueryParam]);
 
-  const onLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+  const onLinkClickWrapper = useCallback((e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
     const href = e.currentTarget.href;
     if (!href) return;
     let url: URL;
@@ -183,7 +192,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     } catch {
       return;
     }
-    if (url.origin !==  window.location.origin) return;
+    if (url.origin !== window.location.origin) return;
     let did = url.searchParams.get("did");
     if (!did) {
       const { slug } = getDictionarySlugInfo(url);
@@ -191,12 +200,13 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     }
     if (did) {
       openDictionaryEntry(did);
+      e.preventDefault();
+      return;
     }
-    if (onArchiveNavigate) {
-      onArchiveNavigate(url);
+    if (onLinkClick) {
+      onLinkClick(e);
     }
-    e.preventDefault();
-  }, [onArchiveNavigate, openDictionaryEntry]);
+  }, [onLinkClick, openDictionaryEntry]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -206,7 +216,8 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       queueMicrotask(() => openDictionaryEntry(did));
     }
     const normalizePath = (value: string) => (value === "/" ? "/" : value.replace(/\/+$/, ""));
-    const handlePopState = () => {
+
+    const handleURLState = () => {
       if (normalizePath(window.location.pathname) !== normalizePath(expectedPathname)) return;
       const nextParams = new URLSearchParams(window.location.search);
       const nextDid = nextParams.get("did");
@@ -217,13 +228,11 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         setActiveDictionary(null);
       }
     };
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handleURLState);
+    window.addEventListener("pushstate", handleURLState);
     return () => {
-      window.removeEventListener("popstate", handlePopState);
-      // Make sure we don't leave a lingering did= in history for this page.
-      if (typeof window !== "undefined" && normalizePath(window.location.pathname) === normalizePath(expectedPathname) && window.location.search.includes("did=")) {
-        setDidQueryParam(null, "replace");
-      }
+      window.removeEventListener("popstate", handleURLState);
+      window.removeEventListener("pushstate", handleURLState);
     };
   }, [expectedPathname, openDictionaryEntry, setDidQueryParam]);
 
@@ -290,7 +299,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           schemaStyles={schemaStyles}
           references={currentData.references}
           dictionaryTooltips={dictionaryTooltips}
-          onLinkClick={onLinkClick}
+          onLinkClick={onLinkClickWrapper}
         />
       ) : (
         <div className="text-sm text-gray-500">Loading post body...</div>
@@ -300,7 +309,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         acknowledgements={acknowledgements}
         authorReferences={authorReferences}
         dictionaryTooltips={dictionaryTooltips}
-        onLinkClick={onLinkClick}
+        onLinkClick={onLinkClickWrapper}
       />
 
       <PostAttachmentsSection
@@ -319,7 +328,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           comments={comments}
           channelPath={post.channel.path}
           entryPath={post.entry.path}
-          onLinkClick={onLinkClick}
+          onLinkClick={onLinkClickWrapper}
           setLightbox={setLightbox}
           onViewPdf={(pdf) => {
             setPdfPageInfo({ page: 1, total: 0 });
@@ -363,13 +372,9 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       {activeDictionary ? (
         <DictionaryModal
           entry={activeDictionary}
-          onClose={() => {
-            dictionaryRequestRef.current = null;
-            setActiveDictionary(null);
-            setDidQueryParam(null);
-          }}
+          onClose={closeDictionaryEntry}
           dictionaryTooltips={dictionaryTooltips}
-          onLinkClick={onLinkClick}
+          onLinkClick={onLinkClickWrapper}
         />
       ) : null}
     </article>

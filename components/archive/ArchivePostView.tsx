@@ -13,8 +13,7 @@ type Props = {
   error: string | null;
   globalTags: GlobalTag[];
   archiveConfig: ArchiveConfig;
-  onClose(): void;
-  onArchiveNavigate(url: URL): boolean;
+  onLinkClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
 };
 
 export function ArchivePostView({
@@ -24,15 +23,14 @@ export function ArchivePostView({
   error,
   globalTags,
   archiveConfig,
-  onClose,
-  onArchiveNavigate,
+  onLinkClick,
 }: Props) {
   if (!post) return null;
 
   return (
     <>
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-8 lg:px-6">
-        <PostNav onBack={onClose} onHome={onClose} />
+        <PostNav doRealPrefetch={false} />
      
         {error ? (
           <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
@@ -46,7 +44,7 @@ export function ArchivePostView({
           schemaStyles={archiveConfig.postStyle}
           dictionaryTooltips={dictionaryTooltips}
           globalTags={globalTags}
-          onArchiveNavigate={onArchiveNavigate}
+          onLinkClick={onLinkClick}
         />
       </main>
       <Footer />

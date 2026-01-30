@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { PostContent } from "@/components/post-content/PostContent";
 import { PostNav } from "@/components/archive/PostNav";
 import { DictionaryModal } from "@/components/archive/DictionaryModal";
@@ -185,7 +184,6 @@ export default function NotFoundResolver({ kind, slug }: Props) {
   const isDictionaryPath = Boolean(dictionarySlug);
   const lookupSlug = archiveSlug ?? dictionarySlug ?? "";
   const fallbackHref = isDictionaryPath ? "/dictionary" : "/archives";
-  const handleBack = useBackNavigation(fallbackHref);
   const showNotFound =
     hasResolved &&
     ((isArchivePath && (!post || !data)) || (isDictionaryPath && !dictionaryEntry) || Boolean(error));
@@ -194,7 +192,7 @@ export default function NotFoundResolver({ kind, slug }: Props) {
     return (
       <>
         <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
-          <PostNav />
+          <PostNav doRealPrefetch={true} />
           <PostContent post={post} data={data} dictionaryTooltips={dictionaryTooltips} />
         </main>
         <Footer />
@@ -252,7 +250,7 @@ export default function NotFoundResolver({ kind, slug }: Props) {
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            onClick={handleBack}
+            onClick={() => router.back()}
             className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
           >
             Go back

@@ -4,7 +4,6 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { Footer } from "@/components/layout/Footer";
 
 type NotFoundKind = "archive" | "dictionary";
@@ -46,7 +45,7 @@ const NotFoundResolver = dynamic(() => import("./NotFoundResolver"), {
 
 function PendingLookup({ kind, slug }: { kind?: NotFoundKind | null; slug?: string | null }) {
   const fallbackHref = kind === "dictionary" ? "/dictionary" : kind === "archive" ? "/archives" : "/";
-  const handleBack = useBackNavigation(fallbackHref);
+
   const kindLabel = kind === "dictionary" ? "dictionary" : kind === "archive" ? "archive" : "page";
   const slugLabel = slug?.trim() || "…";
   return (
@@ -60,7 +59,7 @@ function PendingLookup({ kind, slug }: { kind?: NotFoundKind | null; slug?: stri
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            onClick={handleBack}
+            onClick={() => window.history.back()}
             className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
           >
             Go back
@@ -88,7 +87,6 @@ function PendingLookup({ kind, slug }: { kind?: NotFoundKind | null; slug?: stri
 
 function GenericNotFound() {
   const fallbackHref = "/";
-  const handleBack = useBackNavigation(fallbackHref);
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 py-16 text-center">
@@ -97,7 +95,7 @@ function GenericNotFound() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            onClick={handleBack}
+            onClick={() => window.history.back()}
             className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
           >
             Go back

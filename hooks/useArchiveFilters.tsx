@@ -14,7 +14,6 @@ import {
   setArchiveFiltersToUrl,
   writeArchiveSession,
 } from "@/lib/urlState";
-import { setInternalNavigationFlag } from "@/hooks/useBackNavigation";
 
 type AuthorOption = {
   name: string;
@@ -120,7 +119,6 @@ export function useArchiveFilters({
     startTransition(() => {
       applyFilterState(next);
     });
-    setInternalNavigationFlag();
   }, []);
 
   useEffect(() => {

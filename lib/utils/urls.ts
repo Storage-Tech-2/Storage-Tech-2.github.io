@@ -33,6 +33,17 @@ export function getArchiveSlugInfo(url: URL, basePath: string = siteConfig.baseP
   }
 }
 
+export function getURLFromMouseEvent(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): URL | null {
+  const target = event.currentTarget;
+  const href = target.getAttribute("href");
+  if (!href) return null;
+  try {
+    return new URL(href, window.location.href);
+  } catch {
+    return null;
+  }
+}
+
 export function getDictionarySlugInfo(url: URL, basePath: string = siteConfig.basePath || ""): DictionarySlugInfo {
   const rawPath = url.pathname;
   const normalizedPath = basePath && rawPath.startsWith(basePath) ? rawPath.slice(basePath.length) : rawPath;

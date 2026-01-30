@@ -18,11 +18,38 @@ type DictionaryState = {
   slug: string | null;
 };
 
+export type ArchiveHistoryState = {
+  archiveListHref?: string;
+  lastPostCode?: string;
+  lastDictionaryId?: string;
+  backCount?: number;
+};
+
 type RouterLike = {
   replace: (href: string, options?: { scroll?: boolean }) => void;
 };
 
 const ARCHIVE_SORTS: SortKey[] = ["newest", "oldest", "archived", "archivedOldest", "az"];
+
+export function buildHistoryState({
+  archiveListHref, lastPostCode, lastDictionaryId, backCount
+}: ArchiveHistoryState): ArchiveHistoryState {
+  if (typeof window === "undefined") return { archiveListHref, lastPostCode, lastDictionaryId, backCount };
+  const currentState = window.history.state;
+  return (currentState && typeof currentState === "object")
+    ? { ...(currentState as Record<string, unknown>), archiveListHref, lastPostCode, lastDictionaryId, backCount }
+    : { archiveListHref, lastPostCode, lastDictionaryId, backCount };
+};
+
+export function getHistoryState(): ArchiveHistoryState {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  const currentState = window.history.state;
+  return (currentState && typeof currentState === "object")
+    ? (currentState as ArchiveHistoryState)
+    : {};
+}
 
 export function getArchiveFiltersFromUrl(): ArchiveFilters {
   if (typeof window === "undefined") {
@@ -62,7 +89,7 @@ export function setArchiveFiltersToUrl(router: RouterLike, filters: ArchiveFilte
   if (exclude.length) sp.set("xtags", serializeListParam(exclude));
   if (filters.selectedChannels.length) sp.set("channels", serializeListParam(filters.selectedChannels));
   if (filters.selectedAuthors.length) sp.set("authors", serializeListParam(filters.selectedAuthors));
- 
+
   const query = sp.toString();
   const currentPathname = pathname ?? window.location.pathname;
   const next = query ? `${currentPathname}?${query}` : currentPathname;
