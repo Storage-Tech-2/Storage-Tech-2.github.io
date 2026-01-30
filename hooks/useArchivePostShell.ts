@@ -110,6 +110,7 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
         if (openRequestRef.current !== requestToken) return;
         setOpenError((err as Error).message || "Unable to load this entry.");
       });
+    requestAnimationFrame(() => window.scrollTo(0, 0));
   }, []);
 
   const openPostFromList = useCallback((post: ArchiveListItem, event?: MouseEvent<HTMLAnchorElement>) => {
@@ -119,12 +120,12 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
     if (!openPost) {
       listUrlRef.current = currentHref;
       openScrollRef.current = window.scrollY;
-      sessionStorage.setItem("archive-scroll", `${window.scrollY}`);
     }
     pendingScrollRef.current = null;
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}`;
     const currentState = getHistoryState();
     const nextState = buildHistoryState({
+      archiveListScrollY: openScrollRef.current || 0,
       archiveListHref: listUrlRef.current || currentHref,
       lastPostCode: openPost?.entry.codes[0] || undefined,
       lastBackCount: currentState.backCount,
@@ -132,7 +133,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef }
       lastDictionaryId: undefined,
     });
     window.history.pushState(nextState, "", nextHref);
-    requestAnimationFrame(() => window.scrollTo(0, 0));
     loadPost(post);
     return true;
   }, [archiveRootHref, loadPost, openPost, pendingScrollRef]);

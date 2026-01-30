@@ -7,11 +7,11 @@ import { ArchiveListView } from "./ArchiveListView";
 import { useArchiveData } from "@/hooks/useArchiveData";
 import { useArchiveFilters } from "@/hooks/useArchiveFilters";
 import { useArchivePostShell } from "@/hooks/useArchivePostShell";
-import { useArchiveScrollRestore } from "@/hooks/useArchiveScrollRestore";
 import { type ArchiveIndex } from "@/lib/archive";
 import { DEFAULT_GLOBAL_TAGS, type GlobalTag } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
+import { buildHistoryState, getHistoryState } from "@/lib/urlState";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -83,12 +83,45 @@ export function ArchiveShell({
     filters.results.filtered.length,
   ]);
 
-  useArchiveScrollRestore({
-    pendingScrollRef,
-    hydrated,
-    isPostOpen,
-    restoreKey: filters.results.filtered.length,
-  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const captureScroll = () => {
+      const state = getHistoryState();
+      const y = state.archiveListScrollY;
+      if (typeof y !== "number" || Number.isNaN(y)) return;
+      pendingScrollRef.current = y;
+    };
+    const restoreScroll = () => {
+      if (!hydrated || isPostOpen) return;
+      const y = pendingScrollRef.current;
+      if (y === null) return;
+      requestAnimationFrame(() => window.scrollTo(0, y));
+      pendingScrollRef.current = null;
+    };
+    captureScroll();
+    restoreScroll();
+    window.addEventListener("popstate", captureScroll);
+    window.addEventListener("popstate", restoreScroll);
+    window.addEventListener("pageshow", captureScroll);
+    window.addEventListener("pageshow", restoreScroll);
+    return () => {
+      window.removeEventListener("popstate", captureScroll);
+      window.removeEventListener("popstate", restoreScroll);
+      window.removeEventListener("pageshow", captureScroll);
+      window.removeEventListener("pageshow", restoreScroll);
+    };
+  }, [hydrated, isPostOpen, pendingScrollRef]);
+
+  useEffect(() => {
+    if (!hydrated || isPostOpen) return;
+    if (pendingScrollRef.current === null) return;
+    requestAnimationFrame(() => {
+      const y = pendingScrollRef.current;
+      if (y === null) return;
+      window.scrollTo(0, y);
+      pendingScrollRef.current = null;
+    });
+  }, [hydrated, isPostOpen, pendingScrollRef, filters.results.filtered.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">

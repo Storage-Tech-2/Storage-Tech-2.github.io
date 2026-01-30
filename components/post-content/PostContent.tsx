@@ -214,7 +214,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       // set state and prevent default
       const currentState = getHistoryState();
       const nextState = buildHistoryState({
-        archiveListHref: currentState.archiveListHref,
+        ...currentState,
         lastPostCode: currentData?.code,
         lastDictionaryId: undefined,
         lastBackCount: currentState.backCount,

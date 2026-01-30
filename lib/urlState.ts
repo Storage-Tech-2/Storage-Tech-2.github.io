@@ -19,6 +19,7 @@ type DictionaryState = {
 };
 
 export type ArchiveHistoryState = {
+  archiveListScrollY?: number;
   archiveListHref?: string;
   lastPostCode?: string;
   lastDictionaryId?: string;
@@ -35,13 +36,13 @@ const ARCHIVE_SORTS: SortKey[] = ["newest", "oldest", "archived", "archivedOldes
 export const TEMP_STATE_STORE_KEY = "temp-archive-history-state";
 
 export function buildHistoryState({
-  archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount
+  archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY
 }: ArchiveHistoryState): ArchiveHistoryState {
-  if (typeof window === "undefined") return { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount };
+  if (typeof window === "undefined") return { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY };
   const currentState = window.history.state;
   return (currentState && typeof currentState === "object")
-    ? { ...(currentState as Record<string, unknown>), archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount }
-    : { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount };
+    ? { ...(currentState as Record<string, unknown>), archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY }
+    : { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY };
 };
 
 export function getHistoryState(): ArchiveHistoryState {
