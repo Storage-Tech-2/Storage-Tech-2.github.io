@@ -7,12 +7,12 @@ import { getHistoryState } from "@/lib/urlState";
 import { useRouter } from "next/navigation";
 
 type Props = {
-  doRealPrefetch: boolean;
+  prefetch: boolean;
   goHome?(): void;
   resync?(): void;
 }
 
-export function PostNav({ doRealPrefetch, goHome, resync }: Props) {
+export function PostNav({ prefetch, goHome, resync }: Props) {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
@@ -68,9 +68,10 @@ export function PostNav({ doRealPrefetch, goHome, resync }: Props) {
           const state = hydrated ? getHistoryState() : null;
 
           if (!state || (!state.lastPostCode && !state.archiveListHref)) {
-            prefetchArchiveIndex();
-            if (!doRealPrefetch) {
+            if (!prefetch) {
               e.cancel();
+            } else {
+              prefetchArchiveIndex();
             }
             return;
           }
@@ -85,7 +86,7 @@ export function PostNav({ doRealPrefetch, goHome, resync }: Props) {
             }
           })();
 
-          if (!doRealPrefetch) {
+          if (!prefetch) {
             e.cancel();
           }
         }}
@@ -108,12 +109,10 @@ export function PostNav({ doRealPrefetch, goHome, resync }: Props) {
         }}
         beforePrefetch={
           (e) => {
-
-            prefetchArchiveIndex()
-
-            if (!doRealPrefetch) {
+            if (!prefetch) {
               e.cancel();
-              return;
+            } else {
+              prefetchArchiveIndex();
             }
           }
         }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArchiveIndex, ArchiveListItem, getCachedArchiveIndex, getLastArchiveFetchAt, prefetchArchiveIndex, setCachedArchiveIndex } from "@/lib/archive";
 import { ARCHIVE_CACHE_TTL_MS } from "@/lib/cacheConstants";
 import { DEFAULT_GLOBAL_TAGS } from "@/lib/types";
@@ -28,6 +28,43 @@ export function useArchiveData({ initial }: Options = {}) {
   const [posts, setPosts] = useState<ArchiveListItem[]>(bootstrapIndex?.posts ?? []);
   const [loading, setLoading] = useState(!bootstrapIndex);
   const [error, setError] = useState<string | null>(null);
+
+  const applyIndex = useCallback((idx: ArchiveIndex) => {
+    const mergedConfig = {
+      ...idx.config,
+      globalTags: initial?.config?.globalTags?.length
+        ? initial.config.globalTags
+        : idx.config.globalTags || DEFAULT_GLOBAL_TAGS,
+    };
+    const currentUpdatedAt = config?.updatedAt ?? 0;
+    const nextUpdatedAt = mergedConfig.updatedAt ?? 0;
+    const isSame =
+      currentUpdatedAt === nextUpdatedAt &&
+      idx.posts.length === posts.length &&
+      idx.channels.length === channels.length;
+    if (!isSame) {
+      setConfig(mergedConfig);
+      setChannels(idx.channels);
+      setPosts(idx.posts);
+    }
+  }, [channels.length, config?.updatedAt, initial?.config?.globalTags, posts.length]);
+
+  const refreshArchiveIndex = async () => {
+    if (disableLiveFetch) return;
+    setLoading((prev) => prev || !posts.length);
+    try {
+      const idx = await prefetchArchiveIndex(0);
+      if (!idx) throw new Error("Failed to load archive index");
+      const fetchedAt = getLastArchiveFetchAt() || Date.now();
+      setCachedArchiveIndex(idx, fetchedAt);
+      applyIndex(idx);
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (disableLiveFetch) {
@@ -61,23 +98,7 @@ export function useArchiveData({ initial }: Options = {}) {
         if (cancelled) return;
         const fetchedAt = getLastArchiveFetchAt() || Date.now();
         setCachedArchiveIndex(idx, fetchedAt);
-        const mergedConfig = {
-          ...idx.config,
-          globalTags: initial?.config?.globalTags?.length
-            ? initial.config.globalTags
-            : idx.config.globalTags || DEFAULT_GLOBAL_TAGS,
-        };
-        const currentUpdatedAt = config?.updatedAt ?? 0;
-        const nextUpdatedAt = mergedConfig.updatedAt ?? 0;
-        const isSame =
-          currentUpdatedAt === nextUpdatedAt &&
-          idx.posts.length === posts.length &&
-          idx.channels.length === channels.length;
-        if (!isSame) {
-          setConfig(mergedConfig);
-          setChannels(idx.channels);
-          setPosts(idx.posts);
-        }
+        applyIndex(idx);
         setError(null);
       } catch (err) {
         if (!cancelled) setError((err as Error).message || String(err));
@@ -97,8 +118,8 @@ export function useArchiveData({ initial }: Options = {}) {
     return () => {
       cancelled = true;
     };
-  }, [channels.length, config?.updatedAt, initial, posts.length, preferCached]);
+  }, [applyIndex, initial, posts.length, preferCached]);
 
 
-  return { config, channels, posts, loading, error };
+  return { config, channels, posts, loading, error, refreshArchiveIndex };
 }

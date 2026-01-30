@@ -30,6 +30,8 @@ type BaseProps = {
   view: "home" | "archive" | "dictionary";
   logoSrc: string;
   discordInviteUrl?: string;
+  onLogoClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
+  onArchiveClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
 };
 
 type Props =
@@ -38,7 +40,7 @@ type Props =
   | (BaseProps & { view: "dictionary"; filters?: DictionaryHeaderFilters });
 
 export function HeaderBar(props: Props) {
-  const { siteName, view, logoSrc, discordInviteUrl } = props;
+  const { siteName, view, logoSrc, discordInviteUrl, onLogoClick, onArchiveClick } = props;
   const archiveFilters = view === "archive" ? props.filters : undefined;
   const dictionaryFilters = view === "dictionary" ? props.filters : undefined;
   const archiveSortKey = archiveFilters?.sort.key ?? "newest";
@@ -57,10 +59,10 @@ export function HeaderBar(props: Props) {
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
         <div className="flex w-full flex-wrap items-center gap-2 pb-1 sm:gap-3">
           <div className="flex shrink-0 items-center gap-3">
-            <ForesightPrefetchLink href="/" className="h-10 w-10">
+            <ForesightPrefetchLink href="/" className="h-10 w-10" onClick={onLogoClick}>
               <Image src={logoSrc} alt="Logo" width={40} height={40} className="h-10 w-10" />
             </ForesightPrefetchLink>
-            <ForesightPrefetchLink href="/">
+            <ForesightPrefetchLink href="/" onClick={onLogoClick}>
             <div>
               <div className="text-xl font-bold">
                 {siteName}
@@ -95,6 +97,7 @@ export function HeaderBar(props: Props) {
                   : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
               )}
               beforePrefetch={() => prefetchArchiveIndex()}
+              onClick={onArchiveClick}
             >
               Archive
             </ForesightPrefetchLink>

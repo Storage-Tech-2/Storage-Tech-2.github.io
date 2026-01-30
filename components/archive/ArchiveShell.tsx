@@ -46,7 +46,7 @@ export function ArchiveShell({
 
 
 
-  const { posts, channels, error, config } = useArchiveData({ initial: initialArchive });
+  const { posts, channels, error, config, refreshArchiveIndex } = useArchiveData({ initial: initialArchive });
   const archiveConfig = config ?? initialArchive.config;
   const globalTags = useMemo<GlobalTag[]>(
     () => archiveConfig.globalTags?.length ? archiveConfig.globalTags : DEFAULT_GLOBAL_TAGS,
@@ -79,6 +79,18 @@ export function ArchiveShell({
     isArchivePostURL,
     hydrated,
   });
+
+  const handleArchiveHomeClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    e.preventDefault();
+    filters.reset();
+    refreshArchiveIndex();
+    pendingScrollRef.current = null;
+    const sidebar = sidebarShellRef.current;
+    if (sidebar) sidebar.scrollTo({ top: 0 });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0 });
+    }
+  };
 
   useEffect(() => {
     const el = sidebarShellRef.current;
@@ -142,6 +154,8 @@ export function ArchiveShell({
           logoSrc={siteConfig.logoSrc}
           discordInviteUrl={siteConfig.discordInviteUrl}
           filters={filters}
+          onLogoClick={handleArchiveHomeClick}
+          onArchiveClick={handleArchiveHomeClick}
         />
       ) : null}
 

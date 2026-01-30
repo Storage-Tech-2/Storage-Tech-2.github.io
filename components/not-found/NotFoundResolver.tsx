@@ -192,7 +192,7 @@ export default function NotFoundResolver({ kind, slug }: Props) {
     return (
       <>
         <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 lg:px-6">
-          <PostNav doRealPrefetch={true} />
+          <PostNav prefetch={true} />
           <PostContent post={post} data={data} dictionaryTooltips={dictionaryTooltips} />
         </main>
         <Footer />

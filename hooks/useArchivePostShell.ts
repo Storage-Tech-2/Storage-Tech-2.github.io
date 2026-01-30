@@ -127,7 +127,6 @@ export function useArchivePostShell({ posts, archiveRootHref, pendingScrollRef, 
     const nextHref = `${archiveRootHref}/${encodeURIComponent(post.slug)}/`;
     const currentState = getHistoryState();
     const nextState = buildHistoryState({
-      archiveListScrollY: openScrollRef.current || 0,
       archiveListHref: listUrlRef.current || currentHref,
       lastPostCode: openPost?.entry.codes[0] || undefined,
       lastBackCount: currentState.backCount,

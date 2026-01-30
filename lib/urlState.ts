@@ -19,7 +19,6 @@ type DictionaryState = {
 };
 
 export type ArchiveHistoryState = {
-  archiveListScrollY?: number;
   archiveListHref?: string;
   lastPostCode?: string;
   lastDictionaryId?: string;
@@ -85,13 +84,13 @@ export function applyTempHistoryState() {
 }
 
 export function buildHistoryState({
-  archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY
+  archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount
 }: ArchiveHistoryState): ArchiveHistoryState {
-  if (typeof window === "undefined") return { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY };
+  if (typeof window === "undefined") return { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount };
   const currentState = window.history.state;
   return (currentState && typeof currentState === "object")
-    ? { ...(currentState as Record<string, unknown>), archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY }
-    : { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount, archiveListScrollY };
+    ? { ...(currentState as Record<string, unknown>), archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount }
+    : { archiveListHref, lastPostCode, lastDictionaryId, backCount, lastBackCount };
 };
 
 
