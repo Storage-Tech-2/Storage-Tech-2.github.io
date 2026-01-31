@@ -8,10 +8,7 @@ if (env.backends.onnx.wasm) {
     env.backends.onnx.wasm.wasmPaths = self.location.origin + '/ort/';
 }
 
-const EMBEDDING_DIMENSION = 512;
-const EMBEDDING_FAST_SEARCH_DIMENSION = 128;
-const CANDIDATE_TOPK = 40;
-const CANDIDATE_MAX_RATIO = 0.2;
+const EMBEDDING_DIMENSION = 256;
 const RESULT_TOPK = 20;
 const MIN_SCORE = 0.25;
 const STD_FACTOR = 1.5;
@@ -147,34 +144,6 @@ function selectSemanticScores(scored: Array<{ identifier: string; score: number 
     return selected;
 }
 
-function selectCandidates(scored: Array<{ identifier: string; embedding: Int8Array; score: number }>, totalCount: number) {
-    if (!scored.length) return [] as Array<{ identifier: string; embedding: Int8Array; score: number }>;
-    const scores = scored.map((item) => item.score);
-    const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-    const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
-    const std = Math.sqrt(variance);
-    const sortedScores = [...scores].sort((a, b) => a - b);
-    const p90Index = Math.max(0, Math.floor(0.9 * (sortedScores.length - 1)));
-    const p90 = sortedScores[p90Index];
-    const threshold = Math.max(p90, mean + STD_FACTOR * std);
-
-    const ranked = scored.slice().sort((a, b) => b.score - a.score);
-    let selected = ranked.filter((item) => item.score >= threshold);
-
-    const maxCandidates = Math.min(
-        totalCount,
-        CANDIDATE_MAX_RATIO * totalCount,
-    );
-
-    if (selected.length < CANDIDATE_TOPK) {
-        selected = ranked.slice(0, Math.min(CANDIDATE_TOPK, ranked.length));
-    } else if (selected.length > maxCandidates) {
-        selected = selected.slice(0, maxCandidates);
-    }
-
-    return selected;
-}
-
 const onMessage = async (event: MessageEvent) => {
     const { data } = event;
     if (data.type === 'setEmbeddings') {
@@ -194,21 +163,14 @@ const onMessage = async (event: MessageEvent) => {
             }
             
             const output = await getEmbedding("Represent this sentence for searching relevant passages: " + query);
-            const fastScores = entries
+            const candidates = entries
                 .map((entry) => ({
                     identifier: entry.identifier,
                     embedding: entry.embedding,
-                    score: cosineSimilarity(output, entry.embedding, EMBEDDING_FAST_SEARCH_DIMENSION),
+                    score: cosineSimilarity(output, entry.embedding, EMBEDDING_DIMENSION),
                 }))
-                .sort((a, b) => b.score - a.score);
 
-            const candidates = selectCandidates(fastScores, entries.length);
-            const fullScores = candidates.map((entry) => ({
-                identifier: entry.identifier,
-                score: cosineSimilarity(output, entry.embedding, EMBEDDING_DIMENSION),
-            }));
-
-            const scores = selectSemanticScores(fullScores);
+            const scores = selectSemanticScores(candidates);
             
             postMessage({ type: 'getScoresComplete', requestId, scores });
         } catch (error) {
