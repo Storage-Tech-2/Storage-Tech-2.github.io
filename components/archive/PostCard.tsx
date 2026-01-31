@@ -56,25 +56,27 @@ export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended 
           if (onNavigate) e.cancel()
         }}
       >
-        <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
+        <div className="relative aspect-video min-h-45 w-full rounded-t-2xl bg-black/7 dark:bg-white/5">
           {aiRecommended ? (
-            <span className="absolute left-2 top-2 rounded-full bg-gray-200/80 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600 shadow-sm backdrop-blur-sm dark:bg-gray-800/70 dark:text-gray-300">
+            <span className="absolute left-2 top-2 z-10 rounded-full bg-gray-200/80 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600 shadow-sm backdrop-blur-sm dark:bg-gray-800/70 dark:text-gray-300">
               AI{typeof aiScore === "number" ? ` ${aiScore.toFixed(2)}` : ""}
             </span>
           ) : null}
-          {displaySrc ? (
-            <Image
-              src={displaySrc}
-              alt={post.entry.name || "thumbnail"}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-contain"
-              unoptimized
-              preload={false}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-sm text-gray-700 dark:text-gray-200">{post.entry ? "No image" : "Loading..."}</div>
-          )}
+          <div className="h-full w-full overflow-hidden rounded-t-2xl">
+            {displaySrc ? (
+              <Image
+                src={displaySrc}
+                alt={post.entry.name || "thumbnail"}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-contain"
+                unoptimized
+                preload={false}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm text-gray-700 dark:text-gray-200">{post.entry ? "No image" : "Loading..."}</div>
+            )}
+          </div>
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3">
           <div className="flex items-start justify-between gap-2">

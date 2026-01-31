@@ -53,7 +53,6 @@ export function ArchiveListView({
   const showPagination = pagination.show;
   const rangeStart = Math.min(filteredPosts.length, Math.max(0, Math.max(pageNumber - 1, 0) * pageSize + 1));
   const rangeEnd = Math.min(filteredPosts.length, Math.max(pageNumber, 1) * pageSize);
-  const aiActive = filters.semantic.applied;
 
   return (
     <div className="mx-auto w-full px-2 pb-16 pt-4 sm:px-4 lg:px-6" style={{ contentVisibility: visible ? "visible" : "hidden" }}>
@@ -66,7 +65,6 @@ export function ArchiveListView({
               channelCounts={channelFilters.counts}
               authorOptions={authors.options}
               authorQuery={authors.query}
-              aiActive={aiActive}
               onToggleChannel={channelFilters.toggle}
               onResetFilters={reset}
               onToggleAuthor={authors.toggle}
@@ -95,25 +93,16 @@ export function ArchiveListView({
               </div>
             </div>
             <div className="mb-4 flex flex-wrap gap-2">
-              {tags.all.map((tag) => {
-                const aiCount = tags.aiCounts?.[normalize(tag.name)] || 0;
-                return (
-                  <div key={tag.id} className="flex items-center gap-1">
-                    <TagChip
-                      tag={tag}
-                      state={tags.state[tag.name] || 0}
-                      count={tags.counts[normalize(tag.name)] || 0}
-                      globalTags={globalTags}
-                      onToggle={(rightClick) => tags.toggle(tag.name, rightClick)}
-                    />
-                    {aiActive && aiCount > 0 ? (
-                      <span className="rounded bg-gray-200 px-1 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                        AI {aiCount}
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
+              {tags.all.map((tag) => (
+                <TagChip
+                  key={tag.id}
+                  tag={tag}
+                  state={tags.state[tag.name] || 0}
+                  count={tags.counts[normalize(tag.name)] || 0}
+                  globalTags={globalTags}
+                  onToggle={(rightClick) => tags.toggle(tag.name, rightClick)}
+                />
+              ))}
             </div>
             <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               {showPagination ? (

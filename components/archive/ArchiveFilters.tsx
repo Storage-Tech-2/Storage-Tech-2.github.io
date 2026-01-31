@@ -8,9 +8,8 @@ type Props = {
   channels: ChannelRef[];
   selectedChannels: string[];
   channelCounts: Record<string, number>;
-  authorOptions: Array<{ name: string; norm: string; count: number; aiCount?: number; selected: boolean }>;
+  authorOptions: Array<{ name: string; norm: string; count: number; selected: boolean }>;
   authorQuery: string;
-  aiActive?: boolean;
   onToggleChannel(code: string): void;
   onResetFilters(): void;
   onToggleAuthor(name: string): void;
@@ -24,7 +23,6 @@ export function ArchiveFilters({
   channelCounts,
   authorOptions,
   authorQuery,
-  aiActive = false,
   onToggleChannel,
   onResetFilters,
   onToggleAuthor,
@@ -193,23 +191,16 @@ export function ArchiveFilters({
                   )}
                 >
                   <span className="truncate">{author.name}</span>
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={clsx(
-                        "rounded-full px-2 text-[10px] font-semibold",
-                        author.selected
-                          ? "bg-blue-100 text-blue-900 dark:bg-blue-800 dark:text-blue-50"
-                          : "bg-black/10 text-gray-700 dark:bg-white/10 dark:text-gray-100",
-                      )}
-                    >
-                      {author.count}
-                    </span>
-                    {aiActive && (author.aiCount || 0) > 0 ? (
-                      <span className="rounded-full bg-gray-200 px-2 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                        AI {author.aiCount}
-                      </span>
-                    ) : null}
-                  </div>
+                  <span
+                    className={clsx(
+                      "rounded-full px-2 text-[10px] font-semibold",
+                      author.selected
+                        ? "bg-blue-100 text-blue-900 dark:bg-blue-800 dark:text-blue-50"
+                        : "bg-black/10 text-gray-700 dark:bg-white/10 dark:text-gray-100",
+                    )}
+                  >
+                    {author.count}
+                  </span>
                 </button>
               ))
             ) : (

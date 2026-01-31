@@ -43,6 +43,8 @@ export function ArchiveShell({
   const [aiSearchAvailable, setAiSearchAvailable] = useState(false);
   const [semanticSearch, setSemanticSearch] = useState<{ query: string; scoreById: Record<string, number> } | null>(null);
   const [semanticForceDisabled, setSemanticForceDisabled] = useState(false);
+  const [aiWorkerRequested, setAiWorkerRequested] = useState(false);
+  const [archiveSearchFocused, setArchiveSearchFocused] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const latestSearchRequestIdRef = useRef<string | null>(null);
   const pendingQueryRef = useRef<string>("");
@@ -69,6 +71,7 @@ export function ArchiveShell({
   }, []);
 
   useEffect(() => {
+    if (!aiWorkerRequested) return;
     if (typeof window === "undefined" || !("Worker" in window)) return;
     let cancelled = false;
     const worker = new Worker(new URL("../../workers/embeddingSearchWorker", import.meta.url));
@@ -138,7 +141,7 @@ export function ArchiveShell({
       worker.terminate();
       workerRef.current = null;
     };
-  }, []);
+  }, [aiWorkerRequested]);
 
 
 
@@ -182,6 +185,13 @@ export function ArchiveShell({
   });
 
   useEffect(() => {
+    if (aiWorkerRequested) return;
+    if (filters.search.q.trim()) {
+      setAiWorkerRequested(true);
+    }
+  }, [aiWorkerRequested, filters.search.q]);
+
+  useEffect(() => {
     if (!aiSearchAvailable) return;
     const trimmed = filters.search.q.trim();
     if (!trimmed) {
@@ -200,7 +210,7 @@ export function ArchiveShell({
         key: ARCHIVE_EMBEDDINGS_KEY,
         query: trimmed,
       });
-    }, 250);
+    }, 100);
 
     return () => clearTimeout(timeout);
   }, [filters.search.q, aiSearchAvailable]);
@@ -244,6 +254,12 @@ export function ArchiveShell({
             if (!aiSearchAvailable) return;
             setSemanticForceDisabled((prev) => !prev);
           }}
+          onArchiveSearchFocus={() => {
+            setArchiveSearchFocused(true);
+            setAiWorkerRequested(true);
+          }}
+          onArchiveSearchBlur={() => setArchiveSearchFocused(false)}
+          archiveSearchFocused={archiveSearchFocused}
           onLogoClick={handleArchiveHomeClick}
           onArchiveClick={handleArchiveHomeClick}
         />
