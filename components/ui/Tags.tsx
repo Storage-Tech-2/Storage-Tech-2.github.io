@@ -16,7 +16,25 @@ function buildTagStyle(color?: string): React.CSSProperties | undefined {
   } as React.CSSProperties;
 }
 
-export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag; state: -1 | 0 | 1; count?: number; onToggle?(rightClick: boolean): void; globalTags?: GlobalTag[] }) {
+export type TagChipProps = {
+  tag: Tag;
+  state: -1 | 0 | 1;
+  count?: number;
+  aiCount?: number;
+  aiActive?: boolean;
+  onToggle?(rightClick: boolean): void;
+  globalTags?: GlobalTag[];
+};
+
+export function TagChip({
+  tag,
+  state,
+  count,
+  aiCount,
+  aiActive = false,
+  onToggle,
+  globalTags,
+}: TagChipProps) {
   const meta = getSpecialTagMeta(tag.name, globalTags);
   const metaStyle = meta?.color ? buildTagStyle(meta.color) : undefined;
   const base = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors";
@@ -47,6 +65,11 @@ export function TagChip({ tag, state, count, onToggle, globalTags }: { tag: Tag;
       {meta?.icon && <span className="text-[12px]">{meta.icon}</span>}
       <span>{tag.name}</span>
       {typeof count === "number" && <span className="rounded bg-black/10 px-1 text-[10px] dark:bg-white/10">{count}</span>}
+      {aiActive && typeof aiCount === "number" && aiCount > 0 ? (
+        <span className="rounded bg-gray-200 px-1 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+          AI {aiCount}
+        </span>
+      ) : null}
     </button>
   );
 }

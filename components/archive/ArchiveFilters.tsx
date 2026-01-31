@@ -8,8 +8,10 @@ type Props = {
   channels: ChannelRef[];
   selectedChannels: string[];
   channelCounts: Record<string, number>;
-  authorOptions: Array<{ name: string; norm: string; count: number; selected: boolean }>;
+  channelAiCounts?: Record<string, number>;
+  authorOptions: Array<{ name: string; norm: string; count: number; aiCount?: number; selected: boolean }>;
   authorQuery: string;
+  aiActive?: boolean;
   onToggleChannel(code: string): void;
   onResetFilters(): void;
   onToggleAuthor(name: string): void;
@@ -21,8 +23,10 @@ export function ArchiveFilters({
   channels,
   selectedChannels,
   channelCounts,
+  channelAiCounts,
   authorOptions,
   authorQuery,
+  aiActive = false,
   onToggleChannel,
   onResetFilters,
   onToggleAuthor,
@@ -71,6 +75,7 @@ export function ArchiveFilters({
       <div className="flex flex-col gap-3">
         {groupedChannels.map((group) => {
           const total = group.channels.reduce((sum, ch) => sum + (channelCounts[ch.code] || 0), 0);
+          const aiTotal = aiActive ? group.channels.reduce((sum, ch) => sum + (channelAiCounts?.[ch.code] || 0), 0) : 0;
           const selectedInGroup = group.channels.filter((ch) => selectedChannels.includes(ch.code));
           const defaultOpen = group.channels.some((ch) => selectedChannels.includes(ch.code));
           const isOpen = openGroups[group.category] ?? defaultOpen;
@@ -96,7 +101,10 @@ export function ArchiveFilters({
                     </svg>
                     <span className="text-[11px] uppercase tracking-wide">{group.category}</span>
                   </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Total {total}</span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                    Total {total}
+                    {aiActive && aiTotal > 0 ? ` + AI ${aiTotal}` : ""}
+                  </span>
                 </div>
                 {!isOpen && selectedInGroup.length > 0 ? (
                   <div className="text-[11px] font-normal text-gray-600 dark:text-gray-300">
@@ -108,6 +116,7 @@ export function ArchiveFilters({
                 <div className="flex flex-col gap-2 select-none">
                   {group.channels.map((ch) => {
                     const selected = selectedChannels.includes(ch.code);
+                    const aiCount = aiActive ? (channelAiCounts?.[ch.code] || 0) : 0;
                     return (
                       <label
                         key={ch.code}
@@ -138,6 +147,11 @@ export function ArchiveFilters({
                           >
                             {channelCounts[ch.code] || 0}
                           </span>
+                          {aiActive && aiCount > 0 ? (
+                            <span className="rounded bg-gray-200 px-1 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                              AI {aiCount}
+                            </span>
+                          ) : null}
                         </div>
                         <p
                           className={clsx(
@@ -191,16 +205,23 @@ export function ArchiveFilters({
                   )}
                 >
                   <span className="truncate">{author.name}</span>
-                  <span
-                    className={clsx(
-                      "rounded-full px-2 text-[10px] font-semibold",
-                      author.selected
-                        ? "bg-blue-100 text-blue-900 dark:bg-blue-800 dark:text-blue-50"
-                        : "bg-black/10 text-gray-700 dark:bg-white/10 dark:text-gray-100",
-                    )}
-                  >
-                    {author.count}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={clsx(
+                        "rounded-full px-2 text-[10px] font-semibold",
+                        author.selected
+                          ? "bg-blue-100 text-blue-900 dark:bg-blue-800 dark:text-blue-50"
+                          : "bg-black/10 text-gray-700 dark:bg-white/10 dark:text-gray-100",
+                      )}
+                    >
+                      {author.count}
+                    </span>
+                    {aiActive && (author.aiCount || 0) > 0 ? (
+                      <span className="rounded-full bg-gray-200 px-2 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        AI {author.aiCount}
+                      </span>
+                    ) : null}
+                  </div>
                 </button>
               ))
             ) : (

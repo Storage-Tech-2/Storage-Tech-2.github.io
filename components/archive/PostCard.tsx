@@ -56,6 +56,11 @@ export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended 
         }}
       >
         <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
+          {aiRecommended ? (
+            <span className="absolute left-2 top-2 rounded-full bg-gray-200/80 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600 shadow-sm backdrop-blur-sm dark:bg-gray-800/70 dark:text-gray-300">
+              AI
+            </span>
+          ) : null}
           {displaySrc ? (
             <Image
               src={displaySrc}
@@ -73,14 +78,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended 
         <div className="flex flex-1 flex-col gap-2 p-3">
           <div className="flex items-start justify-between gap-2">
             <h3 className="line-clamp-2 text-sm font-semibold">{post.entry.name}</h3>
-            <div className="flex flex-col items-end gap-1">
-              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.codes[0]}</span>
-              {aiRecommended ? (
-                <span className="rounded-full bg-blue-600/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700 dark:bg-blue-500/20 dark:text-blue-200">
-                  AI Recommended
-                </span>
-              ) : null}
-            </div>
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.codes[0]}</span>
           </div>
           {authorsLine ? <div className="min-h-4 text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div> : <div className="min-h-4" />}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">
