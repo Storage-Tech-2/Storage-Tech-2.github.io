@@ -54,6 +54,35 @@ export function ArchiveShell({
     };
   }, []);
 
+  useEffect(() => {
+    const worker = new Worker(new URL('../../workers/embeddingSearchWorker', import.meta.url));
+
+    worker.onmessage = (event) => {
+      console.log('🍏 Message received from worker: ', event.data);
+    };
+
+    worker.onerror = (event) => {
+      if (event instanceof Event) {
+        console.log('🍎 Error message received from worker: ', event);
+        return event;
+      }
+
+      console.log('🍎 Unexpected error: ', event);
+      throw event;
+    };
+
+    worker.postMessage({
+      type: 'getScores',
+      requestId: 'test-request-1',
+      key: 'test-embeddings',
+      query: 'What is the capital of France?',
+    });
+
+    return () => {
+      worker.terminate();
+    };
+  }, []);
+
 
 
   const { posts, channels, error, config, refreshArchiveIndex } = useArchiveData({ initial: initialArchive });

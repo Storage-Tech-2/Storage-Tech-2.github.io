@@ -11,6 +11,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@huggingface/transformers": "file:transformers/huggingface-transformers-3.8.1.tgz",
     "@next/third-parties": "^16.1.1",
     "@tanstack/react-virtual": "^3.13.18",
     "js.foresight": "^3.4.0",
