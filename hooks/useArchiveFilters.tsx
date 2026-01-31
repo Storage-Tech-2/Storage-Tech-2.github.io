@@ -379,11 +379,6 @@ export function useArchiveFilters({
     return Array.from(map.values());
   }, [posts, selectedAuthors, isArchivePostURL]);
 
-  const authorCounts = useMemo(
-    () => (isArchivePostURL ? {} : computeAuthorCounts(posts, selectedChannels, includeTags, excludeTags, tagMode, q)),
-    [posts, selectedChannels, includeTags, excludeTags, tagMode, q, isArchivePostURL],
-  );
-
   const authorSearchTerm = useMemo(
     () => (isArchivePostURL ? "" : authorQuery.trim().toLowerCase()),
     [authorQuery, isArchivePostURL],
@@ -392,6 +387,11 @@ export function useArchiveFilters({
     if (isArchivePostURL) return [] as ArchiveListItem[];
     return filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode });
   }, [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode, isArchivePostURL]);
+
+  const authorCounts = useMemo(
+    () => (isArchivePostURL ? {} : computeAuthorCounts(regularFilteredPosts)),
+    [regularFilteredPosts, isArchivePostURL],
+  );
 
   const semanticAppendData = useMemo(() => {
     if (isArchivePostURL) {
@@ -570,16 +570,12 @@ export function useArchiveFilters({
   ) : null;
 
   const channelCounts = useMemo(
-    () => (isArchivePostURL ? {} : computeChannelCounts(posts, includeTags, excludeTags, tagMode, q, selectedAuthors)),
-    [posts, includeTags, excludeTags, selectedAuthors, tagMode, q, isArchivePostURL],
+    () => (isArchivePostURL ? {} : computeChannelCounts(filteredPosts)),
+    [filteredPosts, isArchivePostURL],
   );
   const tagCounts = useMemo(
-    () => (isArchivePostURL ? {} : computeTagCounts(posts, selectedChannels, excludeTags, q, selectedAuthors)),
-    [posts, selectedChannels, excludeTags, q, selectedAuthors, isArchivePostURL],
-  );
-  const aiChannelCounts = useMemo(
-    () => (isArchivePostURL || !semanticApplied ? {} : countChannelsFromPosts(semanticAppendData.appended)),
-    [isArchivePostURL, semanticApplied, semanticAppendData.appended],
+    () => (isArchivePostURL ? {} : computeTagCounts(regularFilteredPosts)),
+    [regularFilteredPosts, isArchivePostURL],
   );
   const aiTagCounts = useMemo(
     () => (isArchivePostURL || !semanticApplied ? {} : countTagsFromPosts(semanticAppendData.appended)),
@@ -639,7 +635,6 @@ export function useArchiveFilters({
       selected: selectedChannels,
       setSelected: setSelectedChannels,
       counts: channelCounts,
-      aiCounts: aiChannelCounts,
       toggle: (code: string) =>
         setSelectedChannels((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code])),
     },

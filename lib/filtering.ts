@@ -39,39 +39,9 @@ export function getPostAuthorsNormalized(p: ArchiveListItem): string[] {
   return Array.from(new Set(normalized));
 }
 
-export const computeChannelCounts = (
-  posts: ArchiveListItem[],
-  includeTags: string[],
-  excludeTags: string[],
-  tagMode: TagMode,
-  q: string,
-  selectedAuthors: string[],
-) => {
+export const computeChannelCounts = (posts: ArchiveListItem[]) => {
   const map: Record<string, number> = {};
-  const trimmed = q.trim().toLowerCase();
-  const authorSet = selectedAuthors.length ? new Set(selectedAuthors.map(normalize)) : null;
-  const list = posts.filter((p) => {
-    const postTags = getPostTagsNormalized(p);
-    if (excludeTags.some((t) => postTags.includes(t))) return false;
-    if (includeTags.length) {
-      if (tagMode === "OR" && !includeTags.some((t) => postTags.includes(t))) return false;
-      if (tagMode === "AND" && !includeTags.every((t) => postTags.includes(t))) return false;
-    }
-    if (authorSet) {
-      const authors = getPostAuthorsNormalized(p);
-      if (!authors.some((a) => authorSet.has(a))) return false;
-    }
-    if (!trimmed) return true;
-    const base = [p.entry.name, p.entry.codes[0], p.channel.code, p.channel.name].join(" ").toLowerCase();
-    const extra = [
-      p.entry.tags?.join(" ") || "",
-      getPostAuthorsNormalized(p).join(" "),
-    ]
-      .join(" ")
-      .toLowerCase();
-    return `${base} ${extra}`.includes(trimmed);
-  });
-  list.forEach((p) => {
+  posts.forEach((p) => {
     map[p.channel.code] = (map[p.channel.code] || 0) + 1;
   });
   return map;
@@ -79,34 +49,9 @@ export const computeChannelCounts = (
 
 export const computeTagCounts = (
   posts: ArchiveListItem[],
-  selectedChannels: string[],
-  excludeTags: string[],
-  q: string,
-  selectedAuthors: string[],
 ) => {
   const map: Record<string, number> = {};
-  const trimmed = q.trim().toLowerCase();
-  const channelSet = selectedChannels.length ? new Set(selectedChannels) : null;
-  const authorSet = selectedAuthors.length ? new Set(selectedAuthors.map(normalize)) : null;
-  const list = posts.filter((p) => {
-    if (channelSet && !(channelSet.has(p.channel.code) || channelSet.has(p.channel.name))) return false;
-    const postTags = getPostTagsNormalized(p);
-    if (excludeTags.some((t) => postTags.includes(t))) return false;
-    if (authorSet) {
-      const authors = getPostAuthorsNormalized(p);
-      if (!authors.some((a) => authorSet.has(a))) return false;
-    }
-    if (!trimmed) return true;
-    const base = [p.entry.name, p.entry.codes[0], p.channel.code, p.channel.name].join(" ").toLowerCase();
-    const extra = [
-      p.entry.tags?.join(" ") || "",
-      getPostAuthorsNormalized(p).join(" "),
-    ]
-      .join(" ")
-      .toLowerCase();
-    return `${base} ${extra}`.includes(trimmed);
-  });
-  list.forEach((p) => {
+  posts.forEach((p) => {
     getPostTagsNormalized(p).forEach((t) => {
       map[t] = (map[t] || 0) + 1;
     });
@@ -114,25 +59,9 @@ export const computeTagCounts = (
   return map;
 };
 
-export function computeAuthorCounts(
-  posts: ArchiveListItem[],
-  selectedChannels: string[],
-  includeTags: string[],
-  excludeTags: string[],
-  tagMode: TagMode,
-  q: string,
-) {
-  const filtered = filterPosts(posts, {
-    q,
-    includeTags,
-    excludeTags,
-    selectedChannels,
-    sortKey: "newest",
-    tagMode,
-    selectedAuthors: [],
-  });
+export function computeAuthorCounts(posts: ArchiveListItem[]) {
   const counts: Record<string, number> = {};
-  filtered.forEach((p) => {
+  posts.forEach((p) => {
     getPostAuthorsNormalized(p).forEach((author) => {
       counts[author] = (counts[author] || 0) + 1;
     });
