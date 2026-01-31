@@ -15,10 +15,11 @@ type Props = {
   post: ArchiveListItem;
   sortKey: SortKey;
   globalTags?: GlobalTag[];
+  aiRecommended?: boolean;
   onNavigate?(post: ArchiveListItem, event: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
 
-export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
+export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended = false }: Props) {
   const preview = getPreviewByCode(post.entry.codes[0]);
   const heroSrc = post.entry.mainImagePath
     ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
@@ -72,7 +73,14 @@ export function PostCard({ post, sortKey, onNavigate, globalTags }: Props) {
         <div className="flex flex-1 flex-col gap-2 p-3">
           <div className="flex items-start justify-between gap-2">
             <h3 className="line-clamp-2 text-sm font-semibold">{post.entry.name}</h3>
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.codes[0]}</span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-600 dark:bg-gray-800 dark:text-gray-300">{post.entry.codes[0]}</span>
+              {aiRecommended ? (
+                <span className="rounded-full bg-blue-600/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700 dark:bg-blue-500/20 dark:text-blue-200">
+                  AI Recommended
+                </span>
+              ) : null}
+            </div>
           </div>
           {authorsLine ? <div className="min-h-4 text-xs text-gray-600 dark:text-gray-300">{authorsLine}</div> : <div className="min-h-4" />}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-200">

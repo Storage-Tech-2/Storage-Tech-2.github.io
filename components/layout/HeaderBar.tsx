@@ -36,13 +36,22 @@ type BaseProps = {
 
 type Props =
   | (BaseProps & { view: "home"; filters?: undefined })
-  | (BaseProps & { view: "archive"; filters?: ArchiveHeaderFilters })
+  | (BaseProps & {
+      view: "archive";
+      filters?: ArchiveHeaderFilters;
+      aiSearchAvailable?: boolean;
+      aiSearchApplied?: boolean;
+      onAiSearchToggle?: () => void;
+    })
   | (BaseProps & { view: "dictionary"; filters?: DictionaryHeaderFilters });
 
 export function HeaderBar(props: Props) {
   const { siteName, view, logoSrc, discordInviteUrl, onLogoClick, onArchiveClick } = props;
   const archiveFilters = view === "archive" ? props.filters : undefined;
   const dictionaryFilters = view === "dictionary" ? props.filters : undefined;
+  const aiSearchAvailable = view === "archive" ? (props.aiSearchAvailable ?? false) : false;
+  const aiSearchApplied = view === "archive" ? (props.aiSearchApplied ?? false) : false;
+  const handleAiSearchToggle = view === "archive" ? (props.onAiSearchToggle ?? (() => {})) : () => {};
   const archiveSortKey = archiveFilters?.sort.key ?? "newest";
   const dictionarySortValue = dictionaryFilters?.sort.key ?? "az";
   const searchValue = archiveFilters?.search.q ?? "";
@@ -129,9 +138,28 @@ export function HeaderBar(props: Props) {
                       if (e.key === "Enter") handleSearchCommit();
                     }}
                     placeholder="Search posts, codes, tags, authors"
-                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900"
+                    className={clsx(
+                      "w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900",
+                      aiSearchAvailable && "pr-14",
+                    )}
                   />
                   <span className="pointer-events-none absolute left-3 top-2.5 text-gray-400">🔎</span>
+                  {aiSearchAvailable ? (
+                    <button
+                      type="button"
+                      onClick={handleAiSearchToggle}
+                      aria-pressed={aiSearchApplied}
+                      title={aiSearchApplied ? "Disable AI search" : "Enable AI search"}
+                      className={clsx(
+                        "absolute right-2 top-2.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
+                        aiSearchApplied
+                          ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200"
+                          : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+                      )}
+                    >
+                      AI
+                    </button>
+                  ) : null}
                 </div>
                 <select
                   value={archiveSortKey}

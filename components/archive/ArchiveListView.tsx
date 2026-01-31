@@ -48,6 +48,7 @@ export function ArchiveListView({
   } = filters;
   const filteredPosts = results.filtered;
   const pagedPosts = results.paged;
+  const aiRecommendedCodes = results.aiRecommendedCodes ?? {};
   const showPagination = pagination.show;
   const rangeStart = Math.min(filteredPosts.length, Math.max(0, Math.max(pageNumber - 1, 0) * pageSize + 1));
   const rangeEnd = Math.min(filteredPosts.length, Math.max(pageNumber, 1) * pageSize);
@@ -118,7 +119,14 @@ export function ArchiveListView({
           <div role="main">
             {(hydrated && pageNumber === 0) ? (
               <>
-                <VirtualizedGrid enabled={visible} posts={filteredPosts} sortKey={sort.key} globalTags={globalTags} onNavigate={onNavigate} />
+                <VirtualizedGrid
+                  enabled={visible}
+                  posts={filteredPosts}
+                  sortKey={sort.key}
+                  globalTags={globalTags}
+                  onNavigate={onNavigate}
+                  aiRecommendedCodes={aiRecommendedCodes}
+                />
                 {pagination.node}
               </>
             ) : (
@@ -130,6 +138,7 @@ export function ArchiveListView({
                       post={post}
                       sortKey={sort.key}
                       globalTags={globalTags}
+                      aiRecommended={(post.entry.codes || []).some((code) => aiRecommendedCodes[normalize(code)])}
                       onNavigate={onNavigate}
                     />
                   ))}

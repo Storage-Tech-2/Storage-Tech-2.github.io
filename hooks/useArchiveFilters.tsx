@@ -33,6 +33,12 @@ type Options = {
   isPostOpen: boolean;
   isArchivePostURL: boolean;
   hydrated: boolean;
+  semanticSearch?: {
+    enabled: boolean;
+    query: string;
+    scoreById: Record<string, number>;
+    forceDisabled?: boolean;
+  };
 };
 
 type FilterState = {
@@ -89,6 +95,52 @@ const buildPersistedState = (state: FilterState, scrollY?: number) => ({
   scrollY,
 });
 
+const computeOtsuThreshold = (scores: number[]) => {
+  if (!scores.length) return Number.POSITIVE_INFINITY;
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  if (min === max) return min;
+
+  const bins = 256;
+  const hist = new Array<number>(bins).fill(0);
+  const binWidth = (max - min) / bins;
+  scores.forEach((score) => {
+    const idx = Math.min(bins - 1, Math.max(0, Math.floor((score - min) / binWidth)));
+    hist[idx] += 1;
+  });
+
+  const total = scores.length;
+  const prob = hist.map((h) => h / total);
+  const omega = new Array<number>(bins).fill(0);
+  const mu = new Array<number>(bins).fill(0);
+
+  omega[0] = prob[0];
+  mu[0] = prob[0] * 0;
+  for (let i = 1; i < bins; i += 1) {
+    omega[i] = omega[i - 1] + prob[i];
+    mu[i] = mu[i - 1] + prob[i] * i;
+  }
+
+  const muT = mu[bins - 1];
+  let maxSigma = -1;
+  let thresholdIdx = 0;
+
+  for (let i = 0; i < bins - 1; i += 1) {
+    const w0 = omega[i];
+    const w1 = 1 - w0;
+    if (w0 === 0 || w1 === 0) continue;
+    const mu0 = mu[i] / w0;
+    const mu1 = (muT - mu[i]) / w1;
+    const sigmaBetween = w0 * w1 * (mu0 - mu1) * (mu0 - mu1);
+    if (sigmaBetween > maxSigma) {
+      maxSigma = sigmaBetween;
+      thresholdIdx = i;
+    }
+  }
+
+  return min + (thresholdIdx + 0.5) * binWidth;
+};
+
 export function useArchiveFilters({
   posts,
   channels,
@@ -99,6 +151,7 @@ export function useArchiveFilters({
   isPostOpen,
   isArchivePostURL,
   hydrated,
+  semanticSearch,
 }: Options) {
   const router = useRouter();
   const pathname = usePathname();
@@ -327,10 +380,128 @@ export function useArchiveFilters({
       });
   }, [availableAuthors, authorCounts, normalizedSelectedAuthors, authorSearchTerm, isArchivePostURL]);
 
-  const filteredPosts = useMemo(
-    () => (isArchivePostURL ? [] : filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode })),
-    [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode, isArchivePostURL],
-  );
+  const filteredPosts = useMemo(() => {
+    if (isArchivePostURL) return [] as ArchiveListItem[];
+    const trimmed = q.trim();
+    const semanticScores = semanticSearch?.scoreById ?? {};
+    const semanticEnabled =
+      !!semanticSearch?.enabled &&
+      Boolean(semanticSearch?.query?.trim()) &&
+      semanticSearch?.query?.trim() === trimmed &&
+      Object.keys(semanticScores).length > 0;
+    const regularFiltered = filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode });
+    if (!semanticEnabled || semanticSearch?.forceDisabled) {
+      return regularFiltered;
+    }
+
+    const baseList = filterPosts(posts, {
+      q: "",
+      includeTags,
+      excludeTags,
+      selectedChannels,
+      selectedAuthors,
+      sortKey,
+      tagMode,
+    });
+
+    const scored: Array<{ post: ArchiveListItem; score: number }> = baseList.reduce(
+      (acc, post) => {
+        const codes = post.entry.codes || [];
+        let bestScore: number | null = null;
+        codes.forEach((code) => {
+          const score = semanticScores[normalize(code)];
+          if (typeof score === "number" && (bestScore === null || score > bestScore)) {
+            bestScore = score;
+          }
+        });
+        if (bestScore !== null) {
+          acc.push({ post, score: bestScore });
+        }
+        return acc;
+      },
+      [] as Array<{ post: ArchiveListItem; score: number }>,
+    );
+
+    const scores = scored.map((item) => item.score);
+    const threshold = computeOtsuThreshold(scores);
+    const semanticPosts = scored
+      .filter((item) => item.score >= threshold)
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.post);
+
+    const regularSet = new Set(regularFiltered.map((post) => normalize(post.entry.codes?.[0] || "")));
+    const appended = semanticPosts.filter((post) => !regularSet.has(normalize(post.entry.codes?.[0] || "")));
+
+    return [...regularFiltered, ...appended];
+  }, [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode, isArchivePostURL, semanticSearch]);
+
+  const semanticRecommendedCodes = useMemo(() => {
+    if (isArchivePostURL) return {} as Record<string, true>;
+    const trimmed = q.trim();
+    const semanticScores = semanticSearch?.scoreById ?? {};
+    const semanticEnabled =
+      !!semanticSearch?.enabled &&
+      Boolean(semanticSearch?.query?.trim()) &&
+      semanticSearch?.query?.trim() === trimmed &&
+      Object.keys(semanticScores).length > 0 &&
+      !semanticSearch?.forceDisabled;
+    if (!semanticEnabled) return {} as Record<string, true>;
+
+    const regularFiltered = filterPosts(posts, { q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode });
+    const regularSet = new Set(regularFiltered.map((post) => normalize(post.entry.codes?.[0] || "")));
+
+    const baseList = filterPosts(posts, {
+      q: "",
+      includeTags,
+      excludeTags,
+      selectedChannels,
+      selectedAuthors,
+      sortKey,
+      tagMode,
+    });
+
+    const scored: Array<{ post: ArchiveListItem; score: number }> = baseList.reduce(
+      (acc, post) => {
+        const codes = post.entry.codes || [];
+        let bestScore: number | null = null;
+        codes.forEach((code) => {
+          const score = semanticScores[normalize(code)];
+          if (typeof score === "number" && (bestScore === null || score > bestScore)) {
+            bestScore = score;
+          }
+        });
+        if (bestScore !== null) {
+          acc.push({ post, score: bestScore });
+        }
+        return acc;
+      },
+      [] as Array<{ post: ArchiveListItem; score: number }>,
+    );
+
+    const scores = scored.map((item) => item.score);
+    const threshold = computeOtsuThreshold(scores);
+    const recommended: Record<string, true> = {};
+    scored.forEach((item) => {
+      if (item.score >= threshold) {
+        const code = normalize(item.post.entry.codes?.[0] || "");
+        if (code && !regularSet.has(code)) recommended[code] = true;
+      }
+    });
+    return recommended;
+  }, [q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode, posts, semanticSearch, isArchivePostURL]);
+
+  const semanticApplied = useMemo(() => {
+    const trimmed = q.trim();
+    const semanticScores = semanticSearch?.scoreById ?? {};
+    const semanticEnabled =
+      !!semanticSearch?.enabled &&
+      Boolean(semanticSearch?.query?.trim()) &&
+      semanticSearch?.query?.trim() === trimmed &&
+      Object.keys(semanticScores).length > 0 &&
+      !semanticSearch?.forceDisabled;
+    if (!semanticEnabled) return false;
+    return Object.keys(semanticRecommendedCodes).length > 0;
+  }, [q, semanticSearch, semanticRecommendedCodes]);
 
   const pageTotal = isArchivePostURL ? 0 : (pageCount ?? 0);
   const showPagination = !isArchivePostURL && !disablePagination && pageTotal > 1 && (pageNumber > 0 || !hydrated);
@@ -487,6 +658,11 @@ export function useArchiveFilters({
     results: {
       filtered: filteredPosts,
       paged: pagedPosts,
+      aiRecommendedCodes: semanticRecommendedCodes,
+    },
+    semantic: {
+      applied: semanticApplied,
+      forceDisabled: !!semanticSearch?.forceDisabled,
     },
     pagination: {
       show: showPagination,

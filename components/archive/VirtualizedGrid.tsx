@@ -6,6 +6,7 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "./PostCard";
 import { type ArchiveListItem } from "@/lib/archive";
 import { type GlobalTag, type SortKey } from "@/lib/types";
+import { normalize } from "@/lib/utils/strings";
 
 const GRID_GAP = 16;
 const CARD_HEIGHT = 380;
@@ -17,6 +18,7 @@ type Props = {
   posts: ArchiveListItem[];
   sortKey: SortKey;
   globalTags?: GlobalTag[];
+  aiRecommendedCodes?: Record<string, true>;
   onNavigate?(post: ArchiveListItem, event: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
 
@@ -56,7 +58,7 @@ function useElementWidth<T extends HTMLElement>() {
   return { ref, width };
 }
 
-export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTags }: Props) {
+export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTags, aiRecommendedCodes = {} }: Props) {
   const { ref: containerRef, width } = useElementWidth<HTMLDivElement>();
   const [scrollMargin, setScrollMargin] = useState(0);
 
@@ -122,7 +124,13 @@ export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTag
               >
                 {rowItems.map((p) => (
                   <div key={`${p.channel.path}/${p.entry.path}`} style={{ height: CARD_HEIGHT }}>
-                    <PostCard post={p} onNavigate={onNavigate} sortKey={sortKey} globalTags={globalTags} />
+                    <PostCard
+                      post={p}
+                      onNavigate={onNavigate}
+                      sortKey={sortKey}
+                      globalTags={globalTags}
+                      aiRecommended={(p.entry.codes || []).some((code) => aiRecommendedCodes[normalize(code)])}
+                    />
                   </div>
                 ))}
               </div>

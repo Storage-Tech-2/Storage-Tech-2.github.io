@@ -4,9 +4,7 @@ env.allowLocalModels = true;
 env.localModelPath = self.location.origin + '/models';
 env.allowRemoteModels = false;
 env.backends.onnx.device = 'wasm';
-console.log('ONNX backend device set to:', env.backends.onnx);
 if (env.backends.onnx.wasm) {
-    console.log('Setting ONNX WASM paths to /ort');
     env.backends.onnx.wasm.wasmPaths = self.location.origin + '/ort/';
 }
 

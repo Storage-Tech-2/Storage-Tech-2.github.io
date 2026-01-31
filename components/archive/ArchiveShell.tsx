@@ -12,6 +12,7 @@ import { DEFAULT_GLOBAL_TAGS, type GlobalTag } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
 import { getArchiveSlugInfo } from "@/lib/utils/urls";
+import { normalize } from "@/lib/utils/strings";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -19,6 +20,14 @@ type Props = {
   pageSize: number;
   pageCount?: number;
 };
+
+type EmbeddingsEntryRaw = {
+  identifier: string;
+  embedding: string;
+};
+
+const ARCHIVE_EMBEDDINGS_URL = "https://raw.githubusercontent.com/Storage-Tech-2/Archive/main/embeddings.json";
+const ARCHIVE_EMBEDDINGS_KEY = "archive-embeddings";
 
 let hasHydratedArchiveShell = false;
 
@@ -31,6 +40,12 @@ export function ArchiveShell({
 
   const [hydrated, setHydrated] = useState(hasHydratedArchiveShell);
   const [isArchivePostURL, setIsArchivePostURL] = useState(false);
+  const [aiSearchAvailable, setAiSearchAvailable] = useState(false);
+  const [semanticSearch, setSemanticSearch] = useState<{ query: string; scoreById: Record<string, number> } | null>(null);
+  const [semanticForceDisabled, setSemanticForceDisabled] = useState(false);
+  const workerRef = useRef<Worker | null>(null);
+  const latestSearchRequestIdRef = useRef<string | null>(null);
+  const pendingQueryRef = useRef<string>("");
   
   useEffect(() => {
     hasHydratedArchiveShell = true;
@@ -43,7 +58,6 @@ export function ArchiveShell({
 
     const url = new URL(window.location.href);
     const slug = getArchiveSlugInfo(url)?.slug;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsArchivePostURL(!!slug);
 
     setHydrated(true);
@@ -55,31 +69,74 @@ export function ArchiveShell({
   }, []);
 
   useEffect(() => {
-    const worker = new Worker(new URL('../../workers/embeddingSearchWorker', import.meta.url));
+    if (typeof window === "undefined" || !("Worker" in window)) return;
+    let cancelled = false;
+    const worker = new Worker(new URL("../../workers/embeddingSearchWorker", import.meta.url));
+    workerRef.current = worker;
 
-    worker.onmessage = (event) => {
-      console.log('🍏 Message received from worker: ', event.data);
-    };
-
-    worker.onerror = (event) => {
-      if (event instanceof Event) {
-        console.log('🍎 Error message received from worker: ', event);
-        return event;
+    const handleMessage = (event: MessageEvent) => {
+      const data = event.data as { type?: string; requestId?: string; scores?: Array<{ identifier: string; score: number }> };
+      if (!data?.type) return;
+      if (data.type === "setEmbeddingsComplete") {
+        if (!cancelled) setAiSearchAvailable(true);
+        return;
       }
-
-      console.log('🍎 Unexpected error: ', event);
-      throw event;
+      if (data.type === "getScoresComplete") {
+        if (data.requestId !== latestSearchRequestIdRef.current) return;
+        const scores = data.scores ?? [];
+        const scoreById: Record<string, number> = {};
+        scores.forEach((entry) => {
+          scoreById[normalize(entry.identifier)] = entry.score;
+        });
+        if (!cancelled) {
+          setSemanticSearch({ query: pendingQueryRef.current, scoreById });
+        }
+      }
+      if (data.type === "getScoresError") {
+        if (data.requestId === latestSearchRequestIdRef.current && !cancelled) {
+          setSemanticSearch(null);
+        }
+      }
     };
 
-    worker.postMessage({
-      type: 'getScores',
-      requestId: 'test-request-1',
-      key: 'test-embeddings',
-      query: 'What is the capital of France?',
-    });
+    const handleError = () => {
+      if (!cancelled) {
+        setAiSearchAvailable(false);
+        setSemanticSearch(null);
+      }
+    };
+
+    worker.addEventListener("message", handleMessage);
+    worker.addEventListener("error", handleError);
+
+    const loadEmbeddings = async () => {
+      try {
+        const res = await fetch(ARCHIVE_EMBEDDINGS_URL);
+        if (!res.ok) throw new Error(`Failed to load embeddings: ${res.status}`);
+        const entries = (await res.json()) as EmbeddingsEntryRaw[];
+        if (cancelled) return;
+        worker.postMessage({
+          type: "setEmbeddings",
+          requestId: `set-${Date.now()}`,
+          key: ARCHIVE_EMBEDDINGS_KEY,
+          entries,
+        });
+      } catch {
+        if (!cancelled) {
+          setAiSearchAvailable(false);
+          setSemanticSearch(null);
+        }
+      }
+    };
+
+    loadEmbeddings();
 
     return () => {
+      cancelled = true;
+      worker.removeEventListener("message", handleMessage);
+      worker.removeEventListener("error", handleError);
       worker.terminate();
+      workerRef.current = null;
     };
   }, []);
 
@@ -116,7 +173,37 @@ export function ArchiveShell({
     isPostOpen,
     isArchivePostURL,
     hydrated,
+    semanticSearch: {
+      enabled: aiSearchAvailable,
+      query: semanticSearch?.query ?? "",
+      scoreById: semanticSearch?.scoreById ?? {},
+      forceDisabled: semanticForceDisabled,
+    },
   });
+
+  useEffect(() => {
+    if (!aiSearchAvailable) return;
+    const trimmed = filters.search.q.trim();
+    if (!trimmed) {
+      setSemanticSearch(null);
+      return;
+    }
+    const worker = workerRef.current;
+    if (!worker) return;
+    const timeout = setTimeout(() => {
+      const requestId = `search-${Date.now()}`;
+      latestSearchRequestIdRef.current = requestId;
+      pendingQueryRef.current = trimmed;
+      worker.postMessage({
+        type: "getScores",
+        requestId,
+        key: ARCHIVE_EMBEDDINGS_KEY,
+        query: trimmed,
+      });
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [filters.search.q, aiSearchAvailable]);
 
   const handleArchiveHomeClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.preventDefault();
@@ -151,6 +238,12 @@ export function ArchiveShell({
           logoSrc={siteConfig.logoSrc}
           discordInviteUrl={siteConfig.discordInviteUrl}
           filters={filters}
+          aiSearchAvailable={aiSearchAvailable}
+          aiSearchApplied={filters.semantic.applied}
+          onAiSearchToggle={() => {
+            if (!aiSearchAvailable) return;
+            setSemanticForceDisabled((prev) => !prev);
+          }}
           onLogoClick={handleArchiveHomeClick}
           onArchiveClick={handleArchiveHomeClick}
         />
