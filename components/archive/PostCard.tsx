@@ -16,10 +16,11 @@ type Props = {
   sortKey: SortKey;
   globalTags?: GlobalTag[];
   aiRecommended?: boolean;
+  aiScore?: number;
   onNavigate?(post: ArchiveListItem, event: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
 
-export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended = false }: Props) {
+export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended = false, aiScore }: Props) {
   const preview = getPreviewByCode(post.entry.codes[0]);
   const heroSrc = post.entry.mainImagePath
     ? assetURL(post.channel.path, post.entry.path, post.entry.mainImagePath)
@@ -58,7 +59,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended 
         <div className="relative aspect-video min-h-45 w-full overflow-hidden rounded-t-2xl bg-black/7 dark:bg-white/5">
           {aiRecommended ? (
             <span className="absolute left-2 top-2 rounded-full bg-gray-200/80 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600 shadow-sm backdrop-blur-sm dark:bg-gray-800/70 dark:text-gray-300">
-              AI
+              AI{typeof aiScore === "number" ? ` ${aiScore.toFixed(2)}` : ""}
             </span>
           ) : null}
           {displaySrc ? (

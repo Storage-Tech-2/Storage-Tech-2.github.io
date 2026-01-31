@@ -143,14 +143,6 @@ const computeOtsuThreshold = (scores: number[]) => {
   return min + (thresholdIdx + 0.5) * binWidth;
 };
 
-const countChannelsFromPosts = (list: ArchiveListItem[]) => {
-  const counts: Record<string, number> = {};
-  list.forEach((post) => {
-    counts[post.channel.code] = (counts[post.channel.code] || 0) + 1;
-  });
-  return counts;
-};
-
 const countTagsFromPosts = (list: ArchiveListItem[]) => {
   const counts: Record<string, number> = {};
   list.forEach((post) => {
@@ -395,7 +387,7 @@ export function useArchiveFilters({
 
   const semanticAppendData = useMemo(() => {
     if (isArchivePostURL) {
-      return { appended: [] as ArchiveListItem[], recommendedCodes: {} as Record<string, true> };
+      return { appended: [] as ArchiveListItem[], recommendedCodes: {} as Record<string, true>, recommendedScores: {} as Record<string, number> };
     }
     const trimmed = q.trim();
     const semanticScores = semanticSearch?.scoreById ?? {};
@@ -405,7 +397,7 @@ export function useArchiveFilters({
       semanticSearch?.query?.trim() === trimmed &&
       Object.keys(semanticScores).length > 0;
     if (!semanticEnabled || semanticSearch?.forceDisabled) {
-      return { appended: [] as ArchiveListItem[], recommendedCodes: {} as Record<string, true> };
+      return { appended: [] as ArchiveListItem[], recommendedCodes: {} as Record<string, true>, recommendedScores: {} as Record<string, number> };
     }
 
     const baseList = filterPosts(posts, {
@@ -446,12 +438,16 @@ export function useArchiveFilters({
     const regularSet = new Set(regularFilteredPosts.map((post) => normalize(post.entry.codes?.[0] || "")));
     const appended = semanticPosts.filter((post) => !regularSet.has(normalize(post.entry.codes?.[0] || "")));
     const recommendedCodes: Record<string, true> = {};
+    const recommendedScores: Record<string, number> = {};
     appended.forEach((post) => {
       const code = normalize(post.entry.codes?.[0] || "");
-      if (code) recommendedCodes[code] = true;
+      if (!code) return;
+      recommendedCodes[code] = true;
+      const scoreEntry = scored.find((item) => item.post === post);
+      if (scoreEntry) recommendedScores[code] = scoreEntry.score;
     });
 
-    return { appended, recommendedCodes };
+    return { appended, recommendedCodes, recommendedScores };
   }, [posts, q, includeTags, excludeTags, selectedChannels, selectedAuthors, sortKey, tagMode, isArchivePostURL, semanticSearch, regularFilteredPosts]);
 
   const filteredPosts = useMemo(() => {
@@ -461,6 +457,7 @@ export function useArchiveFilters({
   }, [isArchivePostURL, semanticSearch?.forceDisabled, regularFilteredPosts, semanticAppendData.appended]);
 
   const semanticRecommendedCodes = semanticAppendData.recommendedCodes;
+  const semanticRecommendedScores = semanticAppendData.recommendedScores;
 
   const semanticApplied = useMemo(() => {
     if (semanticSearch?.forceDisabled) return false;
@@ -661,6 +658,7 @@ export function useArchiveFilters({
       filtered: filteredPosts,
       paged: pagedPosts,
       aiRecommendedCodes: semanticRecommendedCodes,
+      aiRecommendedScores: semanticRecommendedScores,
     },
     semantic: {
       applied: semanticApplied,

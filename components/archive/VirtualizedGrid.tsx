@@ -19,6 +19,7 @@ type Props = {
   sortKey: SortKey;
   globalTags?: GlobalTag[];
   aiRecommendedCodes?: Record<string, true>;
+  aiRecommendedScores?: Record<string, number>;
   onNavigate?(post: ArchiveListItem, event: MouseEvent<HTMLAnchorElement>): boolean | void;
 };
 
@@ -58,7 +59,7 @@ function useElementWidth<T extends HTMLElement>() {
   return { ref, width };
 }
 
-export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTags, aiRecommendedCodes = {} }: Props) {
+export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTags, aiRecommendedCodes = {}, aiRecommendedScores = {} }: Props) {
   const { ref: containerRef, width } = useElementWidth<HTMLDivElement>();
   const [scrollMargin, setScrollMargin] = useState(0);
 
@@ -130,6 +131,7 @@ export function VirtualizedGrid({ enabled, posts, sortKey, onNavigate, globalTag
                       sortKey={sortKey}
                       globalTags={globalTags}
                       aiRecommended={(p.entry.codes || []).some((code) => aiRecommendedCodes[normalize(code)])}
+                      aiScore={aiRecommendedScores[normalize(p.entry.codes?.[0] || "")]}
                     />
                   </div>
                 ))}

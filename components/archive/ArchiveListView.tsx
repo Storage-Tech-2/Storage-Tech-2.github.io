@@ -49,6 +49,7 @@ export function ArchiveListView({
   const filteredPosts = results.filtered;
   const pagedPosts = results.paged;
   const aiRecommendedCodes = results.aiRecommendedCodes ?? {};
+  const aiRecommendedScores = results.aiRecommendedScores ?? {};
   const showPagination = pagination.show;
   const rangeStart = Math.min(filteredPosts.length, Math.max(0, Math.max(pageNumber - 1, 0) * pageSize + 1));
   const rangeEnd = Math.min(filteredPosts.length, Math.max(pageNumber, 1) * pageSize);
@@ -63,7 +64,6 @@ export function ArchiveListView({
               channels={channelsList}
               selectedChannels={channelFilters.selected}
               channelCounts={channelFilters.counts}
-              channelAiCounts={channelFilters.aiCounts}
               authorOptions={authors.options}
               authorQuery={authors.query}
               aiActive={aiActive}
@@ -138,6 +138,7 @@ export function ArchiveListView({
                   globalTags={globalTags}
                   onNavigate={onNavigate}
                   aiRecommendedCodes={aiRecommendedCodes}
+                  aiRecommendedScores={aiRecommendedScores}
                 />
                 {pagination.node}
               </>
@@ -151,6 +152,7 @@ export function ArchiveListView({
                       sortKey={sort.key}
                       globalTags={globalTags}
                       aiRecommended={(post.entry.codes || []).some((code) => aiRecommendedCodes[normalize(code)])}
+                      aiScore={aiRecommendedScores[normalize(post.entry.codes?.[0] || "")]}
                       onNavigate={onNavigate}
                     />
                   ))}
