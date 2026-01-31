@@ -370,12 +370,8 @@ export function useArchiveFilters({
     }
     const trimmed = q.trim();
     const semanticScores = semanticSearch?.scoreById ?? {};
-    const semanticEnabled =
-      !!semanticSearch?.enabled &&
-      Boolean(semanticSearch?.query?.trim()) &&
-      semanticSearch?.query?.trim() === trimmed &&
-      Object.keys(semanticScores).length > 0;
-    if (!semanticEnabled || semanticSearch?.forceDisabled) {
+    const semanticReady = !!semanticSearch?.enabled && Object.keys(semanticScores).length > 0;
+    if (!semanticReady || semanticSearch?.forceDisabled || !trimmed) {
       return { appended: [] as ArchiveListItem[], recommendedCodes: {} as Record<string, true>, recommendedScores: {} as Record<string, number> };
     }
 

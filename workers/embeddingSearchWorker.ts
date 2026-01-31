@@ -1,4 +1,4 @@
-import { env, AutoModel, AutoTokenizer, matmul, BertTokenizer, BertModel, Tensor } from "@huggingface/transformers";
+import { env, AutoModel, AutoTokenizer, BertTokenizer, BertModel, Tensor } from "@huggingface/transformers";
 
 env.allowLocalModels = true;
 env.localModelPath = self.location.origin + '/models';
