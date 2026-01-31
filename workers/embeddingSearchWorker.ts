@@ -8,6 +8,12 @@ if (env.backends.onnx.wasm) {
     env.backends.onnx.wasm.wasmPaths = self.location.origin + '/ort/';
 }
 
+const EMBEDDING_DIMENSION = 512;
+// const EMBEDDING_FAST_SEARCH_DIMENSION = 128;
+// const CANDIDATE_TOPK = 40;
+const RESULT_TOPK = 20;
+const MIN_SCORE = 0.25;
+const STD_FACTOR = 1.5;
 
 let model: BertModel | null = null;
 let tokenizer: BertTokenizer | null = null;
@@ -60,34 +66,42 @@ async function getEmbedding(text: string): Promise<Int8Array> {
 
     const embedding = output.sentence_embedding as Tensor;
 
-    // truncate it to 256 dimensions
-    const truncatedData: Float32Array = embedding.data.slice(0, 256) as Float32Array;
+    // truncate it to 512 dimensions
+    const truncatedData: Float32Array = embedding.data.slice(0, EMBEDDING_DIMENSION) as Float32Array;
 
     // now we need to quantize it,
     /*
      ranges = torch.tensor([[-0.3], [+0.3]]).expand(2, embeddings.shape[1]).cpu().numpy()
             quantized = quantize_embeddings(embeddings, "int8", ranges=ranges)
     */
-    const min = -0.3;
-    const max = 0.3;
-    const scale = 255 / (max - min); // 256 levels for int8
+    /*
+    starts = ranges[0, :]
+        steps = (ranges[1, :] - ranges[0, :]) / 255
 
-    const quantizedData = new Int8Array(truncatedData.length);
-    for (let i = 0; i < truncatedData.length; i++) {
-        let quantizedValue = Math.round((truncatedData[i] - min) * scale) - 128; // shift to int8 range
-        if (quantizedValue < -128) quantizedValue = -128;
-        if (quantizedValue > 127) quantizedValue = 127;
+        if precision == "uint8":
+            return ((embeddings - starts) / steps).astype(np.uint8)
+        elif precision == "int8":
+            return ((embeddings - starts) / steps - 128).astype(np.int8)
+    */
+   
+    const quantizedData = new Int8Array(EMBEDDING_DIMENSION);
+    const start = -0.3;
+    const end = 0.3;
+    const step = (end - start) / 255;
+    for (let i = 0; i < EMBEDDING_DIMENSION; i++) {
+        const value = truncatedData[i];
+        const quantizedValue = Math.round((value - start) / step - 128);
         quantizedData[i] = quantizedValue;
     }
 
     return quantizedData;
 }
 
-export function cosineSimilarity(vecA: Int8Array, vecB: Int8Array): number {
+export function cosineSimilarity(vecA: Int8Array, vecB: Int8Array, length: number): number {
     let dotProduct = 0;
     let normA = 0;
     let normB = 0;
-    for (let i = 0; i < vecA.length; i++) {
+    for (let i = 0; i < length; i++) {
         dotProduct += vecA[i] * vecB[i];
         normA += vecA[i] * vecA[i];
         normB += vecB[i] * vecB[i];
@@ -96,6 +110,27 @@ export function cosineSimilarity(vecA: Int8Array, vecB: Int8Array): number {
         return 0;
     }
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+function selectSemanticScores(scored: Array<{ identifier: string; score: number }>) {
+    if (!scored.length) return [] as Array<{ identifier: string; score: number }>;
+    const scores = scored.map((item) => item.score);
+    const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
+    const std = Math.sqrt(variance);
+    const sortedScores = [...scores].sort((a, b) => a - b);
+    const p90Index = Math.max(0, Math.floor(0.9 * (sortedScores.length - 1)));
+    const p90 = sortedScores[p90Index];
+    const threshold = Math.max(p90, mean + STD_FACTOR * std, MIN_SCORE);
+
+    const ranked = scored.slice().sort((a, b) => b.score - a.score);
+    let selected = ranked.filter((item) => item.score >= threshold);
+    if (!selected.length) {
+        selected = ranked.slice(0, RESULT_TOPK);
+    } else if (selected.length > RESULT_TOPK) {
+        selected = selected.slice(0, RESULT_TOPK);
+    }
+    return selected;
 }
 
 const onMessage = async (event: MessageEvent) => {
@@ -117,13 +152,14 @@ const onMessage = async (event: MessageEvent) => {
             }
             
             const output = await getEmbedding("Represent this sentence for searching relevant passages: " + query);
-            const scores = entries.map((entry) => {
-                const score = cosineSimilarity(output, entry.embedding);
-                return {
+            const fullScores = entries
+                .map((entry) => ({
                     identifier: entry.identifier,
-                    score,
-                };
-            });
+                    embedding: entry.embedding,
+                    score: cosineSimilarity(output, entry.embedding, EMBEDDING_DIMENSION),
+                }))
+
+            const scores = selectSemanticScores(fullScores);
             
             postMessage({ type: 'getScoresComplete', requestId, scores });
         } catch (error) {

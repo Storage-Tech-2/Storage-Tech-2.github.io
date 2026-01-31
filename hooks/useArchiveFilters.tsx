@@ -95,27 +95,6 @@ const buildPersistedState = (state: FilterState, scrollY?: number) => ({
   scrollY,
 });
 
-const selectSemanticPosts = (scored: Array<{ post: ArchiveListItem; score: number }>) => {
-  if (!scored.length) return [] as Array<{ post: ArchiveListItem; score: number }>;
-  const topK = 20;
-  const scores = scored.map((item) => item.score);
-  const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-  const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
-  const std = Math.sqrt(variance);
-  const sortedScores = [...scores].sort((a, b) => a - b);
-  const p90Index = Math.max(0, Math.floor(0.9 * (sortedScores.length - 1)));
-  const p90 = sortedScores[p90Index];
-  const threshold = Math.max(p90, mean + 1.5 * std, 0.25);
-
-  const ranked = scored.slice().sort((a, b) => b.score - a.score);
-  let selected = ranked.filter((item) => item.score >= threshold);
-  if (!selected.length) {
-    selected = ranked.slice(0, topK);
-  } else if (selected.length > topK) {
-    selected = selected.slice(0, topK);
-  }
-  return selected;
-};
 
 
 export function useArchiveFilters({
@@ -379,7 +358,7 @@ export function useArchiveFilters({
       [] as Array<{ post: ArchiveListItem; score: number }>,
     );
 
-    const selected = selectSemanticPosts(scored);
+    const selected = scored.slice().sort((a, b) => b.score - a.score);
     const semanticPosts = selected.map((item) => item.post);
 
     const regularSet = new Set(regularFilteredPosts.map((post) => normalize(post.entry.codes?.[0] || "")));

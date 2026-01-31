@@ -227,23 +227,8 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     }, [] as Array<{ entry: IndexedDictionaryEntry; score: number }>);
 
     if (!scored.length) return { filtered: regular, aiRecommendedScores: {} as Record<string, number> };
-    const scores = scored.map((item) => item.score);
-    const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-    const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
-    const std = Math.sqrt(variance);
-    const sortedScores = [...scores].sort((a, b) => a - b);
-    const p90Index = Math.max(0, Math.floor(0.9 * (sortedScores.length - 1)));
-    const p90 = sortedScores[p90Index];
-    const threshold = Math.max(p90, mean + 1.5 * std, 0.25);
-    const topK = 20;
 
-    const ranked = scored.slice().sort((a, b) => b.score - a.score);
-    let selected = ranked.filter((item) => item.score >= threshold);
-    if (!selected.length) {
-      selected = ranked.slice(0, topK);
-    } else if (selected.length > topK) {
-      selected = selected.slice(0, topK);
-    }
+    const selected = scored.slice().sort((a, b) => b.score - a.score);
 
     const regularSet = new Set(regular.map((entry) => normalize(entry.index.id)));
     const appended = selected
