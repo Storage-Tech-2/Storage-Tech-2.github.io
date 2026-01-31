@@ -21,11 +21,15 @@ import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { DictionaryCard } from "../ui/LinkHelpers";
 import { buildDictionaryUrl, getDictionarySlugInfo } from "@/lib/utils/urls";
+import { normalize } from "@/lib/utils/strings";
+import { ensureEmbeddingsLoaded, getScores } from "@/lib/semanticSearch";
 
 type Props = {
   entries: IndexedDictionaryEntry[];
   initialActiveEntry?: IndexedDictionaryEntry | null;
 };
+
+const DICTIONARY_EMBEDDINGS_KEY = "dictionary-embeddings";
 
 const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
   list.reduce((max, entry) => Math.max(max, entry.index.updatedAt ?? 0), 0);
@@ -47,6 +51,12 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"az" | "updated">("az");
   const [active, setActive] = useState<IndexedDictionaryEntry | null>(initialActiveEntry);
+  const [aiSearchAvailable, setAiSearchAvailable] = useState(false);
+  const [semanticSearch, setSemanticSearch] = useState<{ query: string; scoreById: Record<string, number> } | null>(null);
+  const [semanticForceDisabled, setSemanticForceDisabled] = useState(false);
+  const [aiWorkerRequested, setAiWorkerRequested] = useState(false);
+  const [dictionarySearchFocused, setDictionarySearchFocused] = useState(false);
+  const pendingQueryRef = useRef<string>("");
   const activeIdRef = useRef<string | null>(null);
   const entriesUpdatedAt = getEntriesUpdatedAt(entries);
   const cached = getCachedDictionaryIndex();
@@ -94,6 +104,24 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     prefetchArchiveIndex();
   }, []);
 
+  useEffect(() => {
+    if (!aiWorkerRequested) return;
+    let cancelled = false;
+    ensureEmbeddingsLoaded(DICTIONARY_EMBEDDINGS_KEY, "dictionary/embeddings.json")
+      .then(() => {
+        if (!cancelled) setAiSearchAvailable(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAiSearchAvailable(false);
+          setSemanticSearch(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [aiWorkerRequested]);
+
   const currentSearchParams = useMemo(() => {
     const raw = location.search.startsWith("?") ? location.search.slice(1) : location.search;
     return new URLSearchParams(raw);
@@ -113,6 +141,40 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
       setSort(urlSort);
     });
   }, [urlSort]);
+
+  useEffect(() => {
+    if (aiWorkerRequested) return;
+    if (query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAiWorkerRequested(true);
+    }
+  }, [aiWorkerRequested, query]);
+
+  useEffect(() => {
+    if (!aiSearchAvailable) return;
+    const trimmed = query.trim();
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSemanticSearch(null);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      pendingQueryRef.current = trimmed;
+      getScores(DICTIONARY_EMBEDDINGS_KEY, trimmed)
+        .then((scores) => {
+          const scoreById: Record<string, number> = {};
+          scores.forEach((entry) => {
+            scoreById[normalize(entry.identifier)] = entry.score;
+          });
+          setSemanticSearch({ query: pendingQueryRef.current, scoreById });
+        })
+        .catch(() => {
+          setSemanticSearch(null);
+        });
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [query, aiSearchAvailable]);
 
   useEffect(() => {
     if (disableLiveFetch) return;
@@ -149,7 +211,45 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     };
   }, [liveEntries]);
 
-  const filtered = useMemo(() => filterDictionaryEntries(liveEntries, query, sort), [liveEntries, query, sort]);
+  const filtered = useMemo(() => {
+    const regular = filterDictionaryEntries(liveEntries, query, sort);
+    if (!aiSearchAvailable || semanticForceDisabled || !query.trim()) return regular;
+    const semanticScores = semanticSearch?.scoreById ?? {};
+    const semanticReady = Object.keys(semanticScores).length > 0;
+    if (!semanticReady) return regular;
+
+    const scored: Array<{ entry: IndexedDictionaryEntry; score: number }> = liveEntries.reduce((acc, entry) => {
+      const score = semanticScores[normalize(entry.index.id)];
+      if (typeof score === "number") acc.push({ entry, score });
+      return acc;
+    }, [] as Array<{ entry: IndexedDictionaryEntry; score: number }>);
+
+    if (!scored.length) return regular;
+    const scores = scored.map((item) => item.score);
+    const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
+    const std = Math.sqrt(variance);
+    const sortedScores = [...scores].sort((a, b) => a - b);
+    const p90Index = Math.max(0, Math.floor(0.9 * (sortedScores.length - 1)));
+    const p90 = sortedScores[p90Index];
+    const threshold = Math.max(p90, mean + 1.5 * std, 0.25);
+    const topK = 20;
+
+    const ranked = scored.slice().sort((a, b) => b.score - a.score);
+    let selected = ranked.filter((item) => item.score >= threshold);
+    if (!selected.length) {
+      selected = ranked.slice(0, topK);
+    } else if (selected.length > topK) {
+      selected = selected.slice(0, topK);
+    }
+
+    const regularSet = new Set(regular.map((entry) => normalize(entry.index.id)));
+    const appended = selected
+      .map((item) => item.entry)
+      .filter((entry) => !regularSet.has(normalize(entry.index.id)));
+
+    return [...regular, ...appended];
+  }, [liveEntries, query, sort, aiSearchAvailable, semanticForceDisabled, semanticSearch]);
 
   const dictionaryTooltips = useMemo(() => {
     const map: Record<string, string> = {};
@@ -254,6 +354,18 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
         view="dictionary"
         logoSrc={siteConfig.logoSrc}
         discordInviteUrl={siteConfig.discordInviteUrl}
+        aiSearchAvailable={aiSearchAvailable}
+        aiSearchApplied={aiSearchAvailable && !semanticForceDisabled}
+        onAiSearchToggle={() => {
+          if (!aiSearchAvailable) return;
+          setSemanticForceDisabled((prev) => !prev);
+        }}
+        onDictionarySearchFocus={() => {
+          setDictionarySearchFocused(true);
+          setAiWorkerRequested(true);
+        }}
+        onDictionarySearchBlur={() => setDictionarySearchFocused(false)}
+        dictionarySearchFocused={dictionarySearchFocused}
         filters={{
           search: {
             q: query,

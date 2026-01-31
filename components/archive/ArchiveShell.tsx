@@ -13,6 +13,7 @@ import { siteConfig } from "@/lib/siteConfig";
 import { Footer } from "@/components/layout/Footer";
 import { getArchiveSlugInfo } from "@/lib/utils/urls";
 import { normalize } from "@/lib/utils/strings";
+import { ensureEmbeddingsLoaded, getScores } from "@/lib/semanticSearch";
 
 type Props = {
   initialArchive: ArchiveIndex;
@@ -21,12 +22,6 @@ type Props = {
   pageCount?: number;
 };
 
-type EmbeddingsEntryRaw = {
-  identifier: string;
-  embedding: string;
-};
-
-const ARCHIVE_EMBEDDINGS_URL = "https://raw.githubusercontent.com/Storage-Tech-2/Archive/main/embeddings.json";
 const ARCHIVE_EMBEDDINGS_KEY = "archive-embeddings";
 
 let hasHydratedArchiveShell = false;
@@ -45,8 +40,6 @@ export function ArchiveShell({
   const [semanticForceDisabled, setSemanticForceDisabled] = useState(false);
   const [aiWorkerRequested, setAiWorkerRequested] = useState(false);
   const [archiveSearchFocused, setArchiveSearchFocused] = useState(false);
-  const workerRef = useRef<Worker | null>(null);
-  const latestSearchRequestIdRef = useRef<string | null>(null);
   const pendingQueryRef = useRef<string>("");
   
   useEffect(() => {
@@ -60,6 +53,7 @@ export function ArchiveShell({
 
     const url = new URL(window.location.href);
     const slug = getArchiveSlugInfo(url)?.slug;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsArchivePostURL(!!slug);
 
     setHydrated(true);
@@ -72,78 +66,21 @@ export function ArchiveShell({
 
   useEffect(() => {
     if (!aiWorkerRequested) return;
-    if (typeof window === "undefined" || !("Worker" in window)) return;
     let cancelled = false;
-    const worker = new Worker(new URL("../../workers/embeddingSearchWorker", import.meta.url));
-    workerRef.current = worker;
-
-    const handleMessage = (event: MessageEvent) => {
-      const data = event.data as { type?: string; requestId?: string; scores?: Array<{ identifier: string; score: number }> };
-      if (!data?.type) return;
-      if (data.type === "setEmbeddingsComplete") {
+    ensureEmbeddingsLoaded(ARCHIVE_EMBEDDINGS_KEY, "embeddings.json")
+      .then(() => {
         if (!cancelled) setAiSearchAvailable(true);
-        return;
-      }
-      if (data.type === "getScoresComplete") {
-        if (data.requestId !== latestSearchRequestIdRef.current) return;
-        const scores = data.scores ?? [];
-        const scoreById: Record<string, number> = {};
-        scores.forEach((entry) => {
-          scoreById[normalize(entry.identifier)] = entry.score;
-        });
-        if (!cancelled) {
-          setSemanticSearch({ query: pendingQueryRef.current, scoreById });
-        }
-      }
-      if (data.type === "getScoresError") {
-        if (data.requestId === latestSearchRequestIdRef.current && !cancelled) {
-          setSemanticSearch(null);
-        }
-      }
-    };
-
-    const handleError = () => {
-      if (!cancelled) {
-        setAiSearchAvailable(false);
-        setSemanticSearch(null);
-      }
-    };
-
-    worker.addEventListener("message", handleMessage);
-    worker.addEventListener("error", handleError);
-
-    const loadEmbeddings = async () => {
-      try {
-        const res = await fetch(ARCHIVE_EMBEDDINGS_URL);
-        if (!res.ok) throw new Error(`Failed to load embeddings: ${res.status}`);
-        const entries = (await res.json()) as EmbeddingsEntryRaw[];
-        if (cancelled) return;
-        worker.postMessage({
-          type: "setEmbeddings",
-          requestId: `set-${Date.now()}`,
-          key: ARCHIVE_EMBEDDINGS_KEY,
-          entries,
-        });
-      } catch {
+      })
+      .catch(() => {
         if (!cancelled) {
           setAiSearchAvailable(false);
           setSemanticSearch(null);
         }
-      }
-    };
-
-    loadEmbeddings();
-
+      });
     return () => {
       cancelled = true;
-      worker.removeEventListener("message", handleMessage);
-      worker.removeEventListener("error", handleError);
-      worker.terminate();
-      workerRef.current = null;
     };
   }, [aiWorkerRequested]);
-
-
 
   const { posts, channels, error, config, refreshArchiveIndex } = useArchiveData({ initial: initialArchive });
   const archiveConfig = config ?? initialArchive.config;
@@ -187,6 +124,7 @@ export function ArchiveShell({
   useEffect(() => {
     if (aiWorkerRequested) return;
     if (filters.search.q.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAiWorkerRequested(true);
     }
   }, [aiWorkerRequested, filters.search.q]);
@@ -195,21 +133,23 @@ export function ArchiveShell({
     if (!aiSearchAvailable) return;
     const trimmed = filters.search.q.trim();
     if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSemanticSearch(null);
       return;
     }
-    const worker = workerRef.current;
-    if (!worker) return;
     const timeout = setTimeout(() => {
-      const requestId = `search-${Date.now()}`;
-      latestSearchRequestIdRef.current = requestId;
       pendingQueryRef.current = trimmed;
-      worker.postMessage({
-        type: "getScores",
-        requestId,
-        key: ARCHIVE_EMBEDDINGS_KEY,
-        query: trimmed,
-      });
+      getScores(ARCHIVE_EMBEDDINGS_KEY, trimmed)
+        .then((scores) => {
+          const scoreById: Record<string, number> = {};
+          scores.forEach((entry) => {
+            scoreById[normalize(entry.identifier)] = entry.score;
+          });
+          setSemanticSearch({ query: pendingQueryRef.current, scoreById });
+        })
+        .catch(() => {
+          setSemanticSearch(null);
+        });
     }, 100);
 
     return () => clearTimeout(timeout);
