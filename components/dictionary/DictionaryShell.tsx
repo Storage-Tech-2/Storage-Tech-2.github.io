@@ -211,12 +211,14 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     };
   }, [liveEntries]);
 
-  const filtered = useMemo(() => {
+  const { filtered, aiRecommendedScores } = useMemo(() => {
     const regular = filterDictionaryEntries(liveEntries, query, sort);
-    if (!aiSearchAvailable || semanticForceDisabled || !query.trim()) return regular;
+    if (!aiSearchAvailable || semanticForceDisabled || !query.trim()) {
+      return { filtered: regular, aiRecommendedScores: {} as Record<string, number> };
+    }
     const semanticScores = semanticSearch?.scoreById ?? {};
     const semanticReady = Object.keys(semanticScores).length > 0;
-    if (!semanticReady) return regular;
+    if (!semanticReady) return { filtered: regular, aiRecommendedScores: {} as Record<string, number> };
 
     const scored: Array<{ entry: IndexedDictionaryEntry; score: number }> = liveEntries.reduce((acc, entry) => {
       const score = semanticScores[normalize(entry.index.id)];
@@ -224,7 +226,7 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
       return acc;
     }, [] as Array<{ entry: IndexedDictionaryEntry; score: number }>);
 
-    if (!scored.length) return regular;
+    if (!scored.length) return { filtered: regular, aiRecommendedScores: {} as Record<string, number> };
     const scores = scored.map((item) => item.score);
     const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
     const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
@@ -247,8 +249,14 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     const appended = selected
       .map((item) => item.entry)
       .filter((entry) => !regularSet.has(normalize(entry.index.id)));
+    const aiRecommendedScores: Record<string, number> = {};
+    selected.forEach((item) => {
+      const id = normalize(item.entry.index.id);
+      if (regularSet.has(id)) return;
+      aiRecommendedScores[id] = item.score;
+    });
 
-    return [...regular, ...appended];
+    return { filtered: [...regular, ...appended], aiRecommendedScores };
   }, [liveEntries, query, sort, aiSearchAvailable, semanticForceDisabled, semanticSearch]);
 
   const dictionaryTooltips = useMemo(() => {
@@ -388,6 +396,7 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
               key={entry.index.id}
               entry={entry}
               onOpen={openEntry}
+              aiScore={aiRecommendedScores[normalize(entry.index.id)]}
             />
           ))}
         </div>

@@ -153,7 +153,7 @@ export function RecordRenderer({
   return <MarkdownText text={decorated} onLinkClick={onLinkClick} />;
 }
 
-export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntry; onOpen?(entry: IndexedDictionaryEntry): void }) {
+export function DictionaryCard({ entry, onOpen, aiScore }: { entry: IndexedDictionaryEntry; onOpen?(entry: IndexedDictionaryEntry): void; aiScore?: number }) {
   const primary = entry.index.terms[0] || entry.index.id;
   const extraCount = Math.max(0, (entry.index.terms?.length || 0) - 1);
   const slug = buildDictionarySlug(entry.index);
@@ -174,7 +174,14 @@ export function DictionaryCard({ entry, onOpen }: { entry: IndexedDictionaryEntr
     >
       <div className="p-4 text-left">
         <div className="space-y-1">
-          <div className="text-sm font-semibold leading-tight">{primary}</div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-sm font-semibold leading-tight">{primary}</div>
+            {typeof aiScore === "number" ? (
+              <span className="rounded-full bg-gray-200/80 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600 dark:bg-gray-800/70 dark:text-gray-300">
+                AI {aiScore.toFixed(2)}
+              </span>
+            ) : null}
+          </div>
           {extraCount > 0 && <div className="text-[11px] text-gray-500 dark:text-gray-400">{`+${extraCount} more ${extraCount === 1 ? "alias" : "aliases"}`}</div>}
           {entry.index.summary && <div className="text-xs text-gray-600 line-clamp-3 dark:text-gray-300">{entry.index.summary}</div>}
         </div>
