@@ -16,7 +16,9 @@ let loaded = false;
 async function loadModel() {
     const [tokenizerInstance, modelInstance] = await Promise.all([
         AutoTokenizer.from_pretrained('embeddings'),
-        AutoModel.from_pretrained('embeddings'),
+        AutoModel.from_pretrained('embeddings',{
+            dtype: 'q8',
+        }),
     ]);
     tokenizer = tokenizerInstance;
     model = modelInstance;
