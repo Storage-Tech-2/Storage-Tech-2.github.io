@@ -49,6 +49,7 @@ interface EmbeddingsEntry {
 
 const embeddingsCache = new Map<string, EmbeddingsEntry[]>();
 
+self.embeddingsCache = embeddingsCache;
 function base64ToInt8Array(base64: string): Int8Array {
     const binaryString = Buffer.from(base64, 'base64');
     return new Int8Array(binaryString);
@@ -70,6 +71,18 @@ async function getEmbedding(text: string): Promise<Int8Array> {
     // truncate it to 512 dimensions
     const truncatedData: Float32Array = embedding.data.slice(0, EMBEDDING_DIMENSION) as Float32Array;
 
+
+    // renormalize truncated data
+    let norm = 0;
+    for (let i = 0; i < truncatedData.length; i++) {
+        norm += truncatedData[i] * truncatedData[i];
+    }
+    norm = Math.sqrt(norm);
+    for (let i = 0; i < truncatedData.length; i++) {
+        truncatedData[i] = truncatedData[i] / norm;
+    }
+
+
     // now we need to quantize it,
     /*
      ranges = torch.tensor([[-0.3], [+0.3]]).expand(2, embeddings.shape[1]).cpu().numpy()
@@ -84,6 +97,7 @@ async function getEmbedding(text: string): Promise<Int8Array> {
         elif precision == "int8":
             return ((embeddings - starts) / steps - 128).astype(np.int8)
     */
+
    
     const quantizedData = new Int8Array(EMBEDDING_DIMENSION);
     const start = -0.3;
@@ -94,7 +108,6 @@ async function getEmbedding(text: string): Promise<Int8Array> {
         const quantizedValue = Math.round((value - start) / step - 128);
         quantizedData[i] = quantizedValue;
     }
-
     return quantizedData;
 }
 
