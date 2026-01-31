@@ -95,50 +95,26 @@ const buildPersistedState = (state: FilterState, scrollY?: number) => ({
   scrollY,
 });
 
-const computeOtsuThreshold = (scores: number[]) => {
-  if (!scores.length) return Number.POSITIVE_INFINITY;
-  const min = Math.min(...scores);
-  const max = Math.max(...scores);
-  if (min === max) return min;
+const selectSemanticPosts = (scored: Array<{ post: ArchiveListItem; score: number }>) => {
+  if (!scored.length) return [] as Array<{ post: ArchiveListItem; score: number }>;
+  const topK = 20;
+  const scores = scored.map((item) => item.score);
+  const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+  const variance = scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
+  const std = Math.sqrt(variance);
+  const sortedScores = [...scores].sort((a, b) => a - b);
+  const p90Index = Math.max(0, Math.floor(0.9 * (sortedScores.length - 1)));
+  const p90 = sortedScores[p90Index];
+  const threshold = Math.max(p90, mean + 1.5 * std, 0.25);
 
-  const bins = 256;
-  const hist = new Array<number>(bins).fill(0);
-  const binWidth = (max - min) / bins;
-  scores.forEach((score) => {
-    const idx = Math.min(bins - 1, Math.max(0, Math.floor((score - min) / binWidth)));
-    hist[idx] += 1;
-  });
-
-  const total = scores.length;
-  const prob = hist.map((h) => h / total);
-  const omega = new Array<number>(bins).fill(0);
-  const mu = new Array<number>(bins).fill(0);
-
-  omega[0] = prob[0];
-  mu[0] = prob[0] * 0;
-  for (let i = 1; i < bins; i += 1) {
-    omega[i] = omega[i - 1] + prob[i];
-    mu[i] = mu[i - 1] + prob[i] * i;
+  const ranked = scored.slice().sort((a, b) => b.score - a.score);
+  let selected = ranked.filter((item) => item.score >= threshold);
+  if (!selected.length) {
+    selected = ranked.slice(0, topK);
+  } else if (selected.length > topK) {
+    selected = selected.slice(0, topK);
   }
-
-  const muT = mu[bins - 1];
-  let maxSigma = -1;
-  let thresholdIdx = 0;
-
-  for (let i = 0; i < bins - 1; i += 1) {
-    const w0 = omega[i];
-    const w1 = 1 - w0;
-    if (w0 === 0 || w1 === 0) continue;
-    const mu0 = mu[i] / w0;
-    const mu1 = (muT - mu[i]) / w1;
-    const sigmaBetween = w0 * w1 * (mu0 - mu1) * (mu0 - mu1);
-    if (sigmaBetween > maxSigma) {
-      maxSigma = sigmaBetween;
-      thresholdIdx = i;
-    }
-  }
-
-  return min + (thresholdIdx + 0.5) * binWidth;
+  return selected;
 };
 
 
@@ -403,23 +379,20 @@ export function useArchiveFilters({
       [] as Array<{ post: ArchiveListItem; score: number }>,
     );
 
-    const scores = scored.map((item) => item.score);
-    const threshold = computeOtsuThreshold(scores);
-    const semanticPosts = scored
-      .filter((item) => item.score >= threshold)
-      .sort((a, b) => b.score - a.score)
-      .map((item) => item.post);
+    const selected = selectSemanticPosts(scored);
+    const semanticPosts = selected.map((item) => item.post);
 
     const regularSet = new Set(regularFilteredPosts.map((post) => normalize(post.entry.codes?.[0] || "")));
     const appended = semanticPosts.filter((post) => !regularSet.has(normalize(post.entry.codes?.[0] || "")));
+    const selectedScores = new Map(selected.map((item) => [item.post, item.score] as const));
     const recommendedCodes: Record<string, true> = {};
     const recommendedScores: Record<string, number> = {};
     appended.forEach((post) => {
       const code = normalize(post.entry.codes?.[0] || "");
       if (!code) return;
       recommendedCodes[code] = true;
-      const scoreEntry = scored.find((item) => item.post === post);
-      if (scoreEntry) recommendedScores[code] = scoreEntry.score;
+      const scoreEntry = selectedScores.get(post);
+      if (typeof scoreEntry === "number") recommendedScores[code] = scoreEntry;
     });
 
     return { appended, recommendedCodes, recommendedScores };
