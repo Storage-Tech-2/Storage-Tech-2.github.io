@@ -25,6 +25,7 @@ type Props = {
 
 function getColumnCount(width: number) {
   const effectiveWidth = width + SCROLLBAR_FUDGE;
+  if (effectiveWidth >= 1536) return 5;
   if (effectiveWidth >= 1280) return 4;
   if (effectiveWidth >= 1024) return 3;
   if (effectiveWidth >= 640) return 2;
