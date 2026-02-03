@@ -63,6 +63,7 @@ export type BaseAttachment = {
     id: Snowflake,
     name: string,
     url: string,
+    downloadUrl?: string,
     description: string,
     timestamp: number, // Timestamp when the attachment was added
     author: Author,

@@ -1,4 +1,5 @@
 export type SiteConfig = {
+  lfsExtensions: string[];
   siteName: string;
   siteDescription: string;
   logoSrc: string;
@@ -44,6 +45,7 @@ export const siteConfig: SiteConfig = {
     repo: "Archive",
     branch: "main",
   },
+  lfsExtensions: ["mp4", "bin", "zip"],
   repositoryUrl: "https://github.com/Storage-Tech-2/Archive",
   discordInviteUrl: "https://discord.gg/storage-tech-2-1375556143186837695",
 };

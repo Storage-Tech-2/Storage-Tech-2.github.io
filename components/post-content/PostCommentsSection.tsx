@@ -33,7 +33,7 @@ export function PostCommentsSection({
         {comments.map((c) => {
           const attachments = (c.attachments || []).map((att) => ({
             ...att,
-            path: att.path ? attachmentURL(channelPath, entryPath, att.path) : att.path,
+            path: att.path ? attachmentURL(channelPath, entryPath, att) : att.path,
           }));
           return (
             <li key={c.id} className="rounded-xl border p-3 dark:border-gray-800">

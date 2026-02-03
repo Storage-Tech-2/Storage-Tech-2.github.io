@@ -1,4 +1,5 @@
-import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "./types";
+import { siteConfig } from "./siteConfig";
+import { BaseAttachment, DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO } from "./types";
 
 export function getRawURL(owner: string, repo: string, branch: string, path: string) {
   const safe = encodeURI(path.replace(/^\/+/, ""));
@@ -28,12 +29,22 @@ export function assetURL(
 export function attachmentURL(
   channelPath: string,
   entryPath: string,
-  rel: string,
+  attachment: BaseAttachment,
 ) {
-  const joined = joinAssetPath(channelPath, entryPath, rel);
-  const base = joined.split(/[?#]/)[0] ?? "";
-  const isMp4 = base.toLowerCase().endsWith(".mp4");
-  return isMp4
+  if (attachment.downloadUrl) {
+    return attachment.downloadUrl;
+  }
+
+  if (!attachment.path) {
+    return attachment.url;
+  }
+
+  // check extension
+  const extension = attachment.name.split(".").pop() ?? "";
+  const lfsExtensions = siteConfig.lfsExtensions;
+  const shouldUseLFS = lfsExtensions.includes(extension.toLowerCase());
+  const joined = joinAssetPath(channelPath, entryPath, attachment.path);
+  return shouldUseLFS
     ? getMediaURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined)
     : getRawURL(DEFAULT_OWNER, DEFAULT_REPO, DEFAULT_BRANCH, joined);
 }

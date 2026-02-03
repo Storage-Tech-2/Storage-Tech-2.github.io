@@ -285,7 +285,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
 
   const attachments = currentData?.attachments?.map((att) => ({
     ...att,
-    path: att.path ? attachmentURL(post.channel.path, post.entry.path, att.path) : att.path,
+    path: att.path ? attachmentURL(post.channel.path, post.entry.path, att) : att.path,
   })) ?? [];
 
   const updatedAt = currentData?.updatedAt ?? post.entry.updatedAt;
