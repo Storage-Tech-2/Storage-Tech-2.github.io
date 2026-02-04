@@ -1,11 +1,26 @@
 import { env, AutoModel, AutoTokenizer, BertTokenizer, BertModel, Tensor } from "@huggingface/transformers";
+import { siteConfig } from "@/lib/siteConfig";
+
+const normalizePath = (value: string) => {
+    if (!value) return "";
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === "/") return "";
+    const withLeading = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return withLeading.endsWith("/") ? withLeading.slice(0, -1) : withLeading;
+};
+
+const basePath = normalizePath(siteConfig.basePath || "");
+const resolvePublicPath = (path: string) => {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    return `${self.location.origin}${basePath}${normalizedPath}`;
+};
 
 env.allowLocalModels = true;
-env.localModelPath = self.location.origin + '/models';
+env.localModelPath = resolvePublicPath("/models");
 env.allowRemoteModels = false;
 env.backends.onnx.device = 'wasm';
 if (env.backends.onnx.wasm) {
-    env.backends.onnx.wasm.wasmPaths = self.location.origin + '/ort/';
+    env.backends.onnx.wasm.wasmPaths = resolvePublicPath("/ort/");
 }
 
 const EMBEDDING_DIMENSION = 256;
@@ -182,4 +197,3 @@ const onMessage = async (event: MessageEvent) => {
 
 
 addEventListener('message', onMessage);
-

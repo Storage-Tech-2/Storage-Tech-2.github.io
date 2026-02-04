@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { asyncPool, assetURL } from "../lib/github";
 import { fetchArchiveIndex, fetchDictionaryIndex, type ArchiveListItem } from "../lib/archive";
 import { disablePreviewOptimization } from "../lib/runtimeFlags";
+import { siteConfig } from "../lib/siteConfig";
 import { PreviewItem } from "@/lib/previews";
 
 const skip = process.env.SKIP_PREVIEW_DOWNLOAD === "1";
@@ -15,6 +16,21 @@ const indexPath = path.join(root, "lib", "generated", "previews.json");
 const MAX_WIDTH = Number.parseInt(process.env.PREVIEW_MAX_WIDTH || "1024", 10);
 const MAX_HEIGHT = Number.parseInt(process.env.PREVIEW_MAX_HEIGHT || "800", 10);
 const QUALITY = Number.parseInt(process.env.PREVIEW_QUALITY || "80", 10);
+
+const normalizeBasePath = (value?: string | null) => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "/") return "";
+  const withLeading = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return withLeading.endsWith("/") ? withLeading.slice(0, -1) : withLeading;
+};
+
+const basePath = normalizeBasePath(siteConfig.basePath);
+
+const withBasePath = (value: string) => {
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+  return basePath ? `${basePath}${normalized}` : normalized;
+};
 
 async function main() {
   if (skip || disablePreviewOptimization) {
@@ -73,7 +89,7 @@ async function main() {
       previews.push({
         code: post.entry.codes[0],
         sourceUrl,
-        localPath: `/previews/${filename}`,
+        localPath: withBasePath(`/previews/${filename}`),
         width: metadata.width,
         height: metadata.height,
       });

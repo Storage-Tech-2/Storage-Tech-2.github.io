@@ -159,19 +159,6 @@ export function replaceArchiveFiltersInHistory(filters: ArchiveFilters, pathname
   window.history.replaceState(currentState, "", nextHref.next);
 }
 
-export function getDictionaryStateFromUrl(pathname?: string | null): DictionaryState {
-  if (typeof window === "undefined") {
-    return { query: "", committedQuery: "", sort: "az", slug: null };
-  }
-  const sp = new URLSearchParams(window.location.search);
-  const q = sp.get("q") || "";
-  const sortParam = sp.get("sort");
-  const sort = sortParam === "updated" ? "updated" : "az";
-  const match = pathname ? pathname.match(/^\/dictionary\/(.+)$/) : null;
-  const slug = match ? decodeURIComponent(match[1].replace(/\/+$/, "")) : null;
-  return { query: q, committedQuery: q, sort, slug };
-}
-
 export function readArchiveSession(): ArchiveFilters | null {
   if (typeof window === "undefined") return null;
   const saved = sessionStorage.getItem("archive-filters");

@@ -5,26 +5,19 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
+import { getArchiveSlugInfo, getDictionarySlugInfo } from "@/lib/utils/urls";
 
 type NotFoundKind = "archive" | "dictionary";
 
-const extractSlug = (pathname: string | null, segment: string) => {
-  if (!pathname) return null;
-  const match = pathname.match(new RegExp(`/${segment}/(.+)`));
-  if (!match?.[1]) return null;
-  const trimmed = match[1].replace(/\/+$/, "");
-  if (!trimmed) return null;
-  try {
-    return decodeURIComponent(trimmed);
-  } catch {
-    return trimmed;
-  }
-};
-
 const resolveKindAndSlug = (pathname: string | null) => {
-  const archiveSlug = extractSlug(pathname, "archives");
+  if (!pathname) return { kind: null, slug: null };
+  const url = new URL(
+    pathname,
+    typeof window === "undefined" ? "https://example.invalid" : window.location.origin,
+  );
+  const archiveSlug = getArchiveSlugInfo(url).slug;
   if (archiveSlug) return { kind: "archive" as const, slug: archiveSlug };
-  const dictionarySlug = extractSlug(pathname, "dictionary");
+  const dictionarySlug = getDictionarySlugInfo(url).slug;
   if (dictionarySlug) return { kind: "dictionary" as const, slug: dictionarySlug };
   return { kind: null, slug: null };
 };
