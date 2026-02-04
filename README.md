@@ -3,4 +3,4 @@
 Visit the live site at [storagetech2.com](https://storagetech2.com).
 
 ## Get the mod
-https://modrinth.com/mod/st2-downloader
+https://modrinth.com/mod/archive-downloader

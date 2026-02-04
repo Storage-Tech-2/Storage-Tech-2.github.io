@@ -28,12 +28,12 @@ export const metadata: Metadata = {
 
 const resources = [
   {
-    title: "Storage Tech 2 Downloader",
+    title: "Archive Downloader",
     description:
-      "A mod that allows you to browse and download Storage Tech 2 archive entries directly in-game.",
-    url: "https://github.com/Storage-Tech-2/ST2-Downloader",
+      "A mod that allows you to browse and download Storage Tech 2 and other technical archives directly in-game.",
+    url: "https://github.com/Llama-Collective/Archive-Downloader",
     imageSrc: "/mods/st2downloader.png",
-    imageAlt: "Storage Tech 2 Downloader preview",
+    imageAlt: "Archive Downloader preview",
   },
   {
     title: "Redstone Multimeter",
