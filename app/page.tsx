@@ -63,7 +63,7 @@ export default function Home() {
             </p>
             <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The community for storage innovators</h1>
             <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-900 dark:text-gray-200">
-              Storage tech is our passion, and it can be yours too! Whether you&apos;re just starting out or a seasoned designer, we&apos;re here to help you learn more about the latest storage technologies!
+              Want to design an awesome automated storage system for your base in Minecraft? Come on over to Storage Tech 2! We love Minecraft redstone, logistics, and engineering. Our community of enthusiasts will help you to learn more about Minecraft storage technologies, everything from basic filters to the most advanced variable sorting systems. All of any skill level/experience are welcome!
             </p>
           </div>
         </section>
