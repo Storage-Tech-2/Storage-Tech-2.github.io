@@ -34,7 +34,7 @@ const siteUrl = `${siteOrigin.replace(/\/+$/, "")}${basePath || ""}`;
 
 export const siteConfig: SiteConfig = {
   siteName: "Storage Tech 2",
-  siteDescription: "A community-run platform to make Minecraft storage technologies accessible to everyone. Resources, community spaces, and tools to help you learn and develop storage technologies in Minecraft. Check out our archive of tech and join us today!",
+  siteDescription: "The best resource for Minecraft storage tech. 200+ schematics, community spaces, and tools to help you make your own storage system. Check out our archive of tech and join us today!",
   logoSrc: "/logo.png",
   basePath,
   assetPrefix,
