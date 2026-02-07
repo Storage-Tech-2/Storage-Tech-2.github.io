@@ -14,11 +14,11 @@ type Person = {
 
 export const metadata: Metadata = {
   title: `About · ${siteConfig.siteName}`,
-  description: "Meet the Storage Tech 2 team, previous leaders, and read the community constitution.",
+  description: "Meet the Storage Catalog team, previous leaders, and read the community constitution.",
   metadataBase: new URL(siteConfig.siteUrl),
   openGraph: {
     title: `About · ${siteConfig.siteName}`,
-    description: "Meet the Storage Tech 2 team, previous leaders, and read the community constitution.",
+    description: "Meet the Storage Catalog team, previous leaders, and read the community constitution.",
     url: `/about`,
     images: [
       {
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: `About · ${siteConfig.siteName}`,
-    description: "Meet the Storage Tech 2 team, previous leaders, and read the community constitution.",
+    description: "Meet the Storage Catalog team, previous leaders, and read the community constitution.",
     images: ["/banner.webp"]
   },
 };
@@ -120,58 +120,58 @@ const constitutionSections = [
   {
     heading: "Preamble",
     body: [
-      "The Constitution of Storage Tech 2 is a living document that outlines the core governance of the Storage Tech 2 community. This document shall be the supreme law of the community and will be the foundation upon which all other laws and policies are built.",
+      "The Constitution of the Storage Catalog is a living document that outlines the core governance of the Storage Catalog community. This document shall be the supreme law of the community and will be the foundation upon which all other laws and policies are built.",
     ],
   },
   {
     heading: "Article I: Membership",
     body: [
-      "Membership in Storage Tech 2 is open to all individuals, defined as those who have joined the Storage Tech 2 Discord server, excluding bots and those who have been banned from the server. Members are entitled to all rights and privileges outlined in this Constitution.",
+      "Membership in the Storage Catalog is open to all individuals, defined as those who have joined the Storage Catalog Discord server, excluding bots and those who have been banned from the server. Members are entitled to all rights and privileges outlined in this Constitution.",
     ],
   },
   {
     heading: "Article II: Purpose",
     body: [
-      "The purpose of Storage Tech 2 is to provide a welcoming and inclusive community for all individuals interested in Minecraft storage technology. Storage Tech 2 shall provide a platform for members to share knowledge, collaborate on projects, and engage in discussions related to Minecraft storage technology. Storage Tech 2 shall also be responsible for organizing events, maintaining resources, and promoting the growth of the community.",
+      "The purpose of the Storage Catalog is to provide a welcoming and inclusive community for all individuals interested in Minecraft storage technology. The Storage Catalog shall provide a platform for members to share knowledge, collaborate on projects, and engage in discussions related to Minecraft storage technology. The Storage Catalog shall also be responsible for organizing events, maintaining resources, and promoting the growth of the community.",
     ],
   },
   {
     heading: "Article III: Leadership Structure",
     body: [
-      "In the interest of maintaining a fair and community-driven governance structure, Storage Tech 2 shall be led using a system of managed democracy consisting of five branches: the Supreme Council, the Executive, the Board, the Moderators, and the Editorial Branch. Each branch shall have its own responsibilities and powers, as outlined in this Constitution.",
+      "In the interest of maintaining a fair and community-driven governance structure, the Storage Catalog shall be led using a system of managed democracy consisting of five branches: the Supreme Council, the Executive, the Board, the Moderators, and the Editorial Branch. Each branch shall have its own responsibilities and powers, as outlined in this Constitution.",
     ],
   },
   {
     heading: "Article IV: The Supreme Council",
     body: [
-      "In order to ensure the security and continuing stability of Storage Tech 2, the Supreme Council shall be the highest governing body of Storage Tech 2 and shall be given absolute authority over all matters. Members of the Supreme Council shall be appointed by an internal vote, based on their experience and dedication to the storage tech community. The Supreme Council shall have administrative powers over community spaces and all other branches of Storage Tech 2. The Supreme Council promises to operate in a hands-off manner and will only intervene in the event of a crisis or emergency.",
+      "In order to ensure the security and continuing stability of the Storage Catalog, the Supreme Council shall be the highest governing body of the Storage Catalog and shall be given absolute authority over all matters. Members of the Supreme Council shall be appointed by an internal vote, based on their experience and dedication to the storage tech community. The Supreme Council shall have administrative powers over community spaces and all other branches of the Storage Catalog. The Supreme Council promises to operate in a hands-off manner and will only intervene in the event of a crisis or emergency.",
     ],
   },
   {
     heading: "Article V: The Executive Branch",
     body: [
-      "The Executive Branch shall be responsible for the administrative operations of Storage Tech 2 and shall be led by the Chief Executive Officer (CEO). The CEO shall be given administrative powers over community spaces. They are responsible for the overall direction and vision of Storage Tech 2. The CEO shall be appointed by general election and shall serve a term of one year.",
+      "The Executive Branch shall be responsible for the administrative operations of the Storage Catalog and shall be led by the Chief Executive Officer (CEO). The CEO shall be given administrative powers over community spaces. They are responsible for the overall direction and vision of the Storage Catalog. The CEO shall be appointed by general election and shall serve a term of one year.",
     ],
   },
   {
     heading: "Article VI: The Board",
     body: [
-      "The Board shall be responsible for the acquisition and management of resources for Storage Tech 2. This shall include the management of funds, the acquisition of people, and the allocation of resources to various projects and initiatives. The Board shall consist of up to five members and shall embody harmony. Each member shall be appointed by the Executive Branch. Once appointed, Board members shall serve until they resign or are removed by a general referendum.",
-      "Board Powers: The Board shall be responsible for the management of funds and shall have the power to allocate resources to various projects and initiatives with a majority vote. The Board shall also have the power to create and dissolve positions within Storage Tech 2 with a majority vote, except for the positions outlined in this Constitution.",
+      "The Board shall be responsible for the acquisition and management of resources for the Storage Catalog. This shall include the management of funds, the acquisition of people, and the allocation of resources to various projects and initiatives. The Board shall consist of up to five members and shall embody harmony. Each member shall be appointed by the Executive Branch. Once appointed, Board members shall serve until they resign or are removed by a general referendum.",
+      "Board Powers: The Board shall be responsible for the management of funds and shall have the power to allocate resources to various projects and initiatives with a majority vote. The Board shall also have the power to create and dissolve positions within the Storage Catalog with a majority vote, except for the positions outlined in this Constitution.",
     ],
   },
   {
     heading: "Article VII: The Moderators",
     body: [
-      "The Moderators shall be responsible for the day-to-day operations of Storage Tech 2 and shall be appointed or removed by the board. Moderators shall be responsible for moderating community spaces, organizing events, and maintaining resources.",
+      "The Moderators shall be responsible for the day-to-day operations of the Storage Catalog and shall be appointed or removed by the board. Moderators shall be responsible for moderating community spaces, organizing events, and maintaining resources.",
       "Moderator Powers: The Moderators shall embody flexibility, and be responsible for the health of discussion in community spaces. Moderators shall have the power to time out members who violate the rules and delete spam messages. The moderators shall also have the power to manage the editorial branch, including the appointment and removal of editors.",
     ],
   },
   {
     heading: "Article VIII: The Editorial Branch",
     body: [
-      "The Editorial Branch is responsible for curating content for Storage Tech 2 archives. This shall include the tagging of posts, and reviewing and editing of posts for official publication. The Editorial Branch shall be based on a meritocratic system, with members being selected based on their contributions to the community.",
-      "Editorial Powers: The Editorial Branch shall have total control over the content of the Storage Tech 2 archives and shall have the power to approve or reject posts for official publication at the end of the year. The Editors may also set guidelines for the submission of posts and may request revisions from authors. Editors who are inactive for more than three months shall be retired at the discretion of the moderators.",
+      "The Editorial Branch is responsible for curating content for Storage Catalog archives. This shall include the tagging of posts, and reviewing and editing of posts for official publication. The Editorial Branch shall be based on a meritocratic system, with members being selected based on their contributions to the community.",
+      "Editorial Powers: The Editorial Branch shall have total control over the content of the Storage Catalog archives and shall have the power to approve or reject posts for official publication at the end of the year. The Editors may also set guidelines for the submission of posts and may request revisions from authors. Editors who are inactive for more than three months shall be retired at the discretion of the moderators.",
     ],
   },
 ];
@@ -213,9 +213,9 @@ export default function AboutPage() {
       <main className="mx-auto max-w-5xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
         <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">About</p>
-          <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The people keeping Storage Tech 2 thriving</h1>
+          <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The people keeping the Storage Catalog thriving</h1>
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-700 dark:text-gray-200">
-            Our leaders are annually elected by the community to ensure that Storage Tech 2 remains a welcoming space for everyone.
+            Our leaders are annually elected by the community to ensure that Storage Catalog remains a welcoming space for everyone.
           </p>
         </section>
 

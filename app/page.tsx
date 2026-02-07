@@ -49,7 +49,7 @@ export default function Home() {
           <div className="overflow-hidden rounded-t-xl border-b border-gray-200 dark:border-gray-800">
             <Image
               src="/banner.webp"
-              alt="Storage Tech 2 banner"
+              alt="Storage Catalog banner"
               width={1600}
               height={480}
               className="h-auto w-full object-cover"
@@ -59,11 +59,11 @@ export default function Home() {
           </div>
           <div className="px-6 py-8">
             <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-              Welcome to Storage Tech 2
+              Welcome to the Storage Catalog
             </p>
             <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The community for storage innovators</h1>
             <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-900 dark:text-gray-200">
-              Want to design an awesome automated storage system for your base in Minecraft? Come on over to Storage Tech 2! We love Minecraft redstone, logistics, and engineering. Our community of enthusiasts will help you to learn more about Minecraft storage technologies, everything from basic filters to the most advanced variable sorting systems. All of any skill level/experience are welcome!
+              Want to design an awesome automated storage system for your base in Minecraft? Come on over! We love Minecraft redstone, logistics, and engineering. Our community of enthusiasts will help you to learn more about Minecraft storage technologies, everything from basic filters to the most advanced variable sorting systems. All of any skill level/experience are welcome!
             </p>
           </div>
         </section>
@@ -92,7 +92,7 @@ export default function Home() {
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
 
             <p className="text-base leading-relaxed text-gray-900 dark:text-gray-200">
-              We organize Storage Tech 2 to be a community-first platform where we care about your learning and growth.
+              We organize the Storage Catalog to be a community-first platform where we care about your learning and growth.
 
               We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels.
 

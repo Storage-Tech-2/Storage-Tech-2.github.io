@@ -1,6 +1,6 @@
-## Website for Storage Tech 2 Archive
+## Website for Storage Catalog
 
-Visit the live site at [storagetech2.com](https://storagetech2.com).
+Visit the live site at [storagecatalog.com](https://storagecatalog.com).
 
 ## Get the mod
 https://modrinth.com/mod/archive-downloader

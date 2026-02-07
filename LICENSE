@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
---- St2 Site ----
+--- Storage Catalog Site ----
 
 GNU AFFERO GENERAL PUBLIC LICENSE
    Version 3, 19 November 2007
@@ -82,7 +82,7 @@ modification follow.
 
    TERMS AND CONDITIONS
 
-0. Definitions.
+1. Definitions.
 
 "This License" refers to version 3 of the GNU Affero General Public License.
 
@@ -653,7 +653,7 @@ to attach them to the start of each source file to most effectively
 state the exclusion of warranty; and each file should have at least
 the "copyright" line and a pointer to where the full notice is found.
 
-Storage Tech 2 Archive Browser
+Storage Catalog Archive Browser
 Copyright (C) 2026 Andrews54757 (Andrew S) <andrews54757@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
