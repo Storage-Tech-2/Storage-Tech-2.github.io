@@ -82,6 +82,36 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="mt-12 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <a href="https://storagecatalog.org/item-layout-tool/" target="_blank" rel="noreferrer" className="block">
+            <Image
+              src="/layout_tool.webp"
+              alt="Item Layout Tool interface preview"
+              width={1600}
+              height={900}
+              className="h-auto w-full object-cover"
+            />
+          </a>
+          <div className="space-y-3 px-6 py-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+              Featured tool
+            </p>
+            <h2 className="text-2xl font-semibold sm:text-3xl">Design your own storage layout</h2>
+            <p className="text-base leading-relaxed text-gray-900 dark:text-gray-200">
+              Use the Item Layout Tool to plan and arrange your own storage system before you build it in-game.
+              Experiment with different layouts to prototype faster, then export your design to a schematic with a single click when you&apos;re ready to build.
+            </p>
+            <a
+              href="https://storagecatalog.org/item-layout-tool/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
+            >
+              Open the Item Layout Tool
+            </a>
+          </div>
+        </section>
+
         <section className="mt-12 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
