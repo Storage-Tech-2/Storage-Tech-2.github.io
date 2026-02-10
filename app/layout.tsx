@@ -53,7 +53,7 @@ export default function RootLayout({
           type="image/<generated>"
           sizes="<generated>"
         />
-        <GoogleAnalytics gaId="G-W8ZF7F6FXL" />
+        <GoogleAnalytics gaId="G-77Y9ZBT4TY" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 dark:bg-black dark:text-white`}>
         <AutoReloadOnChunkError />
