@@ -108,8 +108,8 @@ export function HeaderBar(props: Props) {
   return (
     <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex w-full flex-wrap items-center gap-2 pb-1 sm:gap-3">
-          <div className="flex shrink-0 items-center">
+        <div className="flex w-full flex-col gap-2 pb-1 md:flex-row md:flex-wrap md:items-center md:gap-3">
+          <div className="flex w-full items-center md:w-auto md:shrink-0">
             <ForesightPrefetchLink
               href="/"
               onClick={onLogoClick}
@@ -122,13 +122,13 @@ export function HeaderBar(props: Props) {
                 height={36}
                 className="h-9 w-9 rounded-[0.45rem] object-cover"
               />
-              <span className="whitespace-nowrap text-[1.08rem] font-bold tracking-[0.015em] text-[#3e301f] dark:text-[#d7e4f8]">
+              <span className="whitespace-nowrap text-[1rem] font-bold tracking-[0.015em] text-[#3e301f] sm:text-[1.08rem] dark:text-[#d7e4f8]">
                 {siteName}
               </span>
             </ForesightPrefetchLink>
           </div>
 
-          <div className="flex shrink-0 items-center gap-4">
+          <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 md:w-auto md:shrink-0 md:gap-4 md:overflow-visible md:pb-0">
             <ForesightPrefetchLink
               href="/"
               aria-current={isCurrentPage(currentPath, "/") ? "page" : undefined}
@@ -194,7 +194,7 @@ export function HeaderBar(props: Props) {
             ) : null}
           </div>
 
-          <div className="flex flex-1 flex-wrap items-center gap-2">
+          <div className="flex w-full items-center gap-2 md:ml-auto md:flex-1">
             {view === "archive" ? (
               <>
                 <div className="relative w-full sm:ml-auto sm:w-full sm:max-w-xl">
