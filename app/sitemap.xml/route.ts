@@ -19,6 +19,9 @@ export async function GET() {
     { loc: "/" },
     { loc: "/archives" },
     { loc: "/dictionary" },
+    { loc: "/about" },
+    { loc: "/mods-and-tools" },
+    { loc: "/item-layout-tool" },
   ];
 
   try {
