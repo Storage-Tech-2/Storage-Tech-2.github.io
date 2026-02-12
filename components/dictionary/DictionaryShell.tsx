@@ -373,7 +373,21 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
       />
 
       <main className="mx-auto max-w-7xl px-4 pb-12 pt-6">
-        <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">Showing {filtered.length} of {liveEntries.length} terms • Sorted {sort === "az" ? "A to Z" : "by updated time"}</div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
+          <span>Showing {filtered.length} of {liveEntries.length} terms</span>
+          <label className="flex items-center gap-2">
+            <span className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400">Sort</span>
+            <select
+              value={sort}
+              onChange={(e) => updateSort(e.target.value as "az" | "updated")}
+              className="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm outline-none transition hover:border-gray-300 focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600"
+              aria-label="Sort dictionary terms"
+            >
+              <option value="az">A to Z</option>
+              <option value="updated">Updated (newest)</option>
+            </select>
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((entry) => (

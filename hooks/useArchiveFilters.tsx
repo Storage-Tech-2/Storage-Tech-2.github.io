@@ -400,8 +400,8 @@ export function useArchiveFilters({
 
   const semanticApplied = useMemo(() => {
     if (semanticSearch?.forceDisabled) return false;
-    return semanticAppendData.appended.length > 0;
-  }, [semanticSearch?.forceDisabled, semanticAppendData.appended.length]);
+    return true;
+  }, [semanticSearch?.forceDisabled]);
 
   const authorOptions = useMemo<AuthorOption[]>(() => {
     if (isArchivePostURL) return [];

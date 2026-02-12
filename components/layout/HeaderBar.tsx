@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/utils/classNames";
-import { type SortKey } from "@/lib/types";
 import { prefetchDictionaryIndex, prefetchIndexAndLatestPosts } from "@/lib/archive";
 import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 
@@ -23,7 +22,7 @@ type HeaderFilters<TSort extends string> = {
   sort: HeaderSortFilters<TSort>;
 };
 
-type ArchiveHeaderFilters = HeaderFilters<SortKey>;
+type ArchiveHeaderFilters = HeaderFilters<"newest" | "oldest" | "archived" | "archivedOldest" | "az">;
 type DictionaryHeaderFilters = HeaderFilters<"az" | "updated">;
 
 function normalizePath(pathname: string) {
@@ -91,8 +90,6 @@ export function HeaderBar(props: Props) {
   const handleDictionarySearchFocus = isDictionary ? (props.onDictionarySearchFocus ?? (() => {})) : () => {};
   const handleDictionarySearchBlur = isDictionary ? (props.onDictionarySearchBlur ?? (() => {})) : () => {};
   const dictionarySearchFocused = isDictionary ? (props.dictionarySearchFocused ?? false) : false;
-  const archiveSortKey = archiveFilters?.sort.key ?? "newest";
-  const dictionarySortValue = dictionaryFilters?.sort.key ?? "az";
   const searchValue = archiveFilters?.search.q ?? "";
   const dictionarySearchValue = dictionaryFilters?.search.q ?? "";
   const showAiIndicator = isArchive
@@ -102,10 +99,8 @@ export function HeaderBar(props: Props) {
       : false;
   const handleSearchChange = archiveFilters?.search.setQ ?? (() => {});
   const handleSearchCommit = archiveFilters?.search.commitSearch ?? (() => {});
-  const handleSortChange = archiveFilters?.sort.setKey ?? (() => {});
   const handleDictionarySearchChange = dictionaryFilters?.search.setQ ?? (() => {});
   const handleDictionarySearchCommit = dictionaryFilters?.search.commitSearch ?? (() => {});
-  const handleDictionarySortChange = dictionaryFilters?.sort.setKey ?? (() => {});
   const navLinkBaseClass = "inline-flex items-center px-1 py-2 text-sm font-medium transition-colors";
   const navLinkInactiveClass = "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white";
   const navLinkActiveClass = "text-gray-900 underline decoration-blue-600 decoration-2 underline-offset-[10px] dark:text-white dark:decoration-blue-400";
@@ -187,6 +182,16 @@ export function HeaderBar(props: Props) {
             >
               Dictionary
             </ForesightPrefetchLink>
+            {discordInviteUrl ? (
+              <a
+                href={discordInviteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={clsx(navLinkBaseClass, navLinkInactiveClass)}
+              >
+                Join Discord
+              </a>
+            ) : null}
           </div>
 
           <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -206,7 +211,7 @@ export function HeaderBar(props: Props) {
                     }}
                     placeholder="Search posts, codes, tags, authors"
                     className={clsx(
-                      "w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900",
+                      "w-full border-b border-gray-300 bg-transparent px-2 py-2 pl-9 text-sm outline-none transition-colors focus:border-blue-500 dark:border-gray-700 dark:focus:border-blue-400",
                       showAiIndicator && "pr-14",
                     )}
                   />
@@ -214,6 +219,7 @@ export function HeaderBar(props: Props) {
                   {showAiIndicator ? (
                     <button
                       type="button"
+                      onPointerDown={(e) => e.preventDefault()}
                       onClick={handleAiSearchToggle}
                       aria-pressed={aiSearchApplied}
                       title={aiSearchApplied ? "Disable AI search" : "Enable AI search"}
@@ -228,18 +234,6 @@ export function HeaderBar(props: Props) {
                     </button>
                   ) : null}
                 </div>
-                <select
-                  value={archiveSortKey}
-                  onChange={(e) => handleSortChange(e.target.value as SortKey)}
-                  className="shrink-0 rounded-xl border border-gray-300 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
-                  aria-label="Sort posts"
-                >
-                  <option value="newest">Updated (newest)</option>
-                  <option value="oldest">Updated (oldest)</option>
-                  <option value="archived">Archived (newest)</option>
-                  <option value="archivedOldest">Archived (oldest)</option>
-                  <option value="az">A to Z</option>
-                </select>
               </>
             ) : view === "dictionary" ? (
               <>
@@ -257,7 +251,7 @@ export function HeaderBar(props: Props) {
                     }}
                     placeholder="Search dictionary terms"
                     className={clsx(
-                      "w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pl-9 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-800 dark:bg-gray-900",
+                      "w-full border-b border-gray-300 bg-transparent px-2 py-2 pl-9 text-sm outline-none transition-colors focus:border-blue-500 dark:border-gray-700 dark:focus:border-blue-400",
                       showAiIndicator && "pr-14",
                     )}
                   />
@@ -265,6 +259,7 @@ export function HeaderBar(props: Props) {
                   {showAiIndicator ? (
                     <button
                       type="button"
+                      onPointerDown={(e) => e.preventDefault()}
                       onClick={handleAiSearchToggle}
                       aria-pressed={aiSearchApplied}
                       title={aiSearchApplied ? "Disable AI search" : "Enable AI search"}
@@ -279,30 +274,9 @@ export function HeaderBar(props: Props) {
                     </button>
                   ) : null}
                 </div>
-                <select
-                  value={dictionarySortValue}
-                  onChange={(e) => handleDictionarySortChange(e.target.value as "az" | "updated")}
-                  className="shrink-0 rounded-xl border border-gray-300 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
-                  aria-label="Sort dictionary terms"
-                >
-                  <option value="az">A to Z</option>
-                  <option value="updated">Updated (newest)</option>
-                </select>
               </>
             ) : null}
 
-            {discordInviteUrl ? (
-              <div className="ml-auto flex items-center gap-2">
-                <a
-                  href={discordInviteUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="shrink-0 rounded-xl border border-blue-600 bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 dark:border-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  Join Discord
-                </a>
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
