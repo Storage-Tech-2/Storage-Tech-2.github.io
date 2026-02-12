@@ -107,7 +107,7 @@ export function HeaderBar(props: Props) {
 
   return (
     <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">
-      <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
+      <div className="mx-auto w-full px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex w-full flex-wrap items-center gap-2 pb-1 sm:gap-3">
           <div className="flex shrink-0 items-center">
             <ForesightPrefetchLink
@@ -197,7 +197,7 @@ export function HeaderBar(props: Props) {
           <div className="flex flex-1 flex-wrap items-center gap-2">
             {view === "archive" ? (
               <>
-                <div className="relative min-w-55 flex-1 sm:w-auto">
+                <div className="relative w-full sm:ml-auto sm:w-full sm:max-w-xl">
                   <input
                     value={searchValue}
                     onChange={(e) => handleSearchChange(e.target.value)}
@@ -237,7 +237,7 @@ export function HeaderBar(props: Props) {
               </>
             ) : view === "dictionary" ? (
               <>
-                <div className="relative min-w-55 flex-1 sm:w-auto">
+                <div className="relative w-full sm:ml-auto sm:w-full sm:max-w-xl">
                   <input
                     value={dictionarySearchValue}
                     onChange={(e) => handleDictionarySearchChange(e.target.value)}
