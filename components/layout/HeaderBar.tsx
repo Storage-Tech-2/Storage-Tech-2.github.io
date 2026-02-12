@@ -1,8 +1,9 @@
 'use client';
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/utils/classNames";
-import { DEFAULT_BRANCH, DEFAULT_OWNER, DEFAULT_REPO, type SortKey } from "@/lib/types";
+import { type SortKey } from "@/lib/types";
 import { prefetchDictionaryIndex, prefetchIndexAndLatestPosts } from "@/lib/archive";
 import { ForesightPrefetchLink } from "../ui/ForesightPrefetchLink";
 
@@ -25,9 +26,24 @@ type HeaderFilters<TSort extends string> = {
 type ArchiveHeaderFilters = HeaderFilters<SortKey>;
 type DictionaryHeaderFilters = HeaderFilters<"az" | "updated">;
 
+function normalizePath(pathname: string) {
+  if (pathname.length > 1 && pathname.endsWith("/")) return pathname.slice(0, -1);
+  return pathname;
+}
+
+function isCurrentPage(currentPath: string, href: string) {
+  return normalizePath(currentPath) === normalizePath(href);
+}
+
+function isActivePath(currentPath: string, href: string) {
+  const normalizedHref = normalizePath(href);
+  if (normalizedHref === "/") return currentPath === "/";
+  return currentPath === normalizedHref || currentPath.startsWith(`${normalizedHref}/`);
+}
+
 type BaseProps = {
   siteName: string;
-  view: "home" | "archive" | "dictionary";
+  view: "home" | "faq" | "archive" | "dictionary";
   logoSrc: string;
   discordInviteUrl?: string;
   onLogoClick?(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
@@ -36,6 +52,7 @@ type BaseProps = {
 
 type Props =
   | (BaseProps & { view: "home"; filters?: undefined })
+  | (BaseProps & { view: "faq"; filters?: undefined })
   | (BaseProps & {
       view: "archive";
       filters?: ArchiveHeaderFilters;
@@ -58,6 +75,8 @@ type Props =
     });
 
 export function HeaderBar(props: Props) {
+  const pathname = usePathname() ?? "/";
+  const currentPath = normalizePath(pathname);
   const { siteName, view, logoSrc, discordInviteUrl, onLogoClick, onArchiveClick } = props;
   const isArchive = view === "archive";
   const isDictionary = view === "dictionary";
@@ -87,48 +106,66 @@ export function HeaderBar(props: Props) {
   const handleDictionarySearchChange = dictionaryFilters?.search.setQ ?? (() => {});
   const handleDictionarySearchCommit = dictionaryFilters?.search.commitSearch ?? (() => {});
   const handleDictionarySortChange = dictionaryFilters?.sort.setKey ?? (() => {});
+  const navLinkBaseClass = "inline-flex items-center px-1 py-2 text-sm font-medium transition-colors";
+  const navLinkInactiveClass = "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white";
+  const navLinkActiveClass = "text-gray-900 underline decoration-blue-600 decoration-2 underline-offset-[10px] dark:text-white dark:decoration-blue-400";
 
   return (
     <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-2 py-3 sm:px-4 lg:px-6">
         <div className="flex w-full flex-wrap items-center gap-2 pb-1 sm:gap-3">
-          <div className="flex shrink-0 items-center gap-3">
-            <ForesightPrefetchLink href="/" className="h-10 w-10" onClick={onLogoClick}>
-              <Image src={logoSrc} alt="Logo" width={40} height={40} className="h-10 w-10" />
-            </ForesightPrefetchLink>
-            <ForesightPrefetchLink href="/" onClick={onLogoClick}>
-            <div>
-              <div className="text-xl font-bold">
+          <div className="flex shrink-0 items-center">
+            <ForesightPrefetchLink
+              href="/"
+              onClick={onLogoClick}
+              className="mr-[0.3rem] flex items-center gap-[0.5rem] rounded-[0.45rem] px-[0.18rem] py-[0.08rem] hover:bg-[rgba(255,255,255,0.42)] dark:hover:bg-[rgba(89,114,152,0.32)]"
+            >
+              <Image
+                src={logoSrc}
+                alt={`${siteName} logo`}
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-[0.45rem] object-cover"
+              />
+              <span className="whitespace-nowrap text-[1.08rem] font-bold tracking-[0.015em] text-[#3e301f] dark:text-[#d7e4f8]">
                 {siteName}
-              </div>
-              <div className="text-xs text-gray-500">
-               
-                  {DEFAULT_OWNER}/{DEFAULT_REPO}@{DEFAULT_BRANCH}
-                
-              </div>
-            </div>
+              </span>
             </ForesightPrefetchLink>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-4">
             <ForesightPrefetchLink
               href="/"
+              aria-current={isCurrentPage(currentPath, "/") ? "page" : undefined}
               className={clsx(
-                "rounded-xl border px-3 py-2 text-sm transition",
-                view === "home"
-                  ? "bg-blue-600 text-white dark:bg-blue-500"
-                  : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
+                navLinkBaseClass,
+                isActivePath(currentPath, "/")
+                  ? navLinkActiveClass
+                  : navLinkInactiveClass,
               )}
             >
               Home
             </ForesightPrefetchLink>
             <ForesightPrefetchLink
-              href="/archives"
+              href="/faq"
+              aria-current={isCurrentPage(currentPath, "/faq") ? "page" : undefined}
               className={clsx(
-                "rounded-xl border px-3 py-2 text-sm transition",
-                view === "archive"
-                  ? "bg-blue-600 text-white dark:bg-blue-500"
-                  : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
+                navLinkBaseClass,
+                isActivePath(currentPath, "/faq")
+                  ? navLinkActiveClass
+                  : navLinkInactiveClass,
+              )}
+            >
+              FAQ
+            </ForesightPrefetchLink>
+            <ForesightPrefetchLink
+              href="/archives"
+              aria-current={isCurrentPage(currentPath, "/archives") ? "page" : undefined}
+              className={clsx(
+                navLinkBaseClass,
+                isActivePath(currentPath, "/archives")
+                  ? navLinkActiveClass
+                  : navLinkInactiveClass,
               )}
               beforePrefetch={() => {
                 prefetchIndexAndLatestPosts();
@@ -139,11 +176,12 @@ export function HeaderBar(props: Props) {
             </ForesightPrefetchLink>
             <ForesightPrefetchLink
               href="/dictionary"
+              aria-current={isCurrentPage(currentPath, "/dictionary") ? "page" : undefined}
               className={clsx(
-                "rounded-xl border px-3 py-2 text-sm transition",
-                view === "dictionary"
-                  ? "bg-blue-600 text-white dark:bg-blue-500"
-                  : "bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800",
+                navLinkBaseClass,
+                isActivePath(currentPath, "/dictionary")
+                  ? navLinkActiveClass
+                  : navLinkInactiveClass,
               )}
               beforePrefetch={() => prefetchDictionaryIndex()}
             >

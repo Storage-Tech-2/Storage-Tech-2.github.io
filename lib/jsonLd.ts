@@ -67,6 +67,13 @@ type DictionaryTermJsonLdInput = {
   statusURL?: string;
 };
 
+type FaqPageJsonLdInput = PageJsonLdInput & {
+  items: Array<{
+    question: string;
+    answer: string;
+  }>;
+};
+
 const organizationId = `${siteConfig.siteUrl}#organization`;
 const websiteId = `${siteConfig.siteUrl}#website`;
 const dictionarySetId = `${siteConfig.siteUrl}/dictionary#termset`;
@@ -431,6 +438,58 @@ export function createDictionaryTermJsonLd({
       },
       ...(alternateNames.length ? { alternateName: alternateNames } : {}),
       ...(sameAsUrls.length ? { sameAs: sameAsUrls } : {}),
+    },
+  );
+}
+
+export function createFaqPageJsonLd({
+  path,
+  title,
+  description,
+  imagePath,
+  items,
+}: FaqPageJsonLdInput): JsonLdGraph {
+  const pageUrl = toAbsoluteUrl(path);
+  const faqId = `${pageUrl}#faq`;
+  const mainEntity = items
+    .map((item) => ({
+      question: item.question.trim(),
+      answer: item.answer.trim(),
+    }))
+    .filter((item) => item.question && item.answer)
+    .map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    }));
+
+  return createGraph(
+    createOrganizationNode(),
+    createWebsiteNode(),
+    createPageNode({
+      path,
+      title,
+      description,
+      type: "WebPage",
+      imagePath,
+      mainEntityId: faqId,
+    }),
+    {
+      "@type": "FAQPage",
+      "@id": faqId,
+      name: title,
+      description,
+      url: pageUrl,
+      mainEntity,
+      isPartOf: {
+        "@id": websiteId,
+      },
+      about: {
+        "@id": organizationId,
+      },
     },
   );
 }

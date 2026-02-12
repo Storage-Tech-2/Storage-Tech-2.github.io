@@ -17,6 +17,7 @@ export async function GET() {
   const withBasePath = (path: string) => `${siteConfig.basePath || ""}${path}`;
   const urls: UrlEntry[] = [
     { loc: "/" },
+    { loc: "/faq" },
     { loc: "/archives" },
     { loc: "/dictionary" },
     { loc: "/about" },
