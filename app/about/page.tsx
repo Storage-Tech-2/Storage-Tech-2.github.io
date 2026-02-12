@@ -3,6 +3,8 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { siteConfig } from "@/lib/siteConfig";
 import type { Metadata } from "next";
+import { PageJsonLd } from "@/components/seo/PageJsonLd";
+import { createAboutPageJsonLd } from "@/lib/jsonLd";
 
 type Person = {
   name: string;
@@ -12,13 +14,16 @@ type Person = {
   note?: string;
 };
 
+const aboutTitle = `About · ${siteConfig.siteName}`;
+const aboutDescription = "Meet the Storage Catalog team, previous leaders, and read the community constitution.";
+
 export const metadata: Metadata = {
-  title: `About · ${siteConfig.siteName}`,
-  description: "Meet the Storage Catalog team, previous leaders, and read the community constitution.",
+  title: aboutTitle,
+  description: aboutDescription,
   metadataBase: new URL(siteConfig.siteUrl),
   openGraph: {
-    title: `About · ${siteConfig.siteName}`,
-    description: "Meet the Storage Catalog team, previous leaders, and read the community constitution.",
+    title: aboutTitle,
+    description: aboutDescription,
     url: `/about`,
     images: [
       {
@@ -28,8 +33,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: `About · ${siteConfig.siteName}`,
-    description: "Meet the Storage Catalog team, previous leaders, and read the community constitution.",
+    title: aboutTitle,
+    description: aboutDescription,
     images: ["/banner.webp"]
   },
 };
@@ -176,6 +181,17 @@ const constitutionSections = [
   },
 ];
 
+const aboutJsonLd = createAboutPageJsonLd({
+  path: "/about",
+  title: aboutTitle,
+  description: aboutDescription,
+  imagePath: "/banner.webp",
+  members: [ceo, ...board, ...staff, ...previousLeaders].map((person) => ({
+    name: person.name,
+    role: person.role,
+  })),
+});
+
 function PersonCard({ person, highlight }: { person: Person; highlight?: boolean }) {
   return (
     <div
@@ -202,13 +218,15 @@ function PersonCard({ person, highlight }: { person: Person; highlight?: boolean
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
-      <HeaderBar
-        siteName={siteConfig.siteName}
-        view="home"
-        logoSrc={siteConfig.logoSrc}
-        discordInviteUrl={siteConfig.discordInviteUrl}
-      />
+    <>
+      <PageJsonLd data={aboutJsonLd} />
+      <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
+        <HeaderBar
+          siteName={siteConfig.siteName}
+          view="home"
+          logoSrc={siteConfig.logoSrc}
+          discordInviteUrl={siteConfig.discordInviteUrl}
+        />
 
       <main className="mx-auto max-w-5xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
         <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -268,7 +286,8 @@ export default function AboutPage() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 }

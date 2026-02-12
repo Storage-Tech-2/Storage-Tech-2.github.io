@@ -3,10 +3,14 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { TagColorLab } from "./ColorWebLab";
 import { siteConfig } from "@/lib/siteConfig";
+import { PageJsonLd } from "@/components/seo/PageJsonLd";
+
+const debugColorPickerTitle = `Tag color debugger · ${siteConfig.siteName}`;
+const debugColorPickerDescription = "Preview how a colorWeb value will render on tag chips and pills. Debug-only; not indexed or linked.";
 
 export const metadata: Metadata = {
-  title: `Tag color debugger · ${siteConfig.siteName}`,
-  description: "Preview how a colorWeb value will render on tag chips and pills. Debug-only; not indexed or linked.",
+  title: debugColorPickerTitle,
+  description: debugColorPickerDescription,
   metadataBase: new URL(siteConfig.siteUrl),
   robots: {
     index: false,
@@ -16,8 +20,14 @@ export const metadata: Metadata = {
 
 export default function ColorPickerDebugPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-black dark:text-white">
-      <HeaderBar siteName={siteConfig.siteName} view="home" logoSrc={siteConfig.logoSrc} discordInviteUrl={siteConfig.discordInviteUrl} />
+    <>
+      <PageJsonLd
+        path="/debug/colorpicker"
+        title={debugColorPickerTitle}
+        description={debugColorPickerDescription}
+      />
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-black dark:text-white">
+        <HeaderBar siteName={siteConfig.siteName} view="home" logoSrc={siteConfig.logoSrc} discordInviteUrl={siteConfig.discordInviteUrl} />
 
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
         <div className="mb-6 max-w-3xl space-y-2">
@@ -31,7 +41,8 @@ export default function ColorPickerDebugPage() {
         <TagColorLab />
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 }

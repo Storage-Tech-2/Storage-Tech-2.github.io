@@ -3,14 +3,19 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Footer } from "@/components/layout/Footer";
 import { siteConfig } from "@/lib/siteConfig";
 import type { Metadata } from "next";
+import { PageJsonLd } from "@/components/seo/PageJsonLd";
+import { createCollectionPageJsonLd } from "@/lib/jsonLd";
+
+const modsAndToolsTitle = `Mods and tools · ${siteConfig.siteName}`;
+const modsAndToolsDescription = "Recommendations for storage tech mods, tools, and resource packs that make building easier.";
 
 export const metadata: Metadata = {
-  title: `Mods and tools · ${siteConfig.siteName}`,
-  description: "Recommendations for storage tech mods, tools, and resource packs that make building easier.",
+  title: modsAndToolsTitle,
+  description: modsAndToolsDescription,
   metadataBase: new URL(siteConfig.siteUrl),
   openGraph: {
-    title: `Mods and tools · ${siteConfig.siteName}`,
-    description: "Recommendations for storage tech mods, tools, and resource packs that make building easier.",
+    title: modsAndToolsTitle,
+    description: modsAndToolsDescription,
     url: `/mods-and-tools`,
     images: [
       {
@@ -20,8 +25,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `Mods and tools · ${siteConfig.siteName}`,
-    description: "Recommendations for storage tech mods, tools, and resource packs that make building easier.",
+    title: modsAndToolsTitle,
+    description: modsAndToolsDescription,
     images: ["/mods/st2downloader.png"]
   },
 };
@@ -45,15 +50,34 @@ const resources = [
   },
 ];
 
+const modsAndToolsJsonLd = createCollectionPageJsonLd({
+  path: "/mods-and-tools",
+  title: modsAndToolsTitle,
+  description: modsAndToolsDescription,
+  imagePath: "/mods/st2downloader.png",
+  items: resources.map((resource) => ({
+    name: resource.title,
+    description: resource.description,
+    url: resource.url,
+    type: "SoftwareApplication",
+    imagePath: resource.imageSrc,
+    extra: {
+      applicationCategory: "GameUtilityApplication",
+    },
+  })),
+});
+
 export default function ModsAndToolsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
-      <HeaderBar
-        siteName={siteConfig.siteName}
-        view="home"
-        logoSrc={siteConfig.logoSrc}
-        discordInviteUrl={siteConfig.discordInviteUrl}
-      />
+    <>
+      <PageJsonLd data={modsAndToolsJsonLd} />
+      <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
+        <HeaderBar
+          siteName={siteConfig.siteName}
+          view="home"
+          logoSrc={siteConfig.logoSrc}
+          discordInviteUrl={siteConfig.discordInviteUrl}
+        />
 
       <main className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
         <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -100,7 +124,8 @@ export default function ModsAndToolsPage() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 }

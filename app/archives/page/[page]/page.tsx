@@ -5,6 +5,8 @@ import { ARCHIVE_PAGE_SIZE, getArchivePageCount } from "@/lib/pagination";
 import { disablePagination } from "@/lib/runtimeFlags";
 import { Metadata } from "next";
 import { siteConfig } from "@/lib/siteConfig";
+import { PageJsonLd } from "@/components/seo/PageJsonLd";
+import { createCollectionPageJsonLd } from "@/lib/jsonLd";
 
 export const dynamic = "force-static";
 
@@ -57,12 +59,37 @@ export default async function ArchivePagedPage({ params }: Params) {
   const archive = await fetchArchiveIndex();
   const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
   if (pageNumber > pageCount) return notFound();
+  const description = "Explore the archives for storage designs, guides, and resources submitted by the community.";
+  const title = `Archives Page ${pageNumber} · ${siteConfig.siteName}`;
+  const pageStart = Math.max(pageNumber - 1, 0) * ARCHIVE_PAGE_SIZE;
+  const pagePosts = archive.posts.slice(pageStart, pageStart + ARCHIVE_PAGE_SIZE);
+  const archivePageJsonLd = createCollectionPageJsonLd({
+    path: `/archives/page/${pageNumber}`,
+    title,
+    description,
+    imagePath: "/archive.webp",
+    numberOfItems: pagePosts.length,
+    items: pagePosts.map((post) => ({
+      name: post.entry.name,
+      url: `/archives/${post.slug}`,
+      description: `Archive entry from ${post.channel.name}.`,
+      type: "TechArticle",
+      dateModified: post.entry.updatedAt,
+      keywords: post.entry.tags,
+      extra: {
+        articleSection: post.channel.name,
+      },
+    })),
+  });
   return (
-    <ArchiveShell
-      initialArchive={archive}
-      pageNumber={pageNumber}
-      pageSize={ARCHIVE_PAGE_SIZE}
-      pageCount={pageCount}
-    />
+    <>
+      <PageJsonLd data={archivePageJsonLd} />
+      <ArchiveShell
+        initialArchive={archive}
+        pageNumber={pageNumber}
+        pageSize={ARCHIVE_PAGE_SIZE}
+        pageCount={pageCount}
+      />
+    </>
   );
 }
