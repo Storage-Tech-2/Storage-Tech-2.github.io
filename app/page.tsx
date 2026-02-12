@@ -32,12 +32,6 @@ export default function Home() {
       cta: "See the recommendations",
     },
     {
-      title: "Frequently asked questions",
-      body: "Get quick answers about the archive, dictionary, and where to find help in the community.",
-      href: "/faq",
-      cta: "Read the FAQ",
-    },
-    {
       title: "Community-first",
       body: "Learn with peers, ask questions, and share new breakthroughs in our Discord, or play together on our public server.",
       href: siteConfig.discordInviteUrl ?? "#",
