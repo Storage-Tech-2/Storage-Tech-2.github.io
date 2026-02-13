@@ -167,7 +167,7 @@ export function HeaderBar(props: Props) {
               }}
               onClick={onArchiveClick}
             >
-              Archive
+              Designs Archive
             </ForesightPrefetchLink>
             <ForesightPrefetchLink
               href="/dictionary"
