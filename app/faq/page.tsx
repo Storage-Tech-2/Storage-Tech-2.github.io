@@ -22,9 +22,9 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "What is the Storage Catalog?",
+    question: "What is the Minecraft Storage Catalog?",
     answer:
-      "Storage Catalog is a community-maintained hub for Minecraft storage tech. It includes a searchable archive of builds, documentation, and a dictionary of technical terms.",
+      "Minecraft Storage Catalog is a community-maintained hub for Minecraft storage tech. It includes a searchable archive of builds, documentation, and a dictionary of technical terms.",
   },
   {
     question: "Where can I find a storage system?",

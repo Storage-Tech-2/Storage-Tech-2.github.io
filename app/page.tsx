@@ -70,7 +70,7 @@ export default function Home() {
           <div className="overflow-hidden rounded-t-xl border-b border-gray-200 dark:border-gray-800">
             <Image
               src="/banner.webp"
-              alt="Storage Catalog banner"
+              alt="Minecraft Storage Catalog banner"
               width={1600}
               height={480}
               className="h-auto w-full object-cover"
@@ -80,7 +80,7 @@ export default function Home() {
           </div>
           <div className="px-6 py-8">
             <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-              Welcome to the Storage Catalog
+              Welcome to the Minecraft Storage Catalog
             </p>
             <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">The community for storage innovators</h1>
             <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-900 dark:text-gray-200">
@@ -156,7 +156,7 @@ export default function Home() {
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
 
             <p className="text-base leading-relaxed text-gray-900 dark:text-gray-200">
-              We organize the Storage Catalog to be a community-first platform where we care about your learning and growth.
+              We organize the Minecraft Storage Catalog to be a community-first platform where we care about your learning and growth.
 
               We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels.
 

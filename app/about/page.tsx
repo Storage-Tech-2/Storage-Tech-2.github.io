@@ -125,7 +125,7 @@ const constitutionSections = [
   {
     heading: "Preamble",
     body: [
-      "The Constitution of the Storage Catalog is a living document that outlines the core governance of the Storage Catalog community. This document shall be the supreme law of the community and will be the foundation upon which all other laws and policies are built.",
+      "The Constitution of the Minecraft Storage Catalog is a living document that outlines the core governance of the Storage Catalog community. This document shall be the supreme law of the community and will be the foundation upon which all other laws and policies are built.",
     ],
   },
   {

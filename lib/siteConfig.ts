@@ -33,7 +33,7 @@ const assetPrefix = basePath || undefined;
 const siteUrl = `${siteOrigin.replace(/\/+$/, "")}${basePath || ""}`;
 
 export const siteConfig: SiteConfig = {
-  siteName: "Storage Catalog",
+  siteName: "Minecraft Storage Catalog",
   siteDescription: "The best resource for Minecraft storage tech. 200+ schematics, community spaces, and tools to help you make your own storage system. Check out our archive of tech and join us today!",
   logoSrc: "/logo.png",
   basePath,
