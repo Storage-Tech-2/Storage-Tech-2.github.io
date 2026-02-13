@@ -48,6 +48,16 @@ const faqItems: FaqItem[] = [
     ],
   },
   {
+    question: "How do I design my own storage system?",
+    answer:
+      "Start by learning the basics of storage tech in the dictionary, then explore existing designs in the archive for inspiration. You can build your design in creative mode and share it with the community for feedback before submitting it to the archive.",
+    links: [
+      { label: "Open the dictionary", href: "/dictionary" },
+      { label: "Browse the archive", href: "/archives" },
+      { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
+    ],
+  },
+  {
     question: "How can I submit my own storage tech designs to the archive?",
     answer:
       "You can submit your designs through our Discord. Look for the #submissions channel and follow the instructions sent by the bot.",
@@ -68,7 +78,7 @@ const faqItems: FaqItem[] = [
   {
     question: "Is there a way to browse the archive in-game?",
     answer:
-      "Yes! You can use the Archive Downloader mod to browse and download archive entries directly in Minecraft. It's available on our Mods and Tools page.",
+      "Yes! You can use the Archive Downloader mod to browse and download storage designs directly in Minecraft. It's available on our Mods and Tools page.",
     links: [
       { label: "Archive Downloader Mod on Modrinth", href: "https://modrinth.com/mod/archive-downloader", external: true },
       { label: "On CurseForge", href: "https://www.curseforge.com/minecraft/mc-mods/archive-downloader", external: true },
