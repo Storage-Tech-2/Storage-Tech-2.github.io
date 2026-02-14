@@ -24,7 +24,12 @@ const faqItems: FaqItem[] = [
   {
     question: "What is the Minecraft Storage Catalog?",
     answer:
-      "Minecraft Storage Catalog is a community-maintained hub for Minecraft storage tech. It includes a searchable archive of builds, documentation, and a dictionary of technical terms.",
+      "Minecraft Storage Catalog is a community-maintained hub for storage tech in Minecraft Java Edition. It includes a searchable archive of builds, documentation, and a dictionary of technical terms.",
+    links: [
+      { label: "Browse the archive", href: "/archives" },
+      { label: "Open the dictionary", href: "/dictionary" },
+      { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
+    ],
   },
   {
     question: "Where can I find a storage system?",
@@ -38,6 +43,19 @@ const faqItems: FaqItem[] = [
     question: "What is the best storage design?",
     answer:
       "There is no single 'best' design, the optimal storage system depends on your specific needs. The archive includes a variety of designs with different trade-offs to suit different use cases. Choose what works best for you, and feel free to ask for recommendations in the Discord community!",
+    links: [
+      { label: "Browse the archive", href: "/archives" },
+      { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
+    ],
+  },
+  {
+    question: "What is a Litematic file? How do I open it?",
+    answer:
+      "Litematic is a popular schematic format for Minecraft Java Edition. You can open Litematic files with the Litematica mod, which allows you to view and load schematics in-game. It's available on both CurseForge and Modrinth.",
+    links: [
+      { label: "Litematica on Modrinth", href: "https://modrinth.com/mod/litematica", external: true },
+      { label: "Litematica on CurseForge", href: "https://www.curseforge.com/minecraft/mc-mods/litematica", external: true },
+    ],
   },
   {
     question: "Where can I ask for help with storage tech?",
@@ -83,6 +101,14 @@ const faqItems: FaqItem[] = [
       { label: "Archive Downloader Mod on Modrinth", href: "https://modrinth.com/mod/archive-downloader", external: true },
       { label: "On CurseForge", href: "https://www.curseforge.com/minecraft/mc-mods/archive-downloader", external: true },
       { label: "Mods and Tools page", href: "/mods-and-tools" },
+    ],
+  },
+  {
+    question: "Is Bedrock Edition supported?",
+    answer:
+      "No. The Storage Catalog focuses exclusively on Java Edition storage tech, as the mechanics and available designs differ significantly from Bedrock Edition. In Bedrock Edition, redstone mechanics are more unpredictable and many of the designs in the archive will not work. You may be able to find Bedrock-compatible designs in the Bedrock Storage Tech Discord linked below.",
+    links: [
+      { label: "Bedrock Storage Tech Discord", href: "https://discord.gg/RaEWYeU", external: true },
     ],
   },
   {
