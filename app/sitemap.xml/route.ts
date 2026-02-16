@@ -34,7 +34,7 @@ export async function GET() {
     archive.posts.forEach((post) => {
       const ts = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);
       urls.push({
-        loc: `/archives/${post.slug}`,
+        loc: `/archives/${post.slug}/`,
         lastmod: ts ? new Date(ts).toISOString() : undefined,
       });
     });
