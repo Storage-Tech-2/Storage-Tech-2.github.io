@@ -89,7 +89,7 @@ export function ArchiveShell({
     [archiveConfig.globalTags],
   );
   const sidebarShellRef = useRef<HTMLElement | null>(null);
-  const archiveRootHref = `${siteConfig.basePath || ""}/archives`;
+  const archiveRootHref = `${siteConfig.basePath || ""}/archives/`;
 
 
   const {

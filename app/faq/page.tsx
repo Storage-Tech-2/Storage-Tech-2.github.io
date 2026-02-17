@@ -26,8 +26,8 @@ const faqItems: FaqItem[] = [
     answer:
       "Minecraft Storage Catalog is a community-maintained hub for storage tech in Minecraft Java Edition. It includes a searchable archive of builds, documentation, and a dictionary of technical terms.",
     links: [
-      { label: "Browse the archive", href: "/archives" },
-      { label: "Open the dictionary", href: "/dictionary" },
+      { label: "Browse the archive", href: "/archives/" },
+      { label: "Open the dictionary", href: "/dictionary/" },
       { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
     ],
   },
@@ -36,7 +36,7 @@ const faqItems: FaqItem[] = [
     answer:
       "You can find storage system designs in the Full Systems category of the archive. If you need something specific, use the search and filters to narrow down what you need.",
     links: [
-      { label: "Browse the archive", href: "/archives" },
+      { label: "Browse the archive", href: "/archives/" },
     ],
   },
     {
@@ -44,7 +44,7 @@ const faqItems: FaqItem[] = [
     answer:
       "There is no single 'best' design, the optimal storage system depends on your specific needs. The archive includes a variety of designs with different trade-offs to suit different use cases. Choose what works best for you, and feel free to ask for recommendations in the Discord community!",
     links: [
-      { label: "Browse the archive", href: "/archives" },
+      { label: "Browse the archive", href: "/archives/" },
       { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
     ],
   },
@@ -70,8 +70,8 @@ const faqItems: FaqItem[] = [
     answer:
       "Start by learning the basics of storage tech in the dictionary, then explore existing designs in the archive for inspiration. You can build your design in creative mode and share it with the community for feedback before submitting it to the archive.",
     links: [
-      { label: "Open the dictionary", href: "/dictionary" },
-      { label: "Browse the archive", href: "/archives" },
+      { label: "Open the dictionary", href: "/dictionary/" },
+      { label: "Browse the archive", href: "/archives/" },
       { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
     ],
   },
@@ -100,7 +100,7 @@ const faqItems: FaqItem[] = [
     links: [
       { label: "Archive Downloader Mod on Modrinth", href: "https://modrinth.com/mod/archive-downloader", external: true },
       { label: "On CurseForge", href: "https://www.curseforge.com/minecraft/mc-mods/archive-downloader", external: true },
-      { label: "Mods and Tools page", href: "/mods-and-tools" },
+      { label: "Mods and Tools page", href: "/mods-and-tools/" },
     ],
   },
   {
@@ -131,7 +131,7 @@ const faqItems: FaqItem[] = [
 ];
 
 const faqJsonLd = createFaqPageJsonLd({
-  path: "/faq",
+  path: "/faq/",
   title: faqTitle,
   description: faqDescription,
   imagePath: "/social.png",
@@ -145,7 +145,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: faqTitle,
     description: faqDescription,
-    url: "/faq",
+    url: "/faq/",
     images: [{ url: "/social.png" }],
   },
   twitter: {

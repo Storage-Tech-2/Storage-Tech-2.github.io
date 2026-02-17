@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: modsAndToolsTitle,
     description: modsAndToolsDescription,
-    url: `/mods-and-tools`,
+    url: `/mods-and-tools/`,
     images: [
       {
         url: `/mods/st2downloader.png`
@@ -51,7 +51,7 @@ const resources = [
 ];
 
 const modsAndToolsJsonLd = createCollectionPageJsonLd({
-  path: "/mods-and-tools",
+  path: "/mods-and-tools/",
   title: modsAndToolsTitle,
   description: modsAndToolsDescription,
   imagePath: "/mods/st2downloader.png",

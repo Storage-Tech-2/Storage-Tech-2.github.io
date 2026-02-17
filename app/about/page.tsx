@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: aboutTitle,
     description: aboutDescription,
-    url: `/about`,
+    url: `/about/`,
     images: [
       {
         url: `/banner.webp`
@@ -182,7 +182,7 @@ const constitutionSections = [
 ];
 
 const aboutJsonLd = createAboutPageJsonLd({
-  path: "/about",
+  path: "/about/",
   title: aboutTitle,
   description: aboutDescription,
   imagePath: "/banner.webp",

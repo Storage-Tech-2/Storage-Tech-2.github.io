@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: dictionaryTitle,
     description: dictionaryDescription,
-    url: `/dictionary`,
+    url: `/dictionary/`,
     images: []
   },
   twitter: {
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
 export default async function DictionaryPage() {
   const dictionary = await fetchDictionaryIndex();
   const dictionaryJsonLd = createCollectionPageJsonLd({
-    path: "/dictionary",
+    path: "/dictionary/",
     title: dictionaryTitle,
     description: dictionaryDescription,
     numberOfItems: dictionary.entries.length,
     items: dictionary.entries.map((entry) => ({
       name: entry.index.terms[0] || entry.index.id,
-      url: `/dictionary/${buildDictionarySlug(entry.index)}`,
+      url: `/dictionary/${buildDictionarySlug(entry.index)}/`,
       description: entry.index.summary,
       type: "DefinedTerm",
       dateModified: entry.index.updatedAt,

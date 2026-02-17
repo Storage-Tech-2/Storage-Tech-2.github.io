@@ -17,19 +17,19 @@ export async function GET() {
   const withBasePath = (path: string) => `${siteConfig.basePath || ""}${path}`;
   const urls: UrlEntry[] = [
     { loc: "/" },
-    { loc: "/faq" },
-    { loc: "/archives" },
-    { loc: "/dictionary" },
-    { loc: "/about" },
-    { loc: "/mods-and-tools" },
-    { loc: "/item-layout-tool" },
+    { loc: "/faq/" },
+    { loc: "/archives/" },
+    { loc: "/dictionary/" },
+    { loc: "/about/" },
+    { loc: "/mods-and-tools/" },
+    { loc: "/item-layout-tool/" },
   ];
 
   try {
     const archive = await fetchArchiveIndex();
     const pageCount = getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
     for (let i = 1; i <= pageCount; i++) {
-      urls.push({ loc: `/archives/page/${i}` });
+      urls.push({ loc: `/archives/page/${i}/` });
     }
     archive.posts.forEach((post) => {
       const ts = getEntryUpdatedAt(post.entry) ?? getEntryArchivedAt(post.entry);

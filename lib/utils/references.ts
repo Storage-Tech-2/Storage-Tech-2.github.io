@@ -285,7 +285,7 @@ export function transformOutputWithReferencesForWebsite(
           return; // skip, already linked
         } else {
           const slug = buildDictionarySlug({ id: reference.id, terms: [reference.term] });
-          const newURL = `/dictionary/${encodeURIComponent(slug)}`;
+          const newURL = `/dictionary/${encodeURIComponent(slug)}/`;
           excludeSet.add(reference.id);
           if (safeTitle) {
             return `[${matchedText}](${newURL} "Definition: ${safeTitle}")`;
@@ -294,7 +294,7 @@ export function transformOutputWithReferencesForWebsite(
           }
         }
       } else if (reference.type === ReferenceType.ARCHIVED_POST) {
-        const newURL = `/archives/${buildEntrySlugFromReference(reference)}`
+        const newURL = `/archives/${buildEntrySlugFromReference(reference)}/`
         const tooltip = reference.name;
         const safeTitle = tooltip ? tooltip.replace(/"/g, "'").replace(/\n/g, " ").trim() : undefined;
         if (isWithinHyperlink) {

@@ -24,12 +24,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description,
     metadataBase: new URL(siteConfig.siteUrl),
     alternates: {
-      canonical: `/archives`,
+      canonical: `/archives/`,
     },
     openGraph: {
       title: `Archives Page ${page} · ${siteConfig.siteName}`,
       description,
-      url: `/archives/page/${page}`,
+      url: `/archives/page/${page}/`,
       images: [
         {
           url: `/archive.webp`
@@ -64,14 +64,14 @@ export default async function ArchivePagedPage({ params }: Params) {
   const pageStart = Math.max(pageNumber - 1, 0) * ARCHIVE_PAGE_SIZE;
   const pagePosts = archive.posts.slice(pageStart, pageStart + ARCHIVE_PAGE_SIZE);
   const archivePageJsonLd = createCollectionPageJsonLd({
-    path: `/archives/page/${pageNumber}`,
+    path: `/archives/page/${pageNumber}/`,
     title,
     description,
     imagePath: "/archive.webp",
     numberOfItems: pagePosts.length,
     items: pagePosts.map((post) => ({
       name: post.entry.name,
-      url: `/archives/${post.slug}`,
+      url: `/archives/${post.slug}/`,
       description: `Archive entry from ${post.channel.name}.`,
       type: "TechArticle",
       dateModified: post.entry.updatedAt,

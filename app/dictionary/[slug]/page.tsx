@@ -42,13 +42,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title,
     description,
     alternates: {
-      canonical: `/dictionary/${canonicalSlug}`,
+      canonical: `/dictionary/${canonicalSlug}/`,
     },
     openGraph: {
       type: "article",
       title,
       description,
-      url: `/dictionary/${canonicalSlug}`,
+      url: `/dictionary/${canonicalSlug}/`,
     },
     twitter: {
       card: "summary",
@@ -64,13 +64,13 @@ export default async function DictionaryEntryPage({ params }: Params) {
   const match = findDictionaryEntryBySlug(dictionary.config.entries, slug);
   if (!match) {
     const dictionaryJsonLd = createCollectionPageJsonLd({
-      path: "/dictionary",
+      path: "/dictionary/",
       title: `Dictionary · ${siteConfig.siteName}`,
       description: dictionaryIndexDescription,
       numberOfItems: dictionary.entries.length,
       items: dictionary.entries.map((entry) => ({
         name: entry.index.terms[0] || entry.index.id,
-        url: `/dictionary/${buildDictionarySlug(entry.index)}`,
+        url: `/dictionary/${buildDictionarySlug(entry.index)}/`,
         description: entry.index.summary,
         type: "DefinedTerm",
         dateModified: entry.index.updatedAt,

@@ -46,13 +46,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${match.entry.name} | ${siteConfig.siteName}`,
     description,
     alternates: {
-      canonical: `/archives/${match.slug}`,
+      canonical: `/archives/${match.slug}/`,
     },
     openGraph: {
       type: "article",
       title: `${match.entry.name} | ${siteConfig.siteName}`,
       description,
-      url: `/archives/${match.slug}`,
+      url: `/archives/${match.slug}/`,
       images: ogImage
         ? [
           {

@@ -16,19 +16,19 @@ export default function Home() {
     {
       title: "A curated archive",
       body: "The latest designs annotated with documentation so you can find inspiration fast.",
-      href: "/archives",
+      href: "/archives/",
       cta: "Browse the archive",
     },
     {
       title: "Living dictionary",
       body: "Short, precise definitions for the jargon and mechanics behind every contraption in the community.",
-      href: "/dictionary",
+      href: "/dictionary/",
       cta: "Open the dictionary",
     },
     {
       title: "Mods and tools",
       body: "Discover the essential mods and tools that make building, testing, and managing storage tech easier.",
-      href: "/mods-and-tools",
+      href: "/mods-and-tools/",
       cta: "See the recommendations",
     },
     {
@@ -123,7 +123,7 @@ export default function Home() {
               Experiment with different layouts to prototype faster, then export your design to a schematic with a single click when you&apos;re ready to build.
             </p>
             <a
-              href="/item-layout-tool"
+              href="/item-layout-tool/"
               className="inline-flex items-center text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
             >
               Open the Item Layout Tool
@@ -160,7 +160,7 @@ export default function Home() {
 
               We were founded after seeing how confusing and fragmented storage tech information could be, and what a difference a clear, well-organized resource could make for builders of all skill levels.
 
-              You can read our founding principles and governance model on our <Link href="/about" className="font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">About page</Link>.
+              You can read our founding principles and governance model on our <Link href="/about/" className="font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">About page</Link>.
             </p>
           </div>
         </section>

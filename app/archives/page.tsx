@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: archivesTitle,
     description,
-    url: `/archives`,
+    url: `/archives/`,
     images: [
       {
         url: `/archive.webp`
@@ -40,14 +40,14 @@ export default async function ArchivePage() {
   const pageCount = disablePagination ? 1 : getArchivePageCount(archive.posts.length, ARCHIVE_PAGE_SIZE);
   const pagePosts = archive.posts.slice(0, ARCHIVE_PAGE_SIZE);
   const archivesJsonLd = createCollectionPageJsonLd({
-    path: "/archives",
+    path: "/archives/",
     title: archivesTitle,
     description,
     imagePath: "/archive.webp",
     numberOfItems: archive.posts.length,
     items: pagePosts.map((post) => ({
       name: post.entry.name,
-      url: `/archives/${post.slug}`,
+      url: `/archives/${post.slug}/`,
       description: `Archive entry from ${post.channel.name}.`,
       type: "TechArticle",
       dateModified: post.entry.updatedAt,

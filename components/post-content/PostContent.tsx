@@ -49,7 +49,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   const [commentsLoading, setCommentsLoading] = useState(false);
   const numComments = currentData?.num_comments ?? 0;
   const basePath = siteConfig.basePath || "";
-  const expectedPathname = `${basePath}/archives/${encodeURIComponent(post.slug)}`;
+  const expectedPathname = `${basePath}/archives/${encodeURIComponent(post.slug)}/`;
 
   useEffect(() => {
     if (disableLiveFetch) return;

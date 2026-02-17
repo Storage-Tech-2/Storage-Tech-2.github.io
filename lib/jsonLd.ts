@@ -76,7 +76,7 @@ type FaqPageJsonLdInput = PageJsonLdInput & {
 
 const organizationId = `${siteConfig.siteUrl}#organization`;
 const websiteId = `${siteConfig.siteUrl}#website`;
-const dictionarySetId = `${siteConfig.siteUrl}/dictionary#termset`;
+const dictionarySetId = `${siteConfig.siteUrl}/dictionary/#termset`;
 const sameAs = [siteConfig.discordInviteUrl, siteConfig.repositoryUrl].filter(
   (value): value is string => Boolean(value),
 );
@@ -333,7 +333,7 @@ export function createArchiveArticleJsonLd({
   channelName,
   categoryName,
 }: ArchiveArticleJsonLdInput): JsonLdGraph {
-  const path = `/archives/${slug}`;
+  const path = `/archives/${slug}/`;
   const pageUrl = toAbsoluteUrl(path);
   const articleId = `${pageUrl}#article`;
   const breadcrumbId = `${pageUrl}#breadcrumb`;
@@ -382,7 +382,7 @@ export function createArchiveArticleJsonLd({
       ...(channelName ? { articleSection: channelName } : {}),
       ...(about.length ? { about } : {}),
     },
-    createBreadcrumbNode(path, title, "Archives", "/archives"),
+    createBreadcrumbNode(path, title, "Archives", "/archives/"),
   );
 }
 
@@ -396,7 +396,7 @@ export function createDictionaryTermJsonLd({
   threadURL,
   statusURL,
 }: DictionaryTermJsonLdInput): JsonLdGraph {
-  const path = `/dictionary/${slug}`;
+  const path = `/dictionary/${slug}/`;
   const pageUrl = toAbsoluteUrl(path);
   const termId = `${pageUrl}#definedterm`;
   const cleanTerms = uniqueNonEmpty(terms);
@@ -421,7 +421,7 @@ export function createDictionaryTermJsonLd({
       "@id": dictionarySetId,
       name: `Dictionary · ${siteConfig.siteName}`,
       description: "A comprehensive dictionary of storage tech terms and concepts.",
-      url: toAbsoluteUrl("/dictionary"),
+      url: toAbsoluteUrl("/dictionary/"),
       isPartOf: {
         "@id": websiteId,
       },

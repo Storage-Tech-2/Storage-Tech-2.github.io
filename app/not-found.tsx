@@ -8,7 +8,7 @@ const notFoundDescription = "The page you requested could not be found.";
 export default function NotFound() {
   return (
     <>
-      <PageJsonLd path="/404" title={notFoundTitle} description={notFoundDescription} />
+      <PageJsonLd path="/404/" title={notFoundTitle} description={notFoundDescription} />
       <NotFoundClient />
     </>
   );

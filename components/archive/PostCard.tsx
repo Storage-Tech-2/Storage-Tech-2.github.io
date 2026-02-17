@@ -43,7 +43,7 @@ export function PostCard({ post, sortKey, onNavigate, globalTags, aiRecommended 
   return (
     <article className="group flex h-full min-h-95 flex-col rounded-2xl bg-white transition hover:shadow-md dark:bg-gray-900">
       <ForesightPrefetchLink
-        href={`/archives/${post.slug}`}
+        href={`/archives/${post.slug}/`}
         className="flex h-full w-full flex-col text-left"
         onClick={(event) => {
           const handled = onNavigate?.(post, event);

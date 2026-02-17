@@ -22,7 +22,7 @@ export default function ColorPickerDebugPage() {
   return (
     <>
       <PageJsonLd
-        path="/debug/colorpicker"
+        path="/debug/colorpicker/"
         title={debugColorPickerTitle}
         description={debugColorPickerDescription}
       />

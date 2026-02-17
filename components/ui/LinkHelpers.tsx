@@ -157,7 +157,7 @@ export function DictionaryCard({ entry, onOpen, aiScore }: { entry: IndexedDicti
   const primary = entry.index.terms[0] || entry.index.id;
   const extraCount = Math.max(0, (entry.index.terms?.length || 0) - 1);
   const slug = buildDictionarySlug(entry.index);
-  const href = `/dictionary/${encodeURIComponent(slug)}`;
+  const href = `/dictionary/${encodeURIComponent(slug)}/`;
   return (
     <Link
       href={href}

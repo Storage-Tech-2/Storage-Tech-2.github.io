@@ -142,11 +142,11 @@ export function HeaderBar(props: Props) {
               Home
             </ForesightPrefetchLink>
             <ForesightPrefetchLink
-              href="/faq"
-              aria-current={isCurrentPage(currentPath, "/faq") ? "page" : undefined}
+              href="/faq/"
+              aria-current={isCurrentPage(currentPath, "/faq/") ? "page" : undefined}
               className={clsx(
                 navLinkBaseClass,
-                isActivePath(currentPath, "/faq")
+                isActivePath(currentPath, "/faq/")
                   ? navLinkActiveClass
                   : navLinkInactiveClass,
               )}
@@ -154,11 +154,11 @@ export function HeaderBar(props: Props) {
               FAQ
             </ForesightPrefetchLink>
             <ForesightPrefetchLink
-              href="/archives"
-              aria-current={isCurrentPage(currentPath, "/archives") ? "page" : undefined}
+              href="/archives/"
+              aria-current={isCurrentPage(currentPath, "/archives/") ? "page" : undefined}
               className={clsx(
                 navLinkBaseClass,
-                isActivePath(currentPath, "/archives")
+                isActivePath(currentPath, "/archives/")
                   ? navLinkActiveClass
                   : navLinkInactiveClass,
               )}
@@ -170,11 +170,11 @@ export function HeaderBar(props: Props) {
               Designs Archive
             </ForesightPrefetchLink>
             <ForesightPrefetchLink
-              href="/dictionary"
-              aria-current={isCurrentPage(currentPath, "/dictionary") ? "page" : undefined}
+              href="/dictionary/"
+              aria-current={isCurrentPage(currentPath, "/dictionary/") ? "page" : undefined}
               className={clsx(
                 navLinkBaseClass,
-                isActivePath(currentPath, "/dictionary")
+                isActivePath(currentPath, "/dictionary/")
                   ? navLinkActiveClass
                   : navLinkInactiveClass,
               )}
