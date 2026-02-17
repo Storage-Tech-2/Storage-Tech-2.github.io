@@ -22,7 +22,6 @@ export async function GET() {
     { loc: "/dictionary/" },
     { loc: "/about/" },
     { loc: "/mods-and-tools/" },
-    { loc: "/item-layout-tool/" },
   ];
 
   try {

@@ -123,7 +123,7 @@ export default function Home() {
               Experiment with different layouts to prototype faster, then export your design to a schematic with a single click when you&apos;re ready to build.
             </p>
             <a
-              href="/item-layout-tool/"
+              href="https://layout.storagecatalog.org/"
               className="inline-flex items-center text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
             >
               Open the Item Layout Tool
