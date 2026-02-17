@@ -104,7 +104,7 @@ export default function Home() {
         </section>
 
         <section className="mt-12 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <a href="https://storagecatalog.org/item-layout-tool/" target="_blank" rel="noreferrer" className="block">
+          <a href="https://layout.storagecatalog.org/" target="_blank" rel="noreferrer" className="block">
             <Image
               src="/layout_tool.webp"
               alt="Item Layout Tool interface preview"
