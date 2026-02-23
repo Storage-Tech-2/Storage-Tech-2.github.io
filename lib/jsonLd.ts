@@ -203,6 +203,11 @@ const createListItemNode = (item: CollectionItem, position: number): JsonLdNode 
 
 const createBreadcrumbNode = (path: string, title: string, parentName: string, parentPath: string): JsonLdNode => {
   const pageUrl = toAbsoluteUrl(path);
+  const siteTitleSuffix = ` | ${siteConfig.siteName}`;
+  const breadcrumbTitle = title.endsWith(siteTitleSuffix)
+    ? title.slice(0, -siteTitleSuffix.length)
+    : title;
+
   return {
     "@type": "BreadcrumbList",
     "@id": `${pageUrl}#breadcrumb`,
@@ -222,7 +227,7 @@ const createBreadcrumbNode = (path: string, title: string, parentName: string, p
       {
         "@type": "ListItem",
         position: 3,
-        name: title,
+        name: breadcrumbTitle,
         item: pageUrl,
       },
     ],
