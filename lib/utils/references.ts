@@ -76,6 +76,23 @@ function shouldIncludeMatch(text: string, term: string, start: number, end: numb
     return ch !== undefined && /[A-Za-z]/.test(ch);
   };
 
+  const getSliceAtEnd = (len: number): string => {
+    return text.slice(end, Math.min(end + len, text.length));
+  };
+  const getCharAt = (pos: number): string | undefined => {
+    pos += end;
+    return pos < text.length ? text[pos] : undefined;
+  };
+
+  // check if code,
+  // if matched text is fully caps
+  if (isTermAllCaps) {
+    // check if next three characters are numbers (for codes like ABC123)
+    if (/\d{3}/.test(getSliceAtEnd(3))) {
+      return false; // if followed by 3 numbers, must be part of code, so don't match just the letters
+    }
+  }
+
   const startSatisfied = isWordChar(before) === false;
   let endingSatisfied = isWordChar(after) === false;
 
@@ -87,14 +104,6 @@ function shouldIncludeMatch(text: string, term: string, start: number, end: numb
   const hasNoNumbers = !/[0-9]/.test(lastWord);
 
   if (hasNoNumbers && startSatisfied && !endingSatisfied) {
-    const getSliceAtEnd = (len: number): string => {
-      return text.slice(end, Math.min(end + len, text.length));
-    };
-    const getCharAt = (pos: number): string | undefined => {
-      pos += end;
-      return pos < text.length ? text[pos] : undefined;
-    };
-
     if (getCharAt(0) === "s" && !isWordChar(getCharAt(1))) {
       endingSatisfied = true;
     } else if (getSliceAtEnd(2) === "ed" && !isWordChar(getCharAt(2))) {
