@@ -155,8 +155,6 @@ export function HeaderBar(props: Props) {
             </ForesightPrefetchLink>
             <a
               href="https://guide.storagecatalog.org"
-              target="_blank"
-              rel="noreferrer"
               className={clsx(navLinkBaseClass, navLinkInactiveClass)}
             >
               Guides
