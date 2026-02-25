@@ -153,6 +153,14 @@ export function HeaderBar(props: Props) {
             >
               FAQ
             </ForesightPrefetchLink>
+            <a
+              href="https://guide.storagecatalog.org"
+              target="_blank"
+              rel="noreferrer"
+              className={clsx(navLinkBaseClass, navLinkInactiveClass)}
+            >
+              Guides
+            </a>
             <ForesightPrefetchLink
               href="/archives/"
               aria-current={isCurrentPage(currentPath, "/archives/") ? "page" : undefined}

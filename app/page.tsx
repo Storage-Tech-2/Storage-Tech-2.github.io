@@ -131,6 +131,22 @@ export default function Home() {
           </div>
         </section>
 
+
+        <section className="mt-12 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold sm:text-3xl">Are you a beginner?</h2>
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+
+            <p className="text-base leading-relaxed text-gray-900 dark:text-gray-200">
+              Check out our beginner guides on our <a href="https://guide.storagecatalog.org" target="_blank" rel="noreferrer" className="font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">guides site</a>, where we cover the basics of storage tech and recommend some good starter builds to get you going. We also have a friendly and helpful community in our Discord server, where you can ask questions, share your progress, and learn from other builders of all skill levels.
+            </p>
+          </div>
+        </section>
+
         <section className="mt-12 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

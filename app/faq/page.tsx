@@ -26,6 +26,7 @@ const faqItems: FaqItem[] = [
     answer:
       "Minecraft Storage Catalog is a community-maintained hub for storage tech in Minecraft Java Edition. It includes a searchable archive of builds, documentation, and a dictionary of technical terms.",
     links: [
+      { label: "View guides", href: "https://guide.storagecatalog.org", external: true },
       { label: "Browse the archive", href: "/archives/" },
       { label: "Open the dictionary", href: "/dictionary/" },
       { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
@@ -34,8 +35,9 @@ const faqItems: FaqItem[] = [
   {
     question: "Where can I find a storage system?",
     answer:
-      "You can find storage system designs in the Full Systems category of the archive. If you need something specific, use the search and filters to narrow down what you need.",
+      "You can find storage system designs in the Full Systems category of the archive. If you need something specific, use the search and filters to narrow down what you need. Theres also a newcomers guide in our guides site that recommends some good starter builds for beginners.",
     links: [
+      { label: "View guides", href: "https://guide.storagecatalog.org", external: true },
       { label: "Browse the archive", href: "/archives/" },
     ],
   },
@@ -44,6 +46,7 @@ const faqItems: FaqItem[] = [
     answer:
       "There is no single 'best' design, the optimal storage system depends on your specific needs. The archive includes a variety of designs with different trade-offs to suit different use cases. Choose what works best for you, and feel free to ask for recommendations in the Discord community!",
     links: [
+      { label: "View guides", href: "https://guide.storagecatalog.org", external: true },
       { label: "Browse the archive", href: "/archives/" },
       { label: "Join the Discord", href: siteConfig.discordInviteUrl ?? "#", external: true },
     ],
