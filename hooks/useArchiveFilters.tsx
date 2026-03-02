@@ -54,7 +54,7 @@ type FilterState = {
 const isUrlStateActive = (state: ReturnType<typeof getArchiveFiltersFromUrl>) =>
   Boolean(
     state.committedQ ||
-    state.sortKey !== "newest" ||
+    state.sortKey !== "archived" ||
     state.tagMode !== "AND" ||
     Object.keys(state.tagState).length > 0 ||
     state.selectedChannels.length > 0 ||
@@ -68,7 +68,7 @@ const toFilterState = (state: Partial<FilterState>): FilterState => ({
   tagState: state.tagState || {},
   selectedChannels: state.selectedChannels || [],
   selectedAuthors: state.selectedAuthors || [],
-  sortKey: state.sortKey || "newest",
+  sortKey: state.sortKey || "archived",
 });
 
 const buildInitialState = (fromSession: ReturnType<typeof readArchiveSession>) => {
@@ -119,7 +119,7 @@ export function useArchiveFilters({
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
   const [authorQuery, setAuthorQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("newest");
+  const [sortKey, setSortKey] = useState<SortKey>("archived");
   const [dictionaryQuery, setDictionaryQuery] = useState("");
   const [dictionarySort, setDictionarySort] = useState<"az" | "updated">("az");
   const skipUrlSyncRef = useRef(true);
@@ -539,7 +539,7 @@ export function useArchiveFilters({
     setTagMode("AND");
     setQ("");
     setCommittedQ("");
-    setSortKey("newest");
+    setSortKey("archived");
   };
 
   return {

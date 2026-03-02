@@ -113,7 +113,7 @@ export function getArchiveFiltersFromUrl(): ArchiveFilters {
       tagState: {},
       selectedChannels: [],
       selectedAuthors: [],
-      sortKey: "newest",
+      sortKey: "archived",
     };
   }
   const sp = new URLSearchParams(window.location.search);
@@ -126,7 +126,7 @@ export function getArchiveFiltersFromUrl(): ArchiveFilters {
     tagState: parsed.tagState || {},
     selectedChannels: parsed.selectedChannels || [],
     selectedAuthors: parsed.selectedAuthors || [],
-    sortKey: parsed.sortKey || "newest",
+    sortKey: parsed.sortKey || "archived",
   };
 }
 
@@ -136,7 +136,7 @@ const buildArchiveFiltersHref = (filters: ArchiveFilters, pathname?: string) => 
   const exclude = Object.keys(filters.tagState).filter((k) => filters.tagState[k] === -1);
   const sp = new URLSearchParams();
   if (filters.committedQ.trim()) sp.set("q", filters.committedQ.trim());
-  if (filters.sortKey !== "newest") sp.set("sort", filters.sortKey);
+  if (filters.sortKey !== "archived") sp.set("sort", filters.sortKey);
   if (filters.tagMode === "OR") sp.set("tagMode", "OR");
   if (include.length) sp.set("tags", serializeListParam(include));
   if (exclude.length) sp.set("xtags", serializeListParam(exclude));

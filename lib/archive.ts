@@ -156,10 +156,10 @@ export async function prefetchPostCardImages(posts: ArchiveListItem[]): Promise<
 export async function prefetchIndexAndLatestPosts(): Promise<void> {
   const index = await prefetchArchiveIndex();
   if (!index) return;
-  // sort posts by newest updated
+  // sort posts by newest archived
   index.posts.sort((a, b) => {
-    const aUpdated = a.entry.updatedAt;
-    const bUpdated = b.entry.updatedAt;
+    const aUpdated = a.entry.archivedAt;
+    const bUpdated = b.entry.archivedAt;
     return bUpdated - aUpdated;
   });
   
