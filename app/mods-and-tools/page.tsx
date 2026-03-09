@@ -35,10 +35,18 @@ const resources = [
   {
     title: "Archive Downloader",
     description:
-      "A mod that allows you to browse and download Storage Tech 2 and other technical archives directly in-game.",
+      "A mod that allows you to browse and download Storage Catalog and other technical archives directly in-game.",
     url: "https://github.com/Llama-Collective/Archive-Downloader",
     imageSrc: "/mods/st2downloader.png",
     imageAlt: "Archive Downloader preview",
+  },
+  {
+    title: "Item Layout Tool",
+    description:
+      "A web-based tool for designing and visualizing item layouts before building them in Minecraft.",
+    url: "https://layout.storagecatalog.org/",
+    imageSrc: "/layout_tool.webp",
+    imageAlt: "Item Layout Tool preview",
   },
   {
     title: "Redstone Multimeter",
