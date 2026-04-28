@@ -19,8 +19,8 @@ import { filterDictionaryEntries } from "@/lib/filtering";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
-import { DictionaryCard } from "../ui/LinkHelpers";
 import { buildDictionaryUrl, getDictionarySlugInfo } from "@/lib/utils/urls";
+import { VirtualizedDictionaryGrid } from "./VirtualizedDictionaryGrid";
 import { normalize } from "@/lib/utils/strings";
 import { ensureEmbeddingsLoaded, getScores } from "@/lib/semanticSearch";
 
@@ -392,16 +392,11 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
           </label>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((entry) => (
-            <DictionaryCard
-              key={entry.index.id}
-              entry={entry}
-              onOpen={openEntry}
-              aiScore={aiRecommendedScores[normalize(entry.index.id)]}
-            />
-          ))}
-        </div>
+        <VirtualizedDictionaryGrid
+          entries={filtered}
+          onOpen={openEntry}
+          aiRecommendedScores={aiRecommendedScores}
+        />
       </main>
 
       {modalEntry ? (
