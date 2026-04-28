@@ -191,7 +191,10 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
           const currentUpdatedAt = getEntriesUpdatedAt(liveEntries);
           const nextUpdatedAt = getEntriesUpdatedAt(fresh.entries);
           const isSame = currentUpdatedAt === nextUpdatedAt && liveEntries.length === fresh.entries.length;
-          if (!isSame) setLiveEntriesOverride(fresh.entries);
+          if (!isSame) {
+            activeIdRef.current = null;
+            setLiveEntriesOverride(fresh.entries);
+          }
         })
         .catch(() => { });
     };
