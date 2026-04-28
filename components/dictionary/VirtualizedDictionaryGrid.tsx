@@ -7,7 +7,7 @@ import { type IndexedDictionaryEntry } from "@/lib/types";
 import { normalize } from "@/lib/utils/strings";
 
 const GRID_GAP = 12;
-const CARD_HEIGHT = 120;
+export const CARD_HEIGHT = 120;
 const ROW_HEIGHT = CARD_HEIGHT + GRID_GAP;
 const SCROLLBAR_FUDGE = 20;
 
@@ -78,6 +78,7 @@ export function VirtualizedDictionaryGrid({ entries, onOpen, aiRecommendedScores
     overscan: 3,
     scrollMargin,
     useFlushSync: false,
+    initialOffset: 0,
   });
 
   if (!entries.length) return null;

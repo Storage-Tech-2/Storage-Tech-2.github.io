@@ -20,7 +20,8 @@ import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type IndexedDictionaryEntry } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { buildDictionaryUrl, getDictionarySlugInfo } from "@/lib/utils/urls";
-import { VirtualizedDictionaryGrid } from "./VirtualizedDictionaryGrid";
+import { VirtualizedDictionaryGrid, CARD_HEIGHT } from "./VirtualizedDictionaryGrid";
+import { DictionaryCard } from "@/components/ui/LinkHelpers";
 import { normalize } from "@/lib/utils/strings";
 import { ensureEmbeddingsLoaded, getScores } from "@/lib/semanticSearch";
 
@@ -30,6 +31,8 @@ type Props = {
 };
 
 const DICTIONARY_EMBEDDINGS_KEY = "dictionary-embeddings";
+
+let hasHydratedDictionaryShell = false;
 
 const getEntriesUpdatedAt = (list: IndexedDictionaryEntry[]) =>
   list.reduce((max, entry) => Math.max(max, entry.index.updatedAt ?? 0), 0);
@@ -55,6 +58,7 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
   const [semanticSearch, setSemanticSearch] = useState<{ query: string; scoreById: Record<string, number> } | null>(null);
   const [semanticForceDisabled, setSemanticForceDisabled] = useState(false);
   const [aiWorkerRequested, setAiWorkerRequested] = useState(false);
+  const [hydrated, setHydrated] = useState(hasHydratedDictionaryShell);
   const [dictionarySearchFocused, setDictionarySearchFocused] = useState(false);
   const pendingQueryRef = useRef<string>("");
   const activeIdRef = useRef<string | null>(null);
@@ -87,6 +91,12 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
     return liveEntries.find((entry) => entry.index.id === slugEntryIndex.id) || { index: slugEntryIndex };
   }, [slugEntryIndex, liveEntries]);
   const modalEntry = activeMatchesSlug && active ? active : slugEntry;
+
+  useEffect(() => {
+    hasHydratedDictionaryShell = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -392,11 +402,25 @@ export function DictionaryShell({ entries, initialActiveEntry = null }: Props) {
           </label>
         </div>
 
-        <VirtualizedDictionaryGrid
-          entries={filtered}
-          onOpen={openEntry}
-          aiRecommendedScores={aiRecommendedScores}
-        />
+        {hydrated ? (
+          <VirtualizedDictionaryGrid
+            entries={filtered}
+            onOpen={openEntry}
+            aiRecommendedScores={aiRecommendedScores}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((entry) => (
+              <div key={entry.index.id} style={{ height: CARD_HEIGHT }}>
+                <DictionaryCard
+                  entry={entry}
+                  onOpen={openEntry}
+                  aiScore={aiRecommendedScores[normalize(entry.index.id)]}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {modalEntry ? (
